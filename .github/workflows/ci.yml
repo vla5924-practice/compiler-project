@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  ubuntu-gcc:
+    name: Ubuntu GCC build & test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Build
+      shell: bash
+      run: |
+        mkdir build && cd build
+        cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
+        make
+    - name: Run tests
+      shell: bash
+      run: |
+        cd build
+        ctest
+
+  windows-msvc:
+    name: Windows MSVC build & test
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Build
+      shell: cmd
+      run: |
+        md build && cd build
+        cmake -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ..
+        cmake --build .
+    - name: Run tests
+      shell: bash
+      run: |
+        cd build
+        ctest
