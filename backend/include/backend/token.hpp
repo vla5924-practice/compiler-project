@@ -32,7 +32,6 @@ struct Token {
 
     enum class Operator {
         Colon,
-        Semicolon,
         Dot,
         Comma,
         Assign,
