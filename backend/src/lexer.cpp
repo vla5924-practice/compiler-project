@@ -1,21 +1,27 @@
 #include "lexer.hpp"
 
 std::map<std::string_view, Token::Keyword> Lexer::keywords = {
-    {"begin", Token::Keyword::Begin},     {"end", Token::Keyword::End},     {"var", Token::Keyword::Var},
-    {"integer", Token::Keyword::Integer}, {"if", Token::Keyword::If},       {"then", Token::Keyword::Then},
-    {"else", Token::Keyword::Else},       {"while", Token::Keyword::While}, {"do", Token::Keyword::Do},
-    {"for", Token::Keyword::For},         {"to", Token::Keyword::To},       {"repeat", Token::Keyword::Repeat},
-    {"until", Token::Keyword::Until},
-};
+    {"    ", Token::Keyword::Indentation},  {"bool", Token::Keyword::Bool},
+    {"int", Token::Keyword::Int},           {"float", Token::Keyword::Float},
+    {"str", Token::Keyword::String},        {"if", Token::Keyword::If},
+    {"else", Token::Keyword::Else},         {"elif", Token::Keyword::Elif},
+    {"range", Token::Keyword::Range},       {"while", Token::Keyword::While},
+    {"for", Token::Keyword::For},           {"break", Token::Keyword::Break},
+    {"import", Token::Keyword::Import},     {"continue", Token::Keyword::Continue},
+    {"def", Token::Keyword::Definition},    {"return", Token::Keyword::Return},
+    {"or", Token::Keyword::Or},             {"and", Token::Keyword::And},
+    {"not", Token::Keyword::Not},           {"in", Token::Keyword::In},
+    {"True", Token::Keyword::True},         {"None", Token::Keyword::None},
+    {"False", Token::Keyword::False}};
 
 std::map<std::string_view, Token::Operator> Lexer::operators = {
-    {":", Token::Operator::Colon},     {";", Token::Operator::Semicolon},  {".", Token::Operator::Stop},
-    {",", Token::Operator::Comma},     {":=", Token::Operator::Assign},    {"+", Token::Operator::Plus},
-    {"-", Token::Operator::Minus},     {"*", Token::Operator::Mult},       {"/", Token::Operator::Div},
-    {"=", Token::Operator::Equal},     {"<>", Token::Operator::NotEqual},  {"<", Token::Operator::Less},
-    {">", Token::Operator::More},      {"<=", Token::Operator::LessEqual}, {">=", Token::Operator::MoreEqual},
-    {"(", Token::Operator::LeftBrace}, {")", Token::Operator::RightBrace},
-};
+    {":", Token::Operator::Colon},          {"%", Token::Operator::Mod},        {".", Token::Operator::Dot},
+    {",", Token::Operator::Comma},          {"=", Token::Operator::Assign},     {"+", Token::Operator::Plus},
+    {"-", Token::Operator::Minus},          {"*", Token::Operator::Mult},       {"/", Token::Operator::Div},
+    {"==", Token::Operator::Equal},         {"!=", Token::Operator::NotEqual},  {"<", Token::Operator::Less},
+    {">", Token::Operator::More},           {"<=", Token::Operator::LessEqual}, {">=", Token::Operator::MoreEqual},
+    {"(", Token::Operator::LeftBrace},      {")", Token::Operator::RightBrace}, {"[", Token::Operator::RectLeftBrace},
+    {"]", Token::Operator::RectRightBrace}, {"'", Token::Operator::Apostrophe}};
 
 TokenList Lexer::process(const StringVec &source) {
     std::list<Token> tokens;
