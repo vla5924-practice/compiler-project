@@ -27,7 +27,7 @@ struct Token {
         In,
         True,
         None,
-        False
+        False,
     };
 
     enum class Operator {
@@ -50,7 +50,7 @@ struct Token {
         RectLeftBrace,
         RectRightBrace,
         Apostrophe,
-        Mod
+        Mod,
     };
 
     enum class Type { Keyword, Identifier, Operator, IntegerLiteral, FloatingPointLiteral, StringLiteral };
