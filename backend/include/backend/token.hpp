@@ -4,12 +4,36 @@
 #include <variant>
 
 struct Token {
-    enum class Keyword { Begin, End, Var, Integer, If, Then, Else, While, Do, For, To, Repeat, Until };
+    enum class Keyword {
+        Indentation,
+        Bool,
+        Int,
+        Float,
+        String,
+        If,
+        Else,
+        Elif,
+        Range,
+        While,
+        For,
+        Break,
+        Import,
+        Continue,
+        Definition,
+        Return,
+        Or,
+        And,
+        Not,
+        In,
+        True,
+        None,
+        False
+    };
 
     enum class Operator {
         Colon,
         Semicolon,
-        Stop,
+        Dot,
         Comma,
         Assign,
         Plus,
@@ -23,7 +47,10 @@ struct Token {
         LessEqual,
         MoreEqual,
         LeftBrace,
-        RightBrace
+        RightBrace,
+        RectRightBrace,
+        Apostrophe,
+        Mod
     };
 
     enum class Type { Keyword, Identifier, Operator, IntegerLiteral, FloatingPointLiteral, StringLiteral };
