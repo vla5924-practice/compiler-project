@@ -48,6 +48,7 @@ struct Token {
         MoreEqual,
         LeftBrace,
         RightBrace,
+        RectLeftBrace,
         RectRightBrace,
         Apostrophe,
         Mod
