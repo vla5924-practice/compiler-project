@@ -1,17 +1,17 @@
 #include "lexer.hpp"
 
 std::map<std::string_view, Token::Keyword> Lexer::keywords = {
-    {" ", Token::Keyword::Indentation},  {"bool", Token::Keyword::Bool},
-    {"int", Token::Keyword::Int},        {"float", Token::Keyword::Float},
-    {"str", Token::Keyword::String},     {"if", Token::Keyword::If},
-    {"else", Token::Keyword::Else},      {"elif", Token::Keyword::Elif},
-    {"range", Token::Keyword::Range},    {"while", Token::Keyword::While},
-    {"for", Token::Keyword::For},        {"break", Token::Keyword::Break},
-    {"import", Token::Keyword::Import},  {"continue", Token::Keyword::Continue},
-    {"def", Token::Keyword::Definition}, {"return", Token::Keyword::Return},
-    {"or", Token::Keyword::Or},          {"and", Token::Keyword::And},
-    {"not", Token::Keyword::Not},        {"in", Token::Keyword::In},
-    {"True", Token::Keyword::True},      {"None", Token::Keyword::None},
+    {"    ", Token::Keyword::Indentation},  {"bool", Token::Keyword::Bool},
+    {"int", Token::Keyword::Int},           {"float", Token::Keyword::Float},
+    {"str", Token::Keyword::String},        {"if", Token::Keyword::If},
+    {"else", Token::Keyword::Else},         {"elif", Token::Keyword::Elif},
+    {"range", Token::Keyword::Range},       {"while", Token::Keyword::While},
+    {"for", Token::Keyword::For},           {"break", Token::Keyword::Break},
+    {"import", Token::Keyword::Import},     {"continue", Token::Keyword::Continue},
+    {"def", Token::Keyword::Definition},    {"return", Token::Keyword::Return},
+    {"or", Token::Keyword::Or},             {"and", Token::Keyword::And},
+    {"not", Token::Keyword::Not},           {"in", Token::Keyword::In},
+    {"True", Token::Keyword::True},         {"None", Token::Keyword::None},
     {"False", Token::Keyword::False}};
 
 std::map<std::string_view, Token::Operator> Lexer::operators = {
