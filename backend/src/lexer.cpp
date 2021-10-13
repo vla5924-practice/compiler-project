@@ -15,13 +15,13 @@ std::map<std::string_view, Token::Keyword> Lexer::keywords = {
     {"False", Token::Keyword::False}};
 
 std::map<std::string_view, Token::Operator> Lexer::operators = {
-    {":", Token::Operator::Colon},          {";", Token::Operator::Semicolon},  {".", Token::Operator::Dot},
+    {":", Token::Operator::Colon},          {"%", Token::Operator::Mod},        {".", Token::Operator::Dot},
     {",", Token::Operator::Comma},          {"=", Token::Operator::Assign},     {"+", Token::Operator::Plus},
     {"-", Token::Operator::Minus},          {"*", Token::Operator::Mult},       {"/", Token::Operator::Div},
     {"==", Token::Operator::Equal},         {"!=", Token::Operator::NotEqual},  {"<", Token::Operator::Less},
     {">", Token::Operator::More},           {"<=", Token::Operator::LessEqual}, {">=", Token::Operator::MoreEqual},
     {"(", Token::Operator::LeftBrace},      {")", Token::Operator::RightBrace}, {"[", Token::Operator::RectLeftBrace},
-    {"]", Token::Operator::RectRightBrace}, {"'", Token::Operator::Apostrophe}, {"%", Token::Operator::Mod}};
+    {"]", Token::Operator::RectRightBrace}, {"'", Token::Operator::Apostrophe}};
 
 TokenList Lexer::process(const StringVec &source) {
     std::list<Token> tokens;
