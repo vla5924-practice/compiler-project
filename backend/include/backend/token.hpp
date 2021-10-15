@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <type_traits>
 #include <variant>
 
 struct Token {
@@ -51,46 +52,73 @@ struct Token {
         RectRightBrace,
         Apostrophe,
         Mod,
+        Arrow, // TODO: add "->" to lexer
     };
 
-    enum class Type { Keyword, Identifier, Operator, IntegerLiteral, FloatingPointLiteral, StringLiteral };
+    enum class Special {
+        Indentation,
+        EndOfExpression,
+    };
+
+    enum class Type {
+        Keyword,
+        Identifier,
+        Operator,
+        Special,
+        IntegerLiteral,
+        FloatingPointLiteral,
+        StringLiteral,
+    };
     Type type;
 
-    std::variant<Keyword, Operator, std::string> kwValue, opValue, strValue; // idValue???
-
-    /*Token() = default;
-    Token(const Token&) = default;
-    Token(Token&&) = default;
-    ~Token() = default;*/
+    std::variant<Keyword, Operator, Special, std::string> kwValue, opValue, specValue, strValue;
 
     Keyword &kw() {
         return std::get<0>(kwValue);
     }
     std::string &id() {
-        return std::get<2>(strValue);
+        return std::get<3>(strValue);
     }
     Operator &op() {
         return std::get<1>(opValue);
     }
+    Special &spec() {
+        return std::get<2>(specValue);
+    }
     std::string &literal() {
-        return std::get<2>(strValue);
+        return std::get<3>(strValue);
     }
 
     const Keyword &kw() const {
         return std::get<0>(kwValue);
     }
     const std::string &id() const {
-        return std::get<2>(strValue);
+        return std::get<3>(strValue);
     }
     const Operator &op() const {
         return std::get<1>(opValue);
     }
+    const Special &spec() const {
+        return std::get<2>(specValue);
+    }
     const std::string &literal() const {
-        return std::get<2>(strValue);
+        return std::get<3>(strValue);
     }
 
     template <Type TokenType, typename ValueType>
     static Token make(const ValueType &value) {
         return Token{TokenType, value};
+    }
+
+    bool is(const Keyword &value) const {
+        return type == Type::Keyword && kw() == value;
+    }
+
+    bool is(const Operator &value) const {
+        return type == Type::Operator && op() == value;
+    }
+
+    bool is(const Special &value) const {
+        return type == Type::Special && spec() == value;
     }
 };

@@ -1,25 +1,15 @@
 #pragma once
 
+#include <list>
 #include <memory>
 #include <string>
-
-struct Literal {
-    union {
-        long int Integer;
-        double FPoint;
-        std::string String;
-    };
-
-    ~Literal() = default;
-};
 
 struct ASTNode {
     using Ptr = std::shared_ptr<ASTNode>;
     using WeakPtr = std::weak_ptr<ASTNode>;
 
-    Ptr left;
-    Ptr right;
-    WeakPtr parent;
+    std::list<Ptr> children;
+    Ptr parent;
 
     enum Type {
         BinaryOperation,
@@ -27,10 +17,24 @@ struct ASTNode {
         IntegerLiteralValue,
         FPointLiteralValue,
         StringLiteralValue,
-        BranchRoot
+        IfExpression,
+        WhileExpression,
+        FunctionDefinition,
+        FunctionArguments,
+        FunctionReturnType,
+        FunctionBody,
+        ProgramRoot,
+        BranchRoot,
     };
     Type type;
-    Literal literal;
 
+    union {
+        long int intNumber;
+        double fpNumber;
+    } numLiteral;
+    std::string strLiteral;
+
+    ASTNode() = default;
+    ASTNode(const Type &type_, Ptr parent_ = Ptr());
     ~ASTNode() = default;
 };
