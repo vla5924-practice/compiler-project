@@ -4,7 +4,7 @@ using namespace lexer;
 
 // clang-format off
 std::map<std::string_view, Token::Keyword> Lexer::keywords = {
-    {"    ", Token::Keyword::Indentation},  {"bool", Token::Keyword::Bool},
+    {"bool", Token::Keyword::Bool},         {"False", Token::Keyword::False},
     {"int", Token::Keyword::Int},           {"float", Token::Keyword::Float},
     {"str", Token::Keyword::String},        {"if", Token::Keyword::If},
     {"else", Token::Keyword::Else},         {"elif", Token::Keyword::Elif},
@@ -14,8 +14,7 @@ std::map<std::string_view, Token::Keyword> Lexer::keywords = {
     {"def", Token::Keyword::Definition},    {"return", Token::Keyword::Return},
     {"or", Token::Keyword::Or},             {"and", Token::Keyword::And},
     {"not", Token::Keyword::Not},           {"in", Token::Keyword::In},
-    {"True", Token::Keyword::True},         {"None", Token::Keyword::None},
-    {"False", Token::Keyword::False}};
+    {"True", Token::Keyword::True},         {"None", Token::Keyword::None}};
 
 std::map<std::string_view, Token::Operator> Lexer::operators = {
     {":", Token::Operator::Colon},          {"%", Token::Operator::Mod},        {".", Token::Operator::Dot},
@@ -39,13 +38,47 @@ TokenList Lexer::process(const StringVec &source) {
 TokenList Lexer::processString(const std::string &str) {
     std::list<Token> tokens;
     std::string id_str;
-    int i = 0;
-    for (auto i = str.begin(); i != str.end(); ++i) {
-        if (isspace(*i) && id_str.size() == 0) // skipping spaces at the beginning of a line
-        {
-            continue;
-        }
+    auto i = str.begin();
 
+    auto space_counter = str.find_first_not_of(' ');
+
+    if (space_counter == std::string::npos) {
+        return tokens;
+    }
+
+    int indentation_count = space_counter / 4;
+    for (int i = 0; i < indentation_count; i++) {
+        tokens.push_back(Token::make<Token::Type::Special>(Token::Special::Indentation));
+    }
+
+    i += space_counter;
+
+    auto begin_token = i;
+    auto end_token = i;
+
+    for (; i != str.end(); ++i) {
+
+        if (isalpha(*i)) {
+            end_token++;
+        } else {
+            if (end_token != begin_token) // pushing Keyword.
+            {
+                auto tok_id = Lexer::keywords.find(std::string(begin_token, end_token));
+                if (tok_id != Lexer::keywords.cend())
+                    tokens.push_back(Token::make<Token::Type::Keyword>(tok_id->second));
+                else {
+                    while (((i) != str.end()) && isalnum(*i)) // adding identifier with numbers
+                    {
+                        end_token++;
+                        i++;
+                    }
+                    tokens.push_back(Token::make<Token::Type::Identifier>(std::string(begin_token, end_token)));
+                }
+                begin_token = i;
+                end_token = i;
+            }
+        }
+/*
         if (isalpha(*i)) // adding letters or numbers to the id_str
         {
             id_str += *i;
@@ -120,7 +153,9 @@ TokenList Lexer::processString(const std::string &str) {
                 tokens.push_back(Token::make<Token::Type::Operator>(tok_id->second));
             id_str.clear();
         }
+        */
     }
+    /*
     // adding a word or symbol at the end of a line
     // these words and symbols are 'begin', ';', '.', ')'
     if (id_str.size() != 0) {
@@ -130,6 +165,7 @@ TokenList Lexer::processString(const std::string &str) {
             tokens.push_back(Token::make<Token::Type::Keyword>(tok_id->second));
         else if (tok_src != Lexer::operators.end())
             tokens.push_back(Token::make<Token::Type::Operator>(tok_src->second));
-    }
+    }*/
+
     return tokens;
 }

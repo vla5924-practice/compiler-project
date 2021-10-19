@@ -16,6 +16,8 @@ std::ostream &operator<<(std::ostream &out, const TokenList &list) {
             out << "FLOAT" << std::endl;
         } else if (token.type == Token::Type::StringLiteral) {
             out << "STRING" << std::endl;
+        } else if (token.type == Token::Type::Special) {
+            out << "SPECIAL" << std::endl;
         }
     }
     return out;
