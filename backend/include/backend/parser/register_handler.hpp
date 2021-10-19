@@ -8,7 +8,7 @@ template <typename HandlerT>
 class RegisterHandler {
   public:
     RegisterHandler(const ast::NodeType &nodeType) {
-        ::Parser::parserHandlers.insert_or_assign(nodeType, std::make_unique<HandlerT>());
+        Parser::parserHandlers.insert_or_assign(nodeType, std::make_unique<HandlerT>());
     }
 };
 
