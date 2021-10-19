@@ -6,7 +6,6 @@ StringVec Preprocessor::removeComments(const StringVec &source) {
     StringVec result;
     for (auto &str : source) {
         std::string resultStr;
-        char prev = 0;
         bool inComment = false;
         bool inStringLiteral = false;
         bool skip;
@@ -21,13 +20,11 @@ StringVec Preprocessor::removeComments(const StringVec &source) {
             // If we are not inside string literal
             // then we can check if there is '//' sequence
             if (!inStringLiteral) {
-                if (sym == '/' && prev == '/') {
-                    resultStr.pop_back();
+                if (sym == '#') {
                     break;
                 }
             }
             resultStr.push_back(sym);
-            prev = sym;
         }
         if (!resultStr.empty())
             result.push_back(std::move(resultStr));
