@@ -9,6 +9,6 @@ namespace lexer {
 
 using TokenList = std::list<Token>;
 
-std::ostream &operator<<(std::ostream &out, const TokenList &list);
-
 } // namespace lexer
+
+std::ostream &operator<<(std::ostream &out, const lexer::TokenList &list);
