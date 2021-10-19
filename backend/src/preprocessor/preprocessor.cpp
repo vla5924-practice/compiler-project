@@ -1,4 +1,6 @@
-#include "preprocessor.hpp"
+#include "preprocessor/preprocessor.hpp"
+
+using namespace preprocessor;
 
 StringVec Preprocessor::removeComments(const StringVec &source) {
     StringVec result;
