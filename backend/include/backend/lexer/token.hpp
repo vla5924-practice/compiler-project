@@ -3,6 +3,8 @@
 #include <string>
 #include <variant>
 
+namespace lexer {
+
 struct Token {
     enum class Keyword {
         Indentation,
@@ -109,3 +111,5 @@ struct Token {
         return Token{TokenType, value};
     }
 };
+
+} // namespace lexer

@@ -1,4 +1,6 @@
-#include "tokenlist.hpp"
+#include "lexer/tokenlist.hpp"
+
+using namespace lexer;
 
 std::ostream &operator<<(std::ostream &out, const TokenList &list) {
     for (const Token &token : list) {

@@ -1,5 +1,8 @@
-#include "lexer.hpp"
+#include "lexer/lexer.hpp"
 
+using namespace lexer;
+
+// clang-format off
 std::map<std::string_view, Token::Keyword> Lexer::keywords = {
     {"    ", Token::Keyword::Indentation},  {"bool", Token::Keyword::Bool},
     {"int", Token::Keyword::Int},           {"float", Token::Keyword::Float},
@@ -22,12 +25,13 @@ std::map<std::string_view, Token::Operator> Lexer::operators = {
     {">", Token::Operator::More},           {"<=", Token::Operator::LessEqual}, {">=", Token::Operator::MoreEqual},
     {"(", Token::Operator::LeftBrace},      {")", Token::Operator::RightBrace}, {"[", Token::Operator::RectLeftBrace},
     {"]", Token::Operator::RectRightBrace}, {"'", Token::Operator::Apostrophe}};
+// clang-format on
 
 TokenList Lexer::process(const StringVec &source) {
     std::list<Token> tokens;
     for (const auto &str : source) {
         TokenList part = processString(str);
-        tokens.insert(tokens.end(), part.begin(), part.end());
+        tokens.insert(tokens.end(), part.begin(), part.end()); // splise
     }
     return tokens;
 }

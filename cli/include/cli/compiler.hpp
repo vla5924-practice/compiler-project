@@ -1,6 +1,6 @@
 #pragma once
 
-#include <backend/lexer.hpp>
+#include <backend/lexer/lexer.hpp>
 #include <backend/parser.hpp>
 #include <backend/preprocessor.hpp>
 

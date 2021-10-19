@@ -5,9 +5,12 @@
 #include <string>
 #include <string_view>
 
+#include "lexer/token.hpp"
 #include "stringvec.hpp"
-#include "token.hpp"
 #include "tokenlist.hpp"
+
+
+namespace lexer {
 
 class Lexer {
     using Type = Token::Type;
@@ -19,6 +22,13 @@ class Lexer {
 
     static TokenList processString(const std::string &str);
 
+    static Token getKeyword(const std::string &str, std::string::iterator &start);
+    static Token getOperator(const std::string &str, std::string::iterator &start);
+    static Token getIdentifier(const std::string &str, std::string::iterator &start);
+    static Token getIntegerLiteral(const std::string &str, std::string::iterator &start);
+    static Token getFloatingPointLiteral(const std::string &str, std::string::iterator &start);
+    static Token getStringLiteral(const std::string &str, std::string::iterator &start);
+
   public:
     Lexer() = delete;
     Lexer(const Lexer &) = delete;
@@ -27,3 +37,5 @@ class Lexer {
 
     static TokenList process(const StringVec &source);
 };
+
+} // namespace lexer
