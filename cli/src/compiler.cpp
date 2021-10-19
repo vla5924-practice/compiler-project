@@ -2,7 +2,9 @@
 
 #include <iostream>
 
-#include <backend/stringvec.hpp>
+#include <backend/lexer.hpp>
+#include <backend/parser/parser.hpp>
+#include <backend/preprocessor.hpp>
 
 int Compiler::exec(int argc, char *argv[]) {
     std::cout << "Compiler launched.\n";
