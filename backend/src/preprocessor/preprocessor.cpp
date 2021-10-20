@@ -5,10 +5,9 @@ using namespace preprocessor;
 StringVec Preprocessor::removeComments(const StringVec &source) {
     StringVec result;
     for (const auto &str : source) {
-        std::string resultStr;
         bool inStringApostrophe = false;
         bool inStringQuotes = false;
-        int i = 0;
+        size_t i = 0;
         for (; i < str.length(); i++) {
             if (str[i] == '\'')
                 inStringApostrophe = !inStringApostrophe;
