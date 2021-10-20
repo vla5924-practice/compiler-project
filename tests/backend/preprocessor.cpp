@@ -5,10 +5,6 @@
 
 using namespace preprocessor;
 
-TEST(Test, can_add) {
-    ASSERT_EQ(4, 2 + 2);
-}
-
 TEST(Preprocessor, can_remove_comment_for_single_line) {
     StringVec source = {"x = 1 # x declaration"};
     StringVec transformed = Preprocessor::process(source);
