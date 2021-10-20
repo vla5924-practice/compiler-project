@@ -4,7 +4,7 @@
 
 #include <backend/lexer.hpp>
 #include <backend/parser/parser.hpp>
-#include <backend/preprocessor.hpp>
+#include <backend/preprocessor/preprocessor.hpp>
 
 int Compiler::exec(int argc, char *argv[]) {
     std::cout << "Compiler launched.\n";
