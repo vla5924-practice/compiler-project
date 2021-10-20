@@ -5,29 +5,24 @@ using namespace preprocessor;
 StringVec Preprocessor::removeComments(const StringVec &source) {
     StringVec result;
     for (auto &str : source) {
-        std::string resultStr;
-        bool inComment = false;
-        bool inStringLiteral = false;
-        bool skip;
-        for (char sym : str) {
-            skip = false;
-            // If we are inside the comment entity
-            // then we can ignore any symbol until line ends
-            // If symbol is quote
-            // this means we are entering or leaving string literal
-            if (sym == '\'')
-                inStringLiteral = !inStringLiteral;
-            // If we are not inside string literal
-            // then we can check if there is '//' sequence
-            if (!inStringLiteral) {
-                if (sym == '#') {
-                    break;
-                }
-            }
-            resultStr.push_back(sym);
+        std::string copy_str = str;
+        size_t found_hash = str.find('#');
+        if (found_hash == std::string::npos) {
+            result.push_back(str);
+            continue;
         }
-        if (!resultStr.empty())
-            result.push_back(std::move(resultStr));
+        while (!copy_str.empty()) {
+            size_t found_smth = copy_str.find_first_of("'\"#");
+            if (copy_str[found_smth] == '#') {
+                std::string subresult_str = copy_str.substr(0, found_smth);
+                copy_str.clear();
+                if (!subresult_str.empty())
+                    result.push_back(std::move(subresult_str));
+            } else {
+                size_t found_second = copy_str.find(copy_str[found_smth], found_smth + 1);
+                copy_str = copy_str.substr(found_second + 1);
+            }
+        }
     }
     return result;
 }
