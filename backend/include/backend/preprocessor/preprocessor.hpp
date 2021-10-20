@@ -2,6 +2,8 @@
 
 #include "stringvec.hpp"
 
+namespace preprocessor {
+
 class Preprocessor {
     static StringVec removeComments(const StringVec &source);
 
@@ -13,3 +15,5 @@ class Preprocessor {
 
     static StringVec process(const StringVec &source);
 };
+
+} // namespace preprocessor
