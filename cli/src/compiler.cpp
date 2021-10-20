@@ -10,7 +10,7 @@ int Compiler::exec(int argc, char *argv[]) {
     // source = readFile(pathtofile...);
     StringVec source = {"var i12, j, k: integer;", "begin",         "   i:=j + k;", "   i:=i + 123;",
                         "   i:= 123.123;",         "   'weqweqwe'", "end."};
-    source = Preprocessor::process(source);
+    source = preprocessor::Preprocessor::process(source);
     std::cout << source << std::endl;
     TokenList tokens = Lexer::process(source);
     std::cout << tokens << std::endl;

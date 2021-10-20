@@ -2,7 +2,7 @@
 
 #include <backend/lexer.hpp>
 #include <backend/parser.hpp>
-#include <backend/preprocessor.hpp>
+#include <backend/preprocessor/preprocessor.hpp>
 
 class Compiler {
     static StringVec readFile(const std::string &path);
