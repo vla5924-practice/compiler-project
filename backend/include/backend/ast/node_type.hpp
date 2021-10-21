@@ -21,6 +21,7 @@ enum class NodeType {
     ProgramRoot,
     BranchRoot,
     Expression,
+    VariableDeclaration,
 };
 
 }
