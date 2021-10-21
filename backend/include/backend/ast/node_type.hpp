@@ -4,6 +4,7 @@ namespace ast {
 
 enum class NodeType {
     BinaryOperation,
+    UnaryOperation,
     VariableName,
     TypeName,
     FunctionName,
@@ -19,6 +20,7 @@ enum class NodeType {
     FunctionBody,
     ProgramRoot,
     BranchRoot,
+    Expression,
 };
 
 }
