@@ -18,8 +18,8 @@ void FunctionDefinitionHandler::run(ParserState &state) {
     } else if (currToken.is(Token::Operator::Arrow) && functionArgumentsEnd) {
         // save return type on next step
     } else if (TypeRegistry::isTypename(currToken) && prevToken.is(Token::Operator::Arrow)) {
-        state.pushChildNode(ast::NodeType::FunctionReturnType);
-        // TODO: really save typename!
+        auto node = state.pushChildNode(ast::NodeType::FunctionReturnType);
+        node->uid() = TypeRegistry::typeId(currToken);
     } else if (currToken.is(Token::Operator::Colon) && TypeRegistry::isTypename(prevToken)) {
         // end of function header
         state.node = state.pushChildNode(ast::NodeType::FunctionBody);

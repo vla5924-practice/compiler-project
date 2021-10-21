@@ -11,12 +11,13 @@ void FunctionArgumentsHandler::run(ParserState &state) {
         const Token &argName = currToken;
         const Token &colon = *std::next(state.tokenIter);
         const Token &argType = *std::next(state.tokenIter, 2);
-        if (argName.type != Token::Type::Identifier || !colon.is(Token::Operator::Colon) || !TypeRegistry::isTypename(argType)) {
+        if (argName.type != Token::Type::Identifier || !colon.is(Token::Operator::Colon) ||
+            !TypeRegistry::isTypename(argType)) {
             // semantic error
         }
         auto node = state.pushChildNode(ast::NodeType::FunctionArgument);
         auto argTypeNode = ParserState::pushChildNode(node, ast::NodeType::TypeName);
-        argTypeNode->strLiteral = argType.id(); // TODO: type registry must hold type IDs as size_t
+        argTypeNode->uid() = TypeRegistry::typeId(argType);
         auto argNameNode = ParserState::pushChildNode(node, ast::NodeType::VariableName);
         argNameNode->strLiteral = argName.id();
 
