@@ -17,9 +17,9 @@ void FunctionArgumentsHandler::run(ParserState &state) {
         }
         auto node = state.pushChildNode(ast::NodeType::FunctionArgument);
         auto argTypeNode = ParserState::pushChildNode(node, ast::NodeType::TypeName);
-        argTypeNode->uid() = TypeRegistry::typeId(argType);
+        argTypeNode->value = TypeRegistry::typeId(argType);
         auto argNameNode = ParserState::pushChildNode(node, ast::NodeType::VariableName);
-        argNameNode->strLiteral = argName.id();
+        argNameNode->value = argName.id();
 
         const Token &last = *std::next(state.tokenIter, 3);
         if (last.is(Token::Operator::Comma))

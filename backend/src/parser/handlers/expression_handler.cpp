@@ -231,16 +231,16 @@ void ExpressionHandler::run(ParserState &state) {
         } else if (expType == ExpressionTokenType::Operand) {
             if (token.type == Token::Type::Identifier) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::VariableName);
-                node->strLiteral = token.id();
+                node->value = token.id();
             } else if (token.type == Token::Type::IntegerLiteral) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::IntegerLiteralValue);
-                node->numLiteral.intNumber = std::atoi(token.literal().c_str());
+                node->value = std::atol(token.literal().c_str());
             } else if (token.type == Token::Type::FloatingPointLiteral) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::FPointLiteralValue);
-                node->numLiteral.fpNumber = std::stof(token.literal());
+                node->value = std::stod(token.literal());
             } else if (token.type == Token::Type::StringLiteral) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::StringLiteralValue);
-                node->strLiteral = token.literal();
+                node->value = token.literal();
             }
         }
         while (currNode->children.size() >= operandMaxCount)

@@ -18,12 +18,6 @@ struct Node {
 
     NodeType type;
 
-    union {
-        long int intNumber;
-        double fpNumber;
-    } numLiteral;
-    std::string strLiteral;
-
     std::variant<long int, double, std::string, size_t> value;
 
     const long int &intNum() const {
@@ -39,21 +33,6 @@ struct Node {
         return std::get<std::string>(value);
     }
     const size_t &uid() const {
-        return std::get<size_t>(value);
-    }
-    long int &intNum() {
-        return std::get<long int>(value);
-    }
-    double &fpNum() {
-        return std::get<double>(value);
-    }
-    std::string &str() {
-        return std::get<std::string>(value);
-    }
-    std::string &id() {
-        return std::get<std::string>(value);
-    }
-    size_t &uid() {
         return std::get<size_t>(value);
     }
 
