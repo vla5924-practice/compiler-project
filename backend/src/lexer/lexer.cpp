@@ -64,7 +64,7 @@ TokenList Lexer::processString(const std::string &str) {
             if (end_token != begin_token) // pushing Keyword.
             {
                 auto tok_id = Lexer::keywords.find(
-                    std::string_view(begin_token._Ptr, static_cast<size_t>(std::distance(begin_token, end_token))));
+                    std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
                 if (tok_id != Lexer::keywords.cend())
                     tokens.emplace_back(std::move(Token::make<Token::Type::Keyword>(tok_id->second)));
                 else {
