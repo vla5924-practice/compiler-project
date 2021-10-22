@@ -10,7 +10,7 @@ SyntaxTree Parser::process(const TokenList &tokens) {
     SyntaxTree tree;
     tree.root = std::make_shared<Node>(NodeType::ProgramRoot);
 
-    parser::ParserState state = {tree.root, tokens.begin()};
+    ParserState state = {tree.root, tokens.begin()};
     while (state.tokenIter != tokens.end()) {
         HandlerRegistry()[state.node->type]->run(state);
     }

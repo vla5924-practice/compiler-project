@@ -71,38 +71,38 @@ struct Token {
     };
     Type type;
 
-    std::variant<Keyword, Operator, Special, std::string> kwValue, opValue, specValue, strValue;
+    std::variant<Keyword, Operator, Special, std::string> value;
 
     Keyword &kw() {
-        return std::get<0>(kwValue);
+        return std::get<Keyword>(value);
     }
     std::string &id() {
-        return std::get<3>(strValue);
+        return std::get<std::string>(value);
     }
     Operator &op() {
-        return std::get<1>(opValue);
+        return std::get<Operator>(value);
     }
     Special &spec() {
-        return std::get<2>(specValue);
+        return std::get<Special>(value);
     }
     std::string &literal() {
-        return std::get<3>(strValue);
+        return std::get<std::string>(value);
     }
 
     const Keyword &kw() const {
-        return std::get<0>(kwValue);
+        return std::get<Keyword>(value);
     }
     const std::string &id() const {
-        return std::get<3>(strValue);
+        return std::get<std::string>(value);
     }
     const Operator &op() const {
-        return std::get<1>(opValue);
+        return std::get<Operator>(value);
     }
     const Special &spec() const {
-        return std::get<2>(specValue);
+        return std::get<Special>(value);
     }
     const std::string &literal() const {
-        return std::get<3>(strValue);
+        return std::get<std::string>(value);
     }
 
     template <Type TokenType, typename ValueType>

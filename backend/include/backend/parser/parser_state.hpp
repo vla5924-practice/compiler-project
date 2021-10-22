@@ -14,7 +14,7 @@ struct ParserState {
     }
 
     static ast::Node::Ptr pushChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType) {
-        node->children.push_back(std::make_shared<ast::Node>(ast::NodeType::FunctionArguments, node));
+        node->children.push_back(std::make_shared<ast::Node>(nodeType, node));
         return node->children.back();
     }
 
