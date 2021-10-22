@@ -6,6 +6,12 @@
 using namespace parser;
 
 void VariableDeclarationHandler::run(ParserState &state) {
+    if (wasInDefinition) {
+        wasInDefinition = false;
+        state.node = state.node->parent;
+        state.goNextToken();
+        return;
+    }
     const Token &colon = state.token();
     const Token &varName = *std::prev(state.tokenIter);
     const Token &varType = *std::next(state.tokenIter);
@@ -21,10 +27,15 @@ void VariableDeclarationHandler::run(ParserState &state) {
     } else if (endOfDecl->is(Token::Operator::Assign)) {
         // declaration with definition
         state.node = state.pushChildNode(ast::NodeType::Expression);
+        wasInDefinition = true;
     } else {
         // semantic error
     }
     std::advance(state.tokenIter, 3);
+}
+
+void VariableDeclarationHandler::reset() {
+    wasInDefinition = false;
 }
 
 REGISTER_PARSING_HANDLER(VariableDeclarationHandler, ast::NodeType::VariableDeclaration);

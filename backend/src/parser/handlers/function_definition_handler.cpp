@@ -15,8 +15,10 @@ void FunctionDefinitionHandler::run(ParserState &state) {
     } else if (currToken.is(Token::Operator::LeftBrace) && prevToken.type == Token::Type::Identifier) {
         // start analyzing arguments
         state.node = state.pushChildNode(ast::NodeType::FunctionArguments);
+        functionArgumentsEnd = true;
     } else if (currToken.is(Token::Operator::Arrow) && functionArgumentsEnd) {
         // save return type on next step
+        functionArgumentsEnd = false;
     } else if (TypeRegistry::isTypename(currToken) && prevToken.is(Token::Operator::Arrow)) {
         auto node = state.pushChildNode(ast::NodeType::FunctionReturnType);
         node->value = TypeRegistry::typeId(currToken);

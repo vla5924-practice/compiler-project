@@ -27,6 +27,7 @@ void FunctionArgumentsHandler::run(ParserState &state) {
         else
             std::advance(state.tokenIter, 3);
     }
+    state.node = state.node->parent;
     state.goNextToken();
 }
 

@@ -3,7 +3,7 @@
 using namespace parser;
 
 BaseHandler::BaseHandler() {
-    reset();
+    this->reset();
 }
 
 void BaseHandler::reset() {
