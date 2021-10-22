@@ -63,97 +63,119 @@ TokenList Lexer::processString(const std::string &str) {
         } else {
             if (end_token != begin_token) // pushing Keyword.
             {
-                auto tok_id = Lexer::keywords.find(std::string(begin_token, end_token));
+                auto tok_id = Lexer::keywords.find(
+                    std::string_view(begin_token._Ptr, static_cast<size_t>(std::distance(begin_token, end_token))));
                 if (tok_id != Lexer::keywords.cend())
-                    tokens.push_back(Token::make<Token::Type::Keyword>(tok_id->second));
+                    tokens.emplace_back(std::move(Token::make<Token::Type::Keyword>(tok_id->second)));
                 else {
-                    while (((i) != str.end()) && isalnum(*i)) // adding identifier with numbers
+                    while ((i != str.end()) && isalnum(*i)) // adding identifier with numbers
                     {
                         end_token++;
                         i++;
                     }
-                    tokens.push_back(Token::make<Token::Type::Identifier>(std::string(begin_token, end_token)));
+                    tokens.emplace_back(
+                        std::move(Token::make<Token::Type::Identifier>(std::string(begin_token, end_token))));
                 }
                 begin_token = i;
                 end_token = i;
             }
         }
-/*
-        if (isalpha(*i)) // adding letters or numbers to the id_str
+
+        if (isspace(*i)) {
+            continue;
+        }
+
+        end_token++;
+        /*
+        if (*i == 39) // ASCII ' = 39?
         {
-            id_str += *i;
-        } else {
-            if (id_str.size() != 0) // pushing Keyword.
+            id_str.clear();
+            i++;
+            while (*i != 39) // TODO need '' check
             {
-                auto tok_id = Lexer::keywords.find(id_str);
-                if (tok_id != Lexer::keywords.end())
-                    tokens.push_back(Token::make<Token::Type::Keyword>(tok_id->second));
-                else {
-                    while (((i) != str.end()) && isalnum(*i)) // adding identifier with numbers
-                    {
-                        id_str += *i;
-                        i++;
-                    }
-                    tokens.push_back(Token::make<Token::Type::Identifier>(id_str));
-                }
-                id_str.clear();
-            }
-
-            if (isspace(*i)) {
-                continue;
-            }
-
-            id_str += *i;
-            if (*i == 39) // ASCII ' = 39?
-            {
-                id_str.clear();
+                id_str += *i;
                 i++;
-                while (*i != 39) // TODO need '' check
+            }
+            tokens.emplace_back(std::move(Token::make<Token::Type::StringLiteral>(id_str)));
+            id_str.clear();
+            continue;
+        }
+        /*
+                if (isalpha(*i)) // adding letters or numbers to the id_str
                 {
                     id_str += *i;
-                    i++;
-                }
-                tokens.push_back(Token::make<Token::Type::StringLiteral>(id_str));
-                id_str.clear();
-                continue;
-            }
+                } else {
+                    if (id_str.size() != 0) // pushing Keyword.
+                    {
+                        auto tok_id = Lexer::keywords.find(id_str);
+                        if (tok_id != Lexer::keywords.end())
+                            tokens.push_back(Token::make<Token::Type::Keyword>(tok_id->second));
+                        else {
+                            while (((i) != str.end()) && isalnum(*i)) // adding identifier with numbers
+                            {
+                                id_str += *i;
+                                i++;
+                            }
+                            tokens.push_back(Token::make<Token::Type::Identifier>(id_str));
+                        }
+                        id_str.clear();
+                    }
 
-            if (isalnum(id_str[0])) // pushing Integer number
-            {
-                while (isalnum(*(i + 1))) {
-                    id_str += *(i + 1);
-                    i++;
-                }
+                    if (isspace(*i)) {
+                        continue;
+                    }
 
-                if (*(i + 1) == '.') // pushing Float number
-                {
-                    id_str += *(i + 1);
-                    i++;
-                    while (isalnum(*(i + 1))) {
+                    id_str += *i;
+                    if (*i == 39) // ASCII ' = 39?
+                    {
+                        id_str.clear();
+                        i++;
+                        while (*i != 39) // TODO need '' check
+                        {
+                            id_str += *i;
+                            i++;
+                        }
+                        tokens.push_back(Token::make<Token::Type::StringLiteral>(id_str));
+                        id_str.clear();
+                        continue;
+                    }
+
+                    if (isalnum(id_str[0])) // pushing Integer number
+                    {
+                        while (isalnum(*(i + 1))) {
+                            id_str += *(i + 1);
+                            i++;
+                        }
+
+                        if (*(i + 1) == '.') // pushing Float number
+                        {
+                            id_str += *(i + 1);
+                            i++;
+                            while (isalnum(*(i + 1))) {
+                                id_str += *(i + 1);
+                                i++;
+                            }
+                            tokens.push_back(Token::make<Token::Type::FloatingPointLiteral>(id_str));
+                            id_str.clear();
+                            continue;
+                        }
+
+                        tokens.push_back(Token::make<Token::Type::IntegerLiteral>(id_str));
+                        id_str.clear();
+                        continue;
+                    }
+
+                    if (((*i == ':') || (*i == '<') || (*i == '>')) && (*(i + 1) == '=')) // pushing Operators
+                    {
                         id_str += *(i + 1);
                         i++;
                     }
-                    tokens.push_back(Token::make<Token::Type::FloatingPointLiteral>(id_str));
+                    auto tok_id = Lexer::operators.find(id_str);
+                    if (tok_id != Lexer::operators.end())
+                        tokens.push_back(Token::make<Token::Type::Operator>(tok_id->second));
                     id_str.clear();
-                    continue;
                 }
-
-                tokens.push_back(Token::make<Token::Type::IntegerLiteral>(id_str));
-                id_str.clear();
-                continue;
-            }
-
-            if (((*i == ':') || (*i == '<') || (*i == '>')) && (*(i + 1) == '=')) // pushing Operators
-            {
-                id_str += *(i + 1);
-                i++;
-            }
-            auto tok_id = Lexer::operators.find(id_str);
-            if (tok_id != Lexer::operators.end())
-                tokens.push_back(Token::make<Token::Type::Operator>(tok_id->second));
-            id_str.clear();
-        }
-        */
+                */
     }
     /*
     // adding a word or symbol at the end of a line
