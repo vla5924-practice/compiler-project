@@ -27,4 +27,4 @@ void VariableDeclarationHandler::run(ParserState &state) {
     std::advance(state.tokenIter, 3);
 }
 
-parser::RegisterHandler<VariableDeclarationHandler> handler(ast::NodeType::VariableDeclaration);
+REGISTER_PARSING_HANDLER(VariableDeclarationHandler, ast::NodeType::VariableDeclaration);

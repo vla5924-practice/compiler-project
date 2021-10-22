@@ -30,4 +30,4 @@ void FunctionArgumentsHandler::run(ParserState &state) {
     state.goNextToken();
 }
 
-parser::RegisterHandler<FunctionArgumentsHandler> handler(ast::NodeType::FunctionDefinition);
+REGISTER_PARSING_HANDLER(FunctionArgumentsHandler, ast::NodeType::FunctionArguments);

@@ -51,4 +51,4 @@ void FunctionBodyHandler::reset() {
     nestingLevel = 0;
 }
 
-parser::RegisterHandler<FunctionBodyHandler> handler(ast::NodeType::FunctionDefinition);
+REGISTER_PARSING_HANDLER(FunctionBodyHandler, ast::NodeType::FunctionBody);

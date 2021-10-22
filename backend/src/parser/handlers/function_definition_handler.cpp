@@ -35,4 +35,4 @@ void FunctionDefinitionHandler::reset() {
     functionBegin = false;
 }
 
-parser::RegisterHandler<FunctionDefinitionHandler> handler(ast::NodeType::FunctionDefinition);
+REGISTER_PARSING_HANDLER(FunctionDefinitionHandler, ast::NodeType::FunctionDefinition);

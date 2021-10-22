@@ -251,4 +251,4 @@ void ExpressionHandler::run(ParserState &state) {
     state.node = state.node->parent;
 }
 
-parser::RegisterHandler<ExpressionHandler> handler(ast::NodeType::Expression);
+REGISTER_PARSING_HANDLER(ExpressionHandler, ast::NodeType::Expression);

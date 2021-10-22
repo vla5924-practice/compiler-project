@@ -1,9 +1,10 @@
 #include "parser/parser.hpp"
 
+#include "parser/parser_state.hpp"
+#include "parser/register_handler.hpp"
+
 using namespace ast;
 using namespace parser;
-
-std::unordered_map<ast::NodeType, std::unique_ptr<parser::BaseHandler>> Parser::parserHandlers = {};
 
 template <>
 int Parser::parseLiteral(const Token &token) {
@@ -36,7 +37,7 @@ ast::SyntaxTree Parser::process(const TokenList &tokens) {
 
     parser::ParserState state = {tree.root, tokens.begin()};
     while (state.tokenIter != tokens.end()) {
-        parserHandlers[state.node->type]->run(state);
+        HandlerRegistry()[state.node->type]->run(state);
     }
     return tree;
 }

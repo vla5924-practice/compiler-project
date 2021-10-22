@@ -15,4 +15,4 @@ void ProgramRootHandler::run(ParserState &state) {
     state.goNextToken();
 }
 
-parser::RegisterHandler<ProgramRootHandler> handler(ast::NodeType::ProgramRoot);
+REGISTER_PARSING_HANDLER(ProgramRootHandler, ast::NodeType::ProgramRoot);
