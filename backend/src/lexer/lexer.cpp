@@ -23,7 +23,7 @@ std::map<std::string_view, Token::Operator> Lexer::operators = {
     {"==", Token::Operator::Equal},         {"!=", Token::Operator::NotEqual},  {"<", Token::Operator::Less},
     {">", Token::Operator::More},           {"<=", Token::Operator::LessEqual}, {">=", Token::Operator::MoreEqual},
     {"(", Token::Operator::LeftBrace},      {")", Token::Operator::RightBrace}, {"[", Token::Operator::RectLeftBrace},
-    {"]", Token::Operator::RectRightBrace}, {"'", Token::Operator::Apostrophe}};
+    {"]", Token::Operator::RectRightBrace}, {"->", Token::Operator::Arrow}};
 // clang-format on
 
 TokenList Lexer::process(const StringVec &source) {
@@ -241,6 +241,9 @@ TokenList Lexer::processString(const std::string &str) {
         else if (tok_src != Lexer::operators.end())
             tokens.push_back(Token::make<Token::Type::Operator>(tok_src->second));
     }*/
+
+
+    // TODO push EndOfStream
 
     return tokens;
 }

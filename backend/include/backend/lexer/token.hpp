@@ -51,7 +51,6 @@ struct Token {
         RightBrace,
         RectLeftBrace,
         RectRightBrace,
-        Apostrophe,
         Mod,
         Arrow, // TODO: add "->" to lexer
     };
