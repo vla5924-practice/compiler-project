@@ -113,137 +113,51 @@ TokenList Lexer::processString(const std::string &str) {
                 end_token = i;
                 continue;
             }
+
+            if (*i == '\"') {
+                i++;
+                begin_token = i;
+                end_token = i;
+                while (*i != '\"')
+                {
+                    end_token++;
+                    i++;
+                }
+                tokens.emplace_back(
+                    std::move(Token::make<Token::Type::StringLiteral>(std::string(begin_token, end_token))));
+                begin_token = i;
+                end_token = i;
+                continue;
+            }
+
+            if (((*i == '!') || (*i == '=') || (*i == '<') || (*i == '>')) && (*(i + 1) == '=') || (*i == '-') && (*(i + 1) == '>')) // pushing Operators
+            {
+                end_token++;
+                i++;
+            }
+            auto tok_id = Lexer::operators.find(
+                    std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
+            if (tok_id != Lexer::operators.end())
+                tokens.emplace_back(std::move(Token::make<Token::Type::Operator>(tok_id->second)));
+            begin_token = i;
+            end_token = i;
         }
     }
-    /*
-     if (isalnum(*i)) { // pushing Integer number
-         while (isalnum(*(i + 1))) {
-             end_token++;
-             i++;
-         }
-
-         if (*(i + 1) == '.') // pushing Float number
-         {
-             end_token++;
-             i++;
-             while (isalnum(*(i + 1))) {
-                 end_token++;
-                 i++;
-             }
-             tokens.emplace_back(std::move(Token::make<Token::Type::FloatingPointLiteral>(std::string(begin_token,
-     end_token)))); begin_token = i; end_token = i; continue;
-         }
-
-         tokens.emplace_back(std::move(Token::make<Token::Type::IntegerLiteral>(std::string(begin_token, end_token))));
-         begin_token = i;
-         end_token = i;
-         continue;
-     }
-     /*
-     if (*i == 39) // ASCII ' = 39?
-     {
-         id_str.clear();
-         i++;
-         while (*i != 39) // TODO need '' check
-         {
-             id_str += *i;
-             i++;
-         }
-         tokens.emplace_back(std::move(Token::make<Token::Type::StringLiteral>(id_str)));
-         id_str.clear();
-         continue;
-     }
-     /*
-             if (isalpha(*i)) // adding letters or numbers to the id_str
-             {
-                 id_str += *i;
-             } else {
-                 if (id_str.size() != 0) // pushing Keyword.
-                 {
-                     auto tok_id = Lexer::keywords.find(id_str);
-                     if (tok_id != Lexer::keywords.end())
-                         tokens.push_back(Token::make<Token::Type::Keyword>(tok_id->second));
-                     else {
-                         while (((i) != str.end()) && isalnum(*i)) // adding identifier with numbers
-                         {
-                             id_str += *i;
-                             i++;
-                         }
-                         tokens.push_back(Token::make<Token::Type::Identifier>(id_str));
-                     }
-                     id_str.clear();
-                 }
-
-                 if (isspace(*i)) {
-                     continue;
-                 }
-
-                 id_str += *i;
-                 if (*i == 39) // ASCII ' = 39?
-                 {
-                     id_str.clear();
-                     i++;
-                     while (*i != 39) // TODO need '' check
-                     {
-                         id_str += *i;
-                         i++;
-                     }
-                     tokens.push_back(Token::make<Token::Type::StringLiteral>(id_str));
-                     id_str.clear();
-                     continue;
-                 }
-
-                 if (isalnum(id_str[0])) // pushing Integer number
-                 {
-                     while (isalnum(*(i + 1))) {
-                         id_str += *(i + 1);
-                         i++;
-                     }
-
-                     if (*(i + 1) == '.') // pushing Float number
-                     {
-                         id_str += *(i + 1);
-                         i++;
-                         while (isalnum(*(i + 1))) {
-                             id_str += *(i + 1);
-                             i++;
-                         }
-                         tokens.push_back(Token::make<Token::Type::FloatingPointLiteral>(id_str));
-                         id_str.clear();
-                         continue;
-                     }
-
-                     tokens.push_back(Token::make<Token::Type::IntegerLiteral>(id_str));
-                     id_str.clear();
-                     continue;
-                 }
-
-                 if (((*i == ':') || (*i == '<') || (*i == '>')) && (*(i + 1) == '=')) // pushing Operators
-                 {
-                     id_str += *(i + 1);
-                     i++;
-                 }
-                 auto tok_id = Lexer::operators.find(id_str);
-                 if (tok_id != Lexer::operators.end())
-                     tokens.push_back(Token::make<Token::Type::Operator>(tok_id->second));
-                 id_str.clear();
-             }
-             */
-    //}
-    /*
+    
     // adding a word or symbol at the end of a line
     // these words and symbols are 'begin', ';', '.', ')'
-    if (id_str.size() != 0) {
-        auto tok_id = Lexer::keywords.find(id_str);
-        auto tok_src = Lexer::operators.find(id_str);
+    if (begin_token != end_token) {
+        auto tok_id = Lexer::keywords.find(
+                    std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
+        auto tok_src = Lexer::operators.find(
+                    std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
         if (tok_id != Lexer::keywords.end())
-            tokens.push_back(Token::make<Token::Type::Keyword>(tok_id->second));
+            tokens.emplace_back(std::move(Token::make<Token::Type::Keyword>(tok_id->second)));
         else if (tok_src != Lexer::operators.end())
-            tokens.push_back(Token::make<Token::Type::Operator>(tok_src->second));
-    }*/
+            tokens.emplace_back(std::move(Token::make<Token::Type::Operator>(tok_src->second)));
+    }
 
-
-    // TODO push EndOfStream
+    tokens.emplace_back(std::move(Token::make<Token::Type::Special>(Token::Special::EndOfExpression)));
 
     return tokens;
 }
