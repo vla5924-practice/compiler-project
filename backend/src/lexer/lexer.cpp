@@ -6,7 +6,7 @@ using namespace lexer;
 std::map<std::string_view, Keyword> Lexer::keywords = {
     {"bool", Keyword::Bool},         {"False", Keyword::False},
     {"int", Keyword::Int},           {"float", Keyword::Float},
-    {"str", Keyword::String},        {"if", Keyword::If},
+    {"str", Keyword::Str},        {"if", Keyword::If},
     {"else", Keyword::Else},         {"elif", Keyword::Elif},
     {"range", Keyword::Range},       {"while", Keyword::While},
     {"for", Keyword::For},           {"break", Keyword::Break},
@@ -18,10 +18,10 @@ std::map<std::string_view, Keyword> Lexer::keywords = {
 
 std::map<std::string_view, Operator> Lexer::operators = {
     {":", Operator::Colon},          {"%", Operator::Mod},        {".", Operator::Dot},
-    {",", Operator::Comma},          {"=", Operator::Assign},     {"+", Operator::Plus},
-    {"-", Operator::Minus},          {"*", Operator::Mult},       {"/", Operator::Div},
+    {",", Operator::Comma},          {"=", Operator::Assign},     {"+", Operator::Add},
+    {"-", Operator::Sub},          {"*", Operator::Mult},       {"/", Operator::Div},
     {"==", Operator::Equal},         {"!=", Operator::NotEqual},  {"<", Operator::Less},
-    {">", Operator::More},           {"<=", Operator::LessEqual}, {">=", Operator::MoreEqual},
+    {">", Operator::Greater},           {"<=", Operator::LessEqual}, {">=", Operator::GreaterEqual},
     {"(", Operator::LeftBrace},      {")", Operator::RightBrace}, {"[", Operator::RectLeftBrace},
     {"]", Operator::RectRightBrace}, {"->", Operator::Arrow}};
 // clang-format on
@@ -130,8 +130,8 @@ TokenList Lexer::processString(const std::string &str) {
             end_token++;
             i++;
         }
-        auto tok_id = operators.find(
-            std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
+        auto tok_id =
+            operators.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
         if (tok_id != operators.end())
             tokens.emplace_back(std::move(Token::make<Type::Operator>(tok_id->second)));
         begin_token = i;
@@ -140,10 +140,10 @@ TokenList Lexer::processString(const std::string &str) {
 
     // adding a word or symbol at the end of a line
     if (begin_token != end_token) {
-        auto tok_id = keywords.find(
-            std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
-        auto tok_src = operators.find(
-            std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
+        auto tok_id =
+            keywords.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
+        auto tok_src =
+            operators.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
         if (tok_id != keywords.end())
             tokens.emplace_back(std::move(Token::make<Type::Keyword>(tok_id->second)));
         else if (tok_src != operators.end())
