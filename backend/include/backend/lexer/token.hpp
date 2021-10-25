@@ -7,7 +7,6 @@ namespace lexer {
 
 struct Token {
     enum class Keyword {
-        Indentation,
         Bool,
         Int,
         Float,
@@ -52,7 +51,7 @@ struct Token {
         RectLeftBrace,
         RectRightBrace,
         Mod,
-        Arrow, // TODO: add "->" to lexer
+        Arrow,
     };
 
     enum class Special {

@@ -12,13 +12,13 @@
 
 namespace lexer {
 
-class Lexer {
-    using Type = Token::Type;
-    using Keyword = Token::Keyword;
-    using Operator = Token::Operator;
+  using Type = Token::Type;
+  using Keyword = Token::Keyword;
+  using Operator = Token::Operator;
 
-    static std::map<std::string_view, Token::Keyword> keywords;
-    static std::map<std::string_view, Token::Operator> operators;
+class Lexer {
+    static std::map<std::string_view, Keyword> keywords;
+    static std::map<std::string_view, Operator> operators;
 
     static TokenList processString(const std::string &str);
 
