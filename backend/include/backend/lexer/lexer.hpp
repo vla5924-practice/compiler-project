@@ -12,9 +12,10 @@
 
 namespace lexer {
 
-  using Type = Token::Type;
-  using Keyword = Token::Keyword;
-  using Operator = Token::Operator;
+using Type = Token::Type;
+using Keyword = Token::Keyword;
+using Operator = Token::Operator;
+using Special = Token::Special;
 
 class Lexer {
     static std::map<std::string_view, Keyword> keywords;

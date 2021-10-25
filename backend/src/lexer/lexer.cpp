@@ -46,7 +46,7 @@ TokenList Lexer::processString(const std::string &str) {
 
     int indentation_count = space_count / 4;
     for (int i = 0; i < indentation_count; i++) {
-        tokens.emplace_back(std::move(Token::make<Type::Special>(Token::Special::Indentation)));
+        tokens.emplace_back(std::move(Token::make<Type::Special>(Special::Indentation)));
     }
 
     auto begin_token = str.begin() + space_count;
@@ -150,7 +150,7 @@ TokenList Lexer::processString(const std::string &str) {
             tokens.emplace_back(std::move(Token::make<Type::Operator>(tok_src->second)));
     }
 
-    tokens.emplace_back(std::move(Token::make<Type::Special>(Token::Special::EndOfExpression)));
+    tokens.emplace_back(std::move(Token::make<Type::Special>(Special::EndOfExpression)));
 
     return tokens;
 }
