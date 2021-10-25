@@ -1,6 +1,7 @@
 #pragma once
 
-#include "ast/node.hpp"
+#include <ast/node.hpp>
+
 #include "tokenlist.hpp"
 
 namespace parser {

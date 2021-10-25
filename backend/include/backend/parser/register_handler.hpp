@@ -3,7 +3,8 @@
 #include <map>
 #include <memory>
 
-#include "ast/node_type.hpp"
+#include <ast/node_type.hpp>
+
 #include "parser/handlers/base_handler.hpp"
 
 #define REGISTER_PARSING_HANDLER(HandlerType, AstNodeType)                                                             \

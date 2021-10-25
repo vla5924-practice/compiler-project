@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ast/syntax_tree.hpp"
-#include "token.hpp"
+#include <ast/syntax_tree.hpp>
+
 #include "tokenlist.hpp"
 
 namespace parser {
