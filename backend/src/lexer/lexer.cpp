@@ -84,12 +84,12 @@ TokenList Lexer::processString(const std::string &str) {
         }
 
         if (isalnum(*i)) { // pushing Integer number
-            while (isalnum(*(i + 1))) {
+            while ((i + 1) != str.end() && isalnum(*(i + 1))) {
                 end_token++;
                 i++;
             }
 
-            if (*(i + 1) == '.') // pushing Float number
+            if ((i + 1) != str.end() && *(i + 1) == '.') // pushing Float number
             {
                 end_token++;
                 i++;
@@ -124,12 +124,15 @@ TokenList Lexer::processString(const std::string &str) {
             continue;
         }
 
+        end_token = i;
+        begin_token = i;
+
         if (((*i == '!') || (*i == '=') || (*i == '<') || (*i == '>')) && (*(i + 1) == '=') ||
             (*i == '-') && (*(i + 1) == '>')) // pushing Operators
         {
-            end_token++;
             i++;
         }
+        end_token++;
         auto tok_id =
             operators.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
         if (tok_id != operators.end())
