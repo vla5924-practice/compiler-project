@@ -17,7 +17,7 @@ struct Token {
     }
     Token(TokenType tokenType, Special special) : type(tokenType), value(special) {
     }
-    Token(TokenType tokenType, std::string string) : type(tokenType), value(string) {
+    Token(TokenType tokenType, std::string& string) : type(tokenType), value(string) {
     }
 
     const Keyword &kw() const {
