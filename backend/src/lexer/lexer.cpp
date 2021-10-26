@@ -59,8 +59,8 @@ TokenList Lexer::processString(const std::string &str) {
             continue;
         }
 
-        if (end_token != begin_token) // pushing Keyword.
-        {
+        // pushing Keyword.
+        if (end_token != begin_token) {
             auto tok_id = keywords.find(
                 std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
             if (tok_id != keywords.cend())
@@ -89,8 +89,7 @@ TokenList Lexer::processString(const std::string &str) {
                 i++;
             }
 
-            if ((i + 1) != str.end() && *(i + 1) == '.') // pushing Float number
-            {
+            if ((i + 1) != str.end() && *(i + 1) == '.') { // pushing Float number
                 end_token++;
                 i++;
                 while (isalnum(*(i + 1))) {
@@ -127,9 +126,9 @@ TokenList Lexer::processString(const std::string &str) {
         end_token = i;
         begin_token = i;
 
+        // pushing Operators
         if (((*i == '!') || (*i == '=') || (*i == '<') || (*i == '>')) && (*(i + 1) == '=') ||
-            (*i == '-') && (*(i + 1) == '>')) // pushing Operators
-        {
+            (*i == '-') && (*(i + 1) == '>')) {
             i++;
         }
         end_token++;
