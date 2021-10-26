@@ -4,19 +4,19 @@ using namespace lexer;
 
 std::ostream &operator<<(std::ostream &out, const TokenList &list) {
     for (const Token &token : list) {
-        if (token.type == Token::Type::Keyword) {
+        if (token.type == TokenType::Keyword) {
             out << "KEYWORD" << std::endl;
-        } else if (token.type == Token::Type::Operator) {
+        } else if (token.type == TokenType::Operator) {
             out << "OPERATOR" << std::endl;
-        } else if (token.type == Token::Type::Identifier) {
+        } else if (token.type == TokenType::Identifier) {
             out << "IDENTIFIER " << std::endl;
-        } else if (token.type == Token::Type::IntegerLiteral) {
+        } else if (token.type == TokenType::IntegerLiteral) {
             out << "INTEGER" << std::endl;
-        } else if (token.type == Token::Type::FloatingPointLiteral) {
+        } else if (token.type == TokenType::FloatingPointLiteral) {
             out << "FLOAT" << std::endl;
-        } else if (token.type == Token::Type::StringLiteral) {
+        } else if (token.type == TokenType::StringLiteral) {
             out << "STRING" << std::endl;
-        } else if (token.type == Token::Type::Special) {
+        } else if (token.type == TokenType::Special) {
             out << "SPECIAL" << std::endl;
         }
     }

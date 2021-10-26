@@ -1,112 +1,39 @@
 #pragma once
 
+#include "tokens_types.hpp"
 #include <string>
 #include <variant>
 
 namespace lexer {
 
 struct Token {
-    enum class Keyword {
-        Bool,
-        Int,
-        Float,
-        Str,
-        If,
-        Else,
-        Elif,
-        Range,
-        While,
-        For,
-        Break,
-        Import,
-        Continue,
-        Definition,
-        Return,
-        Or,
-        And,
-        Not,
-        In,
-        True,
-        None,
-        False,
-    };
+    TokenType type;
 
-    enum class Operator {
-        Colon,
-        Dot,
-        Comma,
-        Assign,
-        Add,
-        Sub,
-        Mult,
-        Div,
-        Equal,
-        NotEqual,
-        Less,
-        Greater,
-        LessEqual,
-        GreaterEqual,
-        LeftBrace,
-        RightBrace,
-        RectLeftBrace,
-        RectRightBrace,
-        Mod,
-        Arrow,
-    };
+    std::variant<Keyword, Operator, Special, std::string> value;
 
-    enum class Special {
-        Indentation,
-        EndOfExpression,
-    };
-
-    enum class Type {
-        Keyword,
-        Identifier,
-        Operator,
-        Special,
-        IntegerLiteral,
-        FloatingPointLiteral,
-        StringLiteral,
-    };
-    Type type;
-
-    std::variant<Keyword, Operator, Special, std::string> kwValue, opValue, specValue, strValue;
-
-    Keyword &kw() {
-        return std::get<0>(kwValue);
+    Token(TokenType tokenType, Keyword keyword) : type(tokenType), value(keyword) {
     }
-    std::string &id() {
-        return std::get<3>(strValue);
+    Token(TokenType tokenType, Operator oper) : type(tokenType), value(oper) {
     }
-    Operator &op() {
-        return std::get<1>(opValue);
+    Token(TokenType tokenType, Special special) : type(tokenType), value(special) {
     }
-    Special &spec() {
-        return std::get<2>(specValue);
-    }
-    std::string &literal() {
-        return std::get<3>(strValue);
+    Token(TokenType tokenType, std::string string) : type(tokenType), value(string) {
     }
 
     const Keyword &kw() const {
-        return std::get<0>(kwValue);
+        return std::get<Keyword>(value);
     }
     const std::string &id() const {
-        return std::get<3>(strValue);
+        return std::get<std::string>(value);
     }
     const Operator &op() const {
-        return std::get<1>(opValue);
+        return std::get<Operator>(value);
     }
     const Special &spec() const {
-        return std::get<2>(specValue);
+        return std::get<Special>(value);
     }
     const std::string &literal() const {
-        return std::get<3>(strValue);
-    }
-
-    template <Type TokenType, typename ValueType>
-    static Token make(const ValueType &value) {
-        return Token{TokenType, value};
+        return std::get<std::string>(value);
     }
 };
 

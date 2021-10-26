@@ -46,7 +46,7 @@ TokenList Lexer::processString(const std::string &str) {
 
     int indentation_count = space_count / 4;
     for (int i = 0; i < indentation_count; i++) {
-        tokens.emplace_back(std::move(Token::make<Type::Special>(Special::Indentation)));
+        tokens.emplace_back(std::move(Token(TokenType::Special, Special::Indentation)));
     }
 
     auto begin_token = str.begin() + space_count;
@@ -64,14 +64,14 @@ TokenList Lexer::processString(const std::string &str) {
             auto tok_id = keywords.find(
                 std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
             if (tok_id != keywords.cend())
-                tokens.emplace_back(std::move(Token::make<Type::Keyword>(tok_id->second)));
+                tokens.emplace_back(std::move(Token(TokenType::Keyword, std::string(begin_token, end_token))));
             else {
                 while ((i != str.end()) && isalnum(*i)) // adding identifier with numbers
                 {
                     end_token++;
                     i++;
                 }
-                tokens.emplace_back(std::move(Token::make<Type::Identifier>(std::string(begin_token, end_token))));
+                tokens.emplace_back(std::move(Token(TokenType::Identifier, std::string(begin_token, end_token))));
             }
             begin_token = i;
             end_token = i;
@@ -97,13 +97,13 @@ TokenList Lexer::processString(const std::string &str) {
                     i++;
                 }
                 tokens.emplace_back(
-                    std::move(Token::make<Type::FloatingPointLiteral>(std::string(begin_token, end_token))));
+                    std::move(Token(TokenType::FloatingPointLiteral, std::string(begin_token, end_token))));
                 begin_token = i;
                 end_token = i;
                 continue;
             }
 
-            tokens.emplace_back(std::move(Token::make<Type::IntegerLiteral>(std::string(begin_token, end_token))));
+            tokens.emplace_back(std::move(Token(TokenType::IntegerLiteral, std::string(begin_token, end_token))));
             begin_token = i;
             end_token = i;
             continue;
@@ -117,7 +117,7 @@ TokenList Lexer::processString(const std::string &str) {
                 end_token++;
                 i++;
             }
-            tokens.emplace_back(std::move(Token::make<Type::StringLiteral>(std::string(begin_token, end_token))));
+            tokens.emplace_back(std::move(Token(TokenType::StringLiteral, std::string(begin_token, end_token))));
             begin_token = i;
             end_token = i;
             continue;
@@ -135,7 +135,7 @@ TokenList Lexer::processString(const std::string &str) {
         auto tok_id =
             operators.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
         if (tok_id != operators.end())
-            tokens.emplace_back(std::move(Token::make<Type::Operator>(tok_id->second)));
+            tokens.emplace_back(std::move(Token(TokenType::Operator, tok_id->second)));
         begin_token = i;
         end_token = i;
     }
@@ -147,12 +147,12 @@ TokenList Lexer::processString(const std::string &str) {
         auto tok_src =
             operators.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
         if (tok_id != keywords.end())
-            tokens.emplace_back(std::move(Token::make<Type::Keyword>(tok_id->second)));
+            tokens.emplace_back(std::move(Token(TokenType::Keyword, tok_id->second)));
         else if (tok_src != operators.end())
-            tokens.emplace_back(std::move(Token::make<Type::Operator>(tok_src->second)));
+            tokens.emplace_back(std::move(Token(TokenType::Operator, tok_id->second)));
     }
 
-    tokens.emplace_back(std::move(Token::make<Type::Special>(Special::EndOfExpression)));
+    tokens.emplace_back(std::move(Token(TokenType::Special, Special::Indentation)));
 
     return tokens;
 }
