@@ -6,7 +6,7 @@ using namespace lexer;
 std::map<std::string_view, Keyword> Lexer::keywords = {
     {"bool", Keyword::Bool},         {"False", Keyword::False},
     {"int", Keyword::Int},           {"float", Keyword::Float},
-    {"str", Keyword::Str},        {"if", Keyword::If},
+    {"str", Keyword::Str},           {"if", Keyword::If},
     {"else", Keyword::Else},         {"elif", Keyword::Elif},
     {"range", Keyword::Range},       {"while", Keyword::While},
     {"for", Keyword::For},           {"break", Keyword::Break},
@@ -19,9 +19,9 @@ std::map<std::string_view, Keyword> Lexer::keywords = {
 std::map<std::string_view, Operator> Lexer::operators = {
     {":", Operator::Colon},          {"%", Operator::Mod},        {".", Operator::Dot},
     {",", Operator::Comma},          {"=", Operator::Assign},     {"+", Operator::Add},
-    {"-", Operator::Sub},          {"*", Operator::Mult},       {"/", Operator::Div},
+    {"-", Operator::Sub},            {"*", Operator::Mult},       {"/", Operator::Div},
     {"==", Operator::Equal},         {"!=", Operator::NotEqual},  {"<", Operator::Less},
-    {">", Operator::Greater},           {"<=", Operator::LessEqual}, {">=", Operator::GreaterEqual},
+    {">", Operator::Greater},        {"<=", Operator::LessEqual}, {">=", Operator::GreaterEqual},
     {"(", Operator::LeftBrace},      {")", Operator::RightBrace}, {"[", Operator::RectLeftBrace},
     {"]", Operator::RectRightBrace}, {"->", Operator::Arrow}};
 // clang-format on
