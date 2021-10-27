@@ -10,9 +10,21 @@ env:
   BUILD_TYPE: Release
 
 jobs:
+  code-style-check:
+    name: Code style check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: DoozyX/clang-format-lint-action@v0.13
+      with:
+        source: '.'
+        exclude: './thirdparty ./docs'
+        extensions: 'hpp,cpp'
+        clangFormatVersion: 12
   ubuntu-gcc:
     name: Ubuntu GCC build & test
     runs-on: ubuntu-latest
+    needs: code-style-check
     steps:
     - uses: actions/checkout@v2
       with:
@@ -32,6 +44,7 @@ jobs:
   windows-msvc:
     name: Windows MSVC build & test
     runs-on: windows-latest
+    needs: code-style-check
     steps:
     - uses: actions/checkout@v2
       with:
