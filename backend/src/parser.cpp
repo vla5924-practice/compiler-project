@@ -1,5 +1,7 @@
 #include "parser.hpp"
 
+using namespace lexer;
+
 template <>
 int Parser::parseLiteral(const Token &token) {
     return atoi(token.literal().c_str());

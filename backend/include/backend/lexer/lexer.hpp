@@ -5,17 +5,16 @@
 #include <string>
 #include <string_view>
 
+#include "lexer/token.hpp"
+#include "lexer/tokenlist.hpp"
 #include "stringvec.hpp"
-#include "token.hpp"
 #include "tokenlist.hpp"
 
-class Lexer {
-    using Type = Token::Type;
-    using Keyword = Token::Keyword;
-    using Operator = Token::Operator;
+namespace lexer {
 
-    static std::map<std::string_view, Token::Keyword> keywords;
-    static std::map<std::string_view, Token::Operator> operators;
+class Lexer {
+    static std::map<std::string_view, Keyword> keywords;
+    static std::map<std::string_view, Operator> operators;
 
     static TokenList processString(const std::string &str);
 
@@ -27,3 +26,5 @@ class Lexer {
 
     static TokenList process(const StringVec &source);
 };
+
+} // namespace lexer

@@ -4,11 +4,11 @@
 #include <string>
 #include <string_view>
 
-#include "token.hpp"
+#include "lexer/token.hpp"
 
 class Parser {
     template <typename RType>
-    static RType parseLiteral(const Token &token);
+    static RType parseLiteral(const lexer::Token &token);
 
   public:
     Parser() = delete;
