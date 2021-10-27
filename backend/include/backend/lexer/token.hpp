@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tokens_types.hpp"
+#include "token_types.hpp"
 #include <string>
 #include <variant>
 
@@ -11,14 +11,10 @@ struct Token {
 
     std::variant<Keyword, Operator, Special, std::string> value;
 
-    Token(TokenType tokenType, Keyword keyword) : type(tokenType), value(keyword) {
-    }
-    Token(TokenType tokenType, Operator oper) : type(tokenType), value(oper) {
-    }
-    Token(TokenType tokenType, Special special) : type(tokenType), value(special) {
-    }
-    Token(TokenType tokenType, const std::string &string) : type(tokenType), value(string) {
-    }
+    explicit Token(Keyword kw) : type(TokenType::Keyword), value(kw){};
+    explicit Token(Operator op) : type(TokenType::Operator), value(op){};
+    explicit Token(Special spec) : type(TokenType::Special), value(spec){};
+    Token(TokenType tokenType, const std::string &literal) : type(tokenType), value(literal){};
 
     const Keyword &kw() const {
         return std::get<Keyword>(value);
