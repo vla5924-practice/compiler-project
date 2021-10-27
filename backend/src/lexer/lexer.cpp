@@ -78,31 +78,35 @@ TokenList Lexer::processString(const std::string &str) {
         }
 
         if (isspace(*i)) {
-            begin_token++;
-            end_token++;
             continue;
         }
 
         if (isalnum(*i)) { // pushing Integer number
-            while ((i + 1) != str.end() && isalnum(*(i + 1))) {
+            begin_token = i;
+            end_token = i;
+            while (i != str.end() && isalnum(*i)) {
                 end_token++;
                 i++;
             }
 
-            if ((i + 1) != str.end() && *(i + 1) == '.') { // pushing Float number
+            if (i != str.end() && *i == '.') { // pushing Float number
                 end_token++;
                 i++;
-                while (isalnum(*(i + 1))) {
+                while (i != str.end() && isalnum(*i)) {
                     end_token++;
                     i++;
                 }
                 tokens.emplace_back(TokenType::FloatingPointLiteral, std::string(begin_token, end_token));
                 begin_token = i;
                 end_token = i;
+                if (i == str.end())
+                    break;
                 continue;
             }
 
             tokens.emplace_back(TokenType::IntegerLiteral, std::string(begin_token, end_token));
+            if (i == str.end())
+                break;
             begin_token = i;
             end_token = i;
             continue;
@@ -112,7 +116,7 @@ TokenList Lexer::processString(const std::string &str) {
             i++;
             begin_token = i;
             end_token = i;
-            while (*i != '"') {
+            while (i != str.end() && *i != '"') {
                 end_token++;
                 i++;
             }
@@ -122,8 +126,8 @@ TokenList Lexer::processString(const std::string &str) {
             continue;
         }
 
-        end_token = i;
         begin_token = i;
+        end_token = i;
 
         // pushing Operators
         if (((*i == '!' || *i == '=' || *i == '<' || *i == '>') && *(i + 1) == '=') ||
