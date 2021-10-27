@@ -126,7 +126,8 @@ TokenList Lexer::processString(const std::string &str) {
         begin_token = i;
 
         // pushing Operators
-        if ((*i == '!' || *i == '=' || *i == '<' || *i == '>') && (*(i + 1) == '=' || *i == '-') && *(i + 1) == '>') {
+        if (((*i == '!' || *i == '=' || *i == '<' || *i == '>') && *(i + 1) == '=') ||
+            ((*i == '-') && *(i + 1) == '>')) {
             i++;
         }
         end_token++;
