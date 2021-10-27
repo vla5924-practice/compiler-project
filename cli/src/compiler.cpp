@@ -14,7 +14,7 @@ int Compiler::exec(int argc, char *argv[]) {
                         "   i:= 123.123;",         "   'weqweqwe'", "end."};
     source = preprocessor::Preprocessor::process(source);
     std::cout << source << std::endl;
-    TokenList tokens = Lexer::process(source);
+    lexer::TokenList tokens = lexer::Lexer::process(source);
     std::cout << tokens << std::endl;
 
     return 0;
