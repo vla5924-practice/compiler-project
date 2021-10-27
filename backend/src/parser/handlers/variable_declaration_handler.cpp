@@ -1,8 +1,10 @@
 #include "parser/handlers/variable_declaration_handler.hpp"
 
+#include "lexer/token_types.hpp"
 #include "parser/register_handler.hpp"
 #include "parser/type_registry.hpp"
 
+using namespace lexer;
 using namespace parser;
 
 void VariableDeclarationHandler::run(ParserState &state) {
@@ -22,9 +24,9 @@ void VariableDeclarationHandler::run(ParserState &state) {
     node->value = varType.id();
 
     auto endOfDecl = std::next(state.tokenIter, 2);
-    if (endOfDecl->is(Token::Special::EndOfExpression)) {
+    if (endOfDecl->is(Special::EndOfExpression)) {
         // declaration without definition
-    } else if (endOfDecl->is(Token::Operator::Assign)) {
+    } else if (endOfDecl->is(Operator::Assign)) {
         // declaration with definition
         state.node = state.pushChildNode(ast::NodeType::Expression);
         wasInDefinition = true;

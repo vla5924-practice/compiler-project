@@ -4,6 +4,7 @@
 #include "parser/register_handler.hpp"
 
 using namespace ast;
+using namespace lexer;
 using namespace parser;
 
 SyntaxTree Parser::process(const TokenList &tokens) {

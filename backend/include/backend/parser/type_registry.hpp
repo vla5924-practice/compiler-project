@@ -3,7 +3,7 @@
 #include <map>
 #include <unordered_set>
 
-#include "token.hpp"
+#include "lexer/token.hpp"
 
 namespace parser {
 
@@ -22,8 +22,8 @@ class TypeRegistry {
     static std::map<std::string, size_t> userDefinedTypes;
 
   public:
-    static bool isTypename(const Token &token);
-    static size_t typeId(const Token &token);
+    static bool isTypename(const lexer::Token &token);
+    static size_t typeId(const lexer::Token &token);
 };
 
 } // namespace parser

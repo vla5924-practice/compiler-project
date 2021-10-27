@@ -1,8 +1,10 @@
 #include "parser/handlers/function_body_handler.hpp"
 
+#include "lexer/token_types.hpp"
 #include "parser/register_handler.hpp"
 #include "parser/type_registry.hpp"
 
+using namespace lexer;
 using namespace parser;
 
 namespace {
@@ -11,7 +13,7 @@ bool isVariableDeclaration(TokenList::const_iterator tokenIter) {
     const Token &varName = *tokenIter;
     const Token &colon = *std::next(tokenIter);
     const Token &varType = *std::next(tokenIter, 2);
-    return varName.type == Token::Type::Identifier && colon.is(Token::Operator::Colon) ||
+    return varName.type == TokenType::Identifier && colon.is(Operator::Colon) ||
            TypeRegistry::isTypename(varType);
 }
 
@@ -20,10 +22,10 @@ bool isVariableDeclaration(TokenList::const_iterator tokenIter) {
 void FunctionBodyHandler::run(ParserState &state) {
     const Token &currToken = state.token();
     const Token &prevToken = *std::prev(state.tokenIter);
-    if (prevToken.is(Token::Special::Indentation)) {
+    if (prevToken.is(Special::Indentation)) {
         nestingLevel++;
     }
-    if (currToken.is(Token::Special::Indentation)) {
+    if (currToken.is(Special::Indentation)) {
         state.goNextToken();
         return;
     }
@@ -31,10 +33,10 @@ void FunctionBodyHandler::run(ParserState &state) {
         // syntax error: extra indentations
         return;
     }
-    if (currToken.is(Token::Keyword::If) && prevToken.is(Token::Special::EndOfExpression)) {
+    if (currToken.is(Keyword::If) && prevToken.is(Special::EndOfExpression)) {
         // start of conditional expression
         state.node = state.pushChildNode(ast::NodeType::IfExpression);
-    } else if (currToken.is(Token::Keyword::While) && prevToken.is(Token::Special::EndOfExpression)) {
+    } else if (currToken.is(Keyword::While) && prevToken.is(Special::EndOfExpression)) {
         // start of cycle expression
         state.node = state.pushChildNode(ast::NodeType::WhileExpression);
     } else if (isVariableDeclaration(state.tokenIter)) {

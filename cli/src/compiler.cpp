@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include <backend/lexer.hpp>
+#include <backend/lexer/lexer.hpp>
 #include <backend/parser/parser.hpp>
 #include <backend/preprocessor/preprocessor.hpp>
 

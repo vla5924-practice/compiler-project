@@ -2,15 +2,15 @@
 
 #include <ast/node.hpp>
 
-#include "tokenlist.hpp"
+#include "lexer/tokenlist.hpp"
 
 namespace parser {
 
 struct ParserState {
     ast::Node::Ptr node;
-    TokenList::const_iterator tokenIter;
+    lexer::TokenList::const_iterator tokenIter;
 
-    const Token &token() const {
+    const lexer::Token &token() const {
         return *tokenIter;
     }
 

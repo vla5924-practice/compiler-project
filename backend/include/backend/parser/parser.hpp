@@ -2,7 +2,7 @@
 
 #include <ast/syntax_tree.hpp>
 
-#include "tokenlist.hpp"
+#include "lexer/tokenlist.hpp"
 
 namespace parser {
 
@@ -13,7 +13,7 @@ class Parser {
     Parser(Parser &&) = delete;
     ~Parser() = delete;
 
-    static ast::SyntaxTree process(const TokenList &tokens);
+    static ast::SyntaxTree process(const lexer::TokenList &tokens);
 };
 
 } // namespace parser

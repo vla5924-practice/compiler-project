@@ -2,8 +2,10 @@
 
 #include <stack>
 
+#include "lexer/token_types.hpp"
 #include "parser/register_handler.hpp"
 
+using namespace lexer;
 using namespace parser;
 
 namespace {
@@ -45,32 +47,32 @@ enum class ExpressionTokenType {
 };
 
 OperationType getOperationType(const Token &token) {
-    if (token.type == Token::Type::Operator) {
+    if (token.type == TokenType::Operator) {
         const auto &op = token.op();
         switch (op) {
-        case Token::Operator::Plus:
-        case Token::Operator::Minus:
-        case Token::Operator::Mult:
-        case Token::Operator::Div:
-        case Token::Operator::Equal:
-        case Token::Operator::NotEqual:
-        case Token::Operator::Less:
-        case Token::Operator::More:
-        case Token::Operator::LessEqual:
-        case Token::Operator::MoreEqual:
-        case Token::Operator::Assign:
+        case Operator::Add:
+        case Operator::Sub:
+        case Operator::Mult:
+        case Operator::Div:
+        case Operator::Equal:
+        case Operator::NotEqual:
+        case Operator::Less:
+        case Operator::Greater:
+        case Operator::LessEqual:
+        case Operator::GreaterEqual:
+        case Operator::Assign:
             return OperationType::Binary;
         default:
             return OperationType::Unknown;
         }
     }
-    if (token.type == Token::Type::Keyword) {
+    if (token.type == TokenType::Keyword) {
         const auto &kw = token.kw();
         switch (kw) {
-        case Token::Keyword::And:
-        case Token::Keyword::Or:
+        case Keyword::And:
+        case Keyword::Or:
             return OperationType::Binary;
-        case Token::Keyword::Not:
+        case Keyword::Not:
             return OperationType::Unary;
         default:
             return OperationType::Unknown;
@@ -80,12 +82,12 @@ OperationType getOperationType(const Token &token) {
 }
 
 ExpressionTokenType getExpressionTokenType(const Token &token) {
-    if (token.type == Token::Type::Identifier || token.type == Token::Type::IntegerLiteral ||
-        token.type == Token::Type::FloatingPointLiteral || token.type == Token::Type::StringLiteral)
+    if (token.type == TokenType::Identifier || token.type == TokenType::IntegerLiteral ||
+        token.type == TokenType::FloatingPointLiteral || token.type == TokenType::StringLiteral)
         return ExpressionTokenType::Operand;
-    if (token.is(Token::Operator::LeftBrace))
+    if (token.is(Operator::LeftBrace))
         return ExpressionTokenType::OpeningBrace;
-    if (token.is(Token::Operator::RightBrace))
+    if (token.is(Operator::RightBrace))
         return ExpressionTokenType::ClosingBrace;
     if (getOperationType(token) != OperationType::Unknown)
         return ExpressionTokenType::Operation;
@@ -93,41 +95,41 @@ ExpressionTokenType getExpressionTokenType(const Token &token) {
 }
 
 BinaryOperation getBinaryOperation(const Token &token) {
-    if (token.type == Token::Type::Operator) {
+    if (token.type == TokenType::Operator) {
         const auto &op = token.op();
         switch (op) {
-        case Token::Operator::Plus:
+        case Operator::Add:
             return BinaryOperation::Add;
-        case Token::Operator::Minus:
+        case Operator::Sub:
             return BinaryOperation::Sub;
-        case Token::Operator::Mult:
+        case Operator::Mult:
             return BinaryOperation::Mult;
-        case Token::Operator::Div:
+        case Operator::Div:
             return BinaryOperation::Div;
-        case Token::Operator::Equal:
+        case Operator::Equal:
             return BinaryOperation::Equal;
-        case Token::Operator::NotEqual:
+        case Operator::NotEqual:
             return BinaryOperation::NotEqual;
-        case Token::Operator::Less:
+        case Operator::Less:
             return BinaryOperation::Less;
-        case Token::Operator::More:
+        case Operator::Greater:
             return BinaryOperation::Greater;
-        case Token::Operator::LessEqual:
+        case Operator::LessEqual:
             return BinaryOperation::LessEqual;
-        case Token::Operator::MoreEqual:
+        case Operator::GreaterEqual:
             return BinaryOperation::GreaterEqual;
-        case Token::Operator::Assign:
+        case Operator::Assign:
             return BinaryOperation::Assign;
         default:
             return BinaryOperation::Unknown;
         }
     }
-    if (token.type == Token::Type::Keyword) {
+    if (token.type == TokenType::Keyword) {
         const auto &kw = token.kw();
         switch (kw) {
-        case Token::Keyword::And:
+        case Keyword::And:
             return BinaryOperation::And;
-        case Token::Keyword::Or:
+        case Keyword::Or:
             return BinaryOperation::Or;
         default:
             return BinaryOperation::Unknown;
@@ -175,7 +177,7 @@ size_t getOperandCount(OperationType type) {
 void ExpressionHandler::run(ParserState &state) {
     // find expression end (EndOfExpression or Colon)
     auto it = state.tokenIter;
-    while (!it->is(Token::Operator::Colon) && !it->is(Token::Special::EndOfExpression))
+    while (!it->is(Operator::Colon) && !it->is(Special::EndOfExpression))
         it++;
     const auto &tokenIterBegin = state.tokenIter;
     const auto &tokenIterEnd = it;
@@ -229,16 +231,16 @@ void ExpressionHandler::run(ParserState &state) {
                 currNode = ParserState::pushChildNode(currNode, ast::NodeType::UnaryOperation);
             }
         } else if (expType == ExpressionTokenType::Operand) {
-            if (token.type == Token::Type::Identifier) {
+            if (token.type == TokenType::Identifier) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::VariableName);
                 node->value = token.id();
-            } else if (token.type == Token::Type::IntegerLiteral) {
+            } else if (token.type == TokenType::IntegerLiteral) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::IntegerLiteralValue);
                 node->value = std::atol(token.literal().c_str());
-            } else if (token.type == Token::Type::FloatingPointLiteral) {
+            } else if (token.type == TokenType::FloatingPointLiteral) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::FPointLiteralValue);
                 node->value = std::stod(token.literal());
-            } else if (token.type == Token::Type::StringLiteral) {
+            } else if (token.type == TokenType::StringLiteral) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::StringLiteralValue);
                 node->value = token.literal();
             }
