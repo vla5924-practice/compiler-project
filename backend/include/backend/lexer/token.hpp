@@ -31,6 +31,9 @@ struct Token {
     const std::string &literal() const {
         return std::get<std::string>(value);
     }
+    bool operator==(const Token &other) const {
+        return value == other.value && type == other.type;
+    }
 };
 
 } // namespace lexer
