@@ -155,7 +155,7 @@ TokenList Lexer::processString(const std::string &str) {
             tokens.emplace_back(tok_id->second);
     }
 
-    tokens.emplace_back(Special::Indentation);
+    tokens.emplace_back(Special::EndOfExpression);
 
     return tokens;
 }
