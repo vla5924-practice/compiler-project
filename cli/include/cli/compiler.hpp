@@ -1,10 +1,10 @@
 #pragma once
 
-#include <backend/lexer/lexer.hpp>
-#include <backend/parser.hpp>
-#include <backend/preprocessor/preprocessor.hpp>
+#include <argparse/argparse.hpp>
+#include <backend/stringvec.hpp>
 
 class Compiler {
+    static argparse::ArgumentParser createArgumentParser();
     static StringVec readFile(const std::string &path);
 
   public:
