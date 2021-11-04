@@ -3,6 +3,7 @@
 #include <ast/node.hpp>
 
 #include "lexer/tokenlist.hpp"
+#include "parser/type_registry.hpp"
 
 namespace parser {
 
@@ -25,6 +26,17 @@ struct ParserState {
 
     void goNextToken() {
         tokenIter++;
+    }
+
+    size_t findVariable(const std::string &name) const {
+        auto currNode = node;
+        while (currNode) {
+            auto it = currNode->variables.find(name);
+            if (it != currNode->variables.end())
+                return it->second;
+            currNode = currNode->parent;
+        }
+        return TypeRegistry::UnknownType;
     }
 };
 

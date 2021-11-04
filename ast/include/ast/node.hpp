@@ -6,6 +6,7 @@
 #include <variant>
 
 #include "ast/node_type.hpp"
+#include "ast/variables_table.hpp"
 
 namespace ast {
 
@@ -17,8 +18,9 @@ struct Node {
     Ptr parent;
 
     NodeType type;
-
     std::variant<long int, double, std::string, size_t> value;
+
+    VariablesTable variables;
 
     const long int &intNum() const {
         return std::get<long int>(value);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ast/functions_table.hpp"
 #include "ast/node.hpp"
 
 namespace ast {
@@ -10,6 +11,7 @@ class SyntaxTree {
     ~SyntaxTree() = default;
 
     Node::Ptr root;
+    FunctionsTable functions;
 };
 
 } // namespace ast
