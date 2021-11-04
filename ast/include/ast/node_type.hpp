@@ -11,17 +11,17 @@ enum class NodeType {
     IntegerLiteralValue,
     FPointLiteralValue,
     StringLiteralValue,
-    IfExpression,
-    WhileExpression,
     FunctionDefinition,
     FunctionArguments,
     FunctionArgument,
     FunctionReturnType,
-    FunctionBody,
     ProgramRoot,
     BranchRoot,
     Expression,
     VariableDeclaration,
+    IfStatement,
+    ElifStatement,
+    WhileStatement,
 };
 
 }
