@@ -26,7 +26,7 @@ void FunctionDefinitionHandler::run(ParserState &state) {
         node->value = TypeRegistry::typeId(currToken);
     } else if (currToken.is(Operator::Colon) && TypeRegistry::isTypename(prevToken)) {
         // end of function header
-        state.node = state.pushChildNode(ast::NodeType::FunctionBody);
+        state.node = state.pushChildNode(ast::NodeType::BranchRoot);
         functionBegin = true;
     } else {
         // semantic error

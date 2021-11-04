@@ -4,7 +4,7 @@
 
 namespace parser {
 
-class FunctionBodyHandler : public BaseHandler {
+class BranchRootHandler : public BaseHandler {
     int nestingLevel;
 
   public:
