@@ -8,7 +8,6 @@
 #include "lexer/token.hpp"
 #include "lexer/tokenlist.hpp"
 #include "stringvec.hpp"
-#include "tokenlist.hpp"
 
 namespace lexer {
 

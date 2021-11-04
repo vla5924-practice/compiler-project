@@ -1,8 +1,6 @@
 #pragma once
 
-#include <backend/lexer/lexer.hpp>
-#include <backend/parser.hpp>
-#include <backend/preprocessor/preprocessor.hpp>
+#include <backend/stringvec.hpp>
 
 class Compiler {
     static StringVec readFile(const std::string &path);
