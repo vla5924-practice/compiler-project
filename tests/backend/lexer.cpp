@@ -187,8 +187,95 @@ TEST(Lexer, can_detect_indentation) {
     TokenList transformed = Lexer::process(source);
     TokenList expected;
     expected.emplace_back(Keyword::If);
+    expected.emplace_back(Special::EndOfExpression);
     expected.emplace_back(Special::Indentation);
     expected.emplace_back(Operator::Greater);
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_identifier) {
+    StringVec source = {"int x = 6"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(TokenType::Identifier, "x");
+    expected.emplace_back(Operator::Assign);
+    expected.emplace_back(TokenType::IntegerLiteral, "6");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_integer_literal) {
+    StringVec source = {"int 6"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(TokenType::IntegerLiteral, "6");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_float_literal) {
+    StringVec source = {"int 6.5"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(TokenType::FloatingPointLiteral, "6.5");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_string_literal) {
+    StringVec source = {"int \"string\""};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(TokenType::StringLiteral, "string");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_double_indentation) {
+    StringVec source = {"        int"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Special::Indentation);
+    expected.emplace_back(Special::Indentation);
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_tokens_with_spaces) {
+    StringVec source = {"int   float  ", "  6  ==  7.99  "};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(Keyword::Float);
+    expected.emplace_back(Special::EndOfExpression);
+    expected.emplace_back(TokenType::IntegerLiteral, "6");
+    expected.emplace_back(Operator::Equal);
+    expected.emplace_back(TokenType::FloatingPointLiteral, "7.99");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_skip_empty_line) {
+    StringVec source = {"int", "          "};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_throw_id_starting_with_number) {
+    StringVec source = {"int 1x"};
+    ASSERT_ANY_THROW(Lexer::process(source));
+}
+
+TEST(Lexer, can_throw_id_containing_special_symbols) {
+    StringVec source = {"int x@x"};
+    ASSERT_ANY_THROW(Lexer::process(source));
 }
