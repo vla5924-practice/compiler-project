@@ -31,6 +31,18 @@ struct Token {
     const std::string &literal() const {
         return std::get<std::string>(value);
     }
+
+    bool is(const Keyword &value) const {
+        return type == TokenType::Keyword && kw() == value;
+    }
+
+    bool is(const Operator &value) const {
+        return type == TokenType::Operator && op() == value;
+    }
+
+    bool is(const Special &value) const {
+        return type == TokenType::Special && spec() == value;
+    }
 };
 
 } // namespace lexer

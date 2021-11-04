@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include <backend/lexer/lexer.hpp>
-#include <backend/parser.hpp>
+#include <backend/parser/parser.hpp>
 #include <backend/preprocessor/preprocessor.hpp>
 
 argparse::ArgumentParser Compiler::createArgumentParser() {
