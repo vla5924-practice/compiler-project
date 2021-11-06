@@ -1,8 +1,10 @@
 #pragma once
 
+#include <argparse/argparse.hpp>
 #include <backend/stringvec.hpp>
 
 class Compiler {
+    static argparse::ArgumentParser createArgumentParser();
     static StringVec readFile(const std::string &path);
 
   public:
