@@ -207,30 +207,27 @@ TEST(Lexer, can_detect_identifier) {
 }
 
 TEST(Lexer, can_detect_integer_literal) {
-    StringVec source = {"int 6"};
+    StringVec source = {"6"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
-    expected.emplace_back(Keyword::Int);
     expected.emplace_back(TokenType::IntegerLiteral, "6");
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
 }
 
 TEST(Lexer, can_detect_float_literal) {
-    StringVec source = {"int 6.5"};
+    StringVec source = {"6.5"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
-    expected.emplace_back(Keyword::Int);
     expected.emplace_back(TokenType::FloatingPointLiteral, "6.5");
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
 }
 
 TEST(Lexer, can_detect_string_literal) {
-    StringVec source = {"int \"string\""};
+    StringVec source = {"\"string\""};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
-    expected.emplace_back(Keyword::Int);
     expected.emplace_back(TokenType::StringLiteral, "string");
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
