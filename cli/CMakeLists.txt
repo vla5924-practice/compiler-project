@@ -16,4 +16,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
     include/cli
     ${CMAKE_SOURCE_DIR}/backend/include
 )
-target_link_libraries(${TARGET_NAME} PUBLIC backend)
+target_link_libraries(${TARGET_NAME} PUBLIC
+    argparse
+    backend
+)
