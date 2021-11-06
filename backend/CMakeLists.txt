@@ -16,3 +16,5 @@ target_include_directories(${TARGET_NAME} PUBLIC
     include/backend
     include
 )
+
+target_link_libraries(${TARGET_NAME} ast)
