@@ -183,13 +183,13 @@ TEST(Lexer, can_detect_rect_left_brace) {
 }
 
 TEST(Lexer, can_detect_indentation) {
-    StringVec source = {"if", "    >"};
+    StringVec source = {"if", "    int"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
     expected.emplace_back(Keyword::If);
     expected.emplace_back(Special::EndOfExpression);
     expected.emplace_back(Special::Indentation);
-    expected.emplace_back(Operator::Greater);
+    expected.emplace_back(Keyword::Int);
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
 }
@@ -278,4 +278,22 @@ TEST(Lexer, can_throw_id_starting_with_number) {
 TEST(Lexer, can_throw_id_containing_special_symbols) {
     StringVec source = {"int x@x"};
     ASSERT_ANY_THROW(Lexer::process(source));
+}
+
+TEST(Lexer, can_detect_operators_in_a_row) {
+    StringVec source = {"+-+-+-+-+-"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Operator::Add);
+    expected.emplace_back(Operator::Sub);
+    expected.emplace_back(Operator::Add);
+    expected.emplace_back(Operator::Sub);
+    expected.emplace_back(Operator::Add);
+    expected.emplace_back(Operator::Sub);
+    expected.emplace_back(Operator::Add);
+    expected.emplace_back(Operator::Sub);
+    expected.emplace_back(Operator::Add);
+    expected.emplace_back(Operator::Sub);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
 }
