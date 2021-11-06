@@ -36,6 +36,10 @@ struct Token {
         return value == other.value && type == other.type;
     }
 
+    bool operator!=(const Token &other) const {
+        return !(*this == other);
+    }
+
     bool is(const Keyword &value) const {
         return type == TokenType::Keyword && kw() == value;
     }
