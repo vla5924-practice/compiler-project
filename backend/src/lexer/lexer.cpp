@@ -78,6 +78,8 @@ TokenList Lexer::processString(const std::string &str) {
         }
 
         if (isspace(*i)) {
+            begin_token = i + 1;
+            end_token = i + 1;
             continue;
         }
 
@@ -134,16 +136,7 @@ TokenList Lexer::processString(const std::string &str) {
             if (((*i == '!' || *i == '=' || *i == '<' || *i == '>') && *(i + 1) == '=') ||
                 ((*i == '-') && *(i + 1) == '>')) {
                 i++;
-                end_token += 2;
-                auto tok_id = operators.find(
-                    std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
-                if (tok_id != operators.end())
-                    tokens.emplace_back(tok_id->second);
-
-                begin_token = i;
-                end_token = i;
-
-                continue;
+                end_token++;
             }
 
         end_token++;
