@@ -28,4 +28,8 @@ class ErrorBuffer : public std::exception {
         }
         return str.str().c_str();
     }
+
+    bool empty() const {
+        return buffer.empty();
+    }
 };
