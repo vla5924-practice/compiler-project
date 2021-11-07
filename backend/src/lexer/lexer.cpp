@@ -1,5 +1,7 @@
 #include "lexer/lexer.hpp"
 
+#include "lexer/lexer_error.hpp"
+
 using namespace lexer;
 
 // clang-format off
@@ -28,20 +30,26 @@ std::map<std::string_view, Operator> Lexer::operators = {
 
 TokenList Lexer::process(const StringVec &source) {
     TokenList tokens;
+    size_t line_number = 1;
+    ErrorBuffer errors;
     for (const auto &str : source) {
-        TokenList part = processString(str);
+        TokenList part = processString(str, line_number++, errors);
         tokens.splice(tokens.end(), part);
     }
     return tokens;
 }
 
-TokenList Lexer::processString(const std::string &str) {
+TokenList Lexer::processString(const std::string &str, size_t line_number, ErrorBuffer &errors) {
     TokenList tokens;
 
     auto space_count = str.find_first_not_of(' ');
 
     if (space_count == std::string::npos) {
         return tokens;
+    }
+
+    if (space_count % 4 != 0) {
+        errors.push<LexerError>(line_number, 1, "Extra spaces at the begining of line are not allowed");
     }
 
     int indentation_count = space_count / 4;
