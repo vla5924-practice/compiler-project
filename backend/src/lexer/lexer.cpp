@@ -107,10 +107,10 @@ TokenList Lexer::processString(const std::string &str) {
             }
 
             tokens.emplace_back(TokenType::IntegerLiteral, std::string(begin_token, end_token));
-            if (i == str.end())
-                break;
             begin_token = i;
             end_token = i;
+            if (i == str.end())
+                break;
             continue;
         }
 
@@ -160,6 +160,8 @@ TokenList Lexer::processString(const std::string &str) {
             tokens.emplace_back(tok_id->second);
         else if (tok_src != operators.end())
             tokens.emplace_back(tok_id->second);
+        else
+            tokens.emplace_back(TokenType::Identifier, std::string(begin_token, end_token));
     }
 
     tokens.emplace_back(Special::EndOfExpression);
