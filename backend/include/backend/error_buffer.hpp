@@ -8,7 +8,7 @@
 #include "base_error.hpp"
 
 class ErrorBuffer : public std::exception {
-    std::list<std::unique_ptr<BaseError>> buffer;
+    std::list<std::shared_ptr<BaseError>> buffer;
 
   public:
     ErrorBuffer() = default;
@@ -18,7 +18,7 @@ class ErrorBuffer : public std::exception {
 
     template <typename ErrorT, typename... Args>
     void push(Args... args) {
-        buffer.emplace_back(std::make_unique<ErrorT>(args...));
+        buffer.emplace_back(std::make_shared<ErrorT>(args...));
     }
 
     virtual const char *what() const noexcept {
