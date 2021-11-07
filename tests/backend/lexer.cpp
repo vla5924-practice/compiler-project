@@ -306,17 +306,6 @@ TEST(Lexer, can_detect_operators_in_a_row) {
     ASSERT_EQ(expected, transformed);
 }
 
-/*
-TEST(Lexer, can_detect_id_starting_with_number) {
-    StringVec source = {"1x"};
-    TokenList transformed = Lexer::process(source);
-    TokenList expected;
-    expected.emplace_back(TokenType::IntegerLiteral, "1");
-    expected.emplace_back(TokenType::Identifier, "x");
-    expected.emplace_back(Special::EndOfExpression);
-    ASSERT_EQ(expected, transformed);
-}*/
-
 // This test need in a parser
 /*
 TEST(Lexer, can_throw_id_starting_with_number) {
@@ -337,7 +326,7 @@ TEST(Lexer, can_throw_literal_not_end_quote) {
 }
 
 TEST(Lexer, can_throw_extra_spaces) {
-    StringVec source = {"\"quote"};
+    StringVec source = {"  "};
     ASSERT_ANY_THROW(Lexer::process(source));
 }
 */
