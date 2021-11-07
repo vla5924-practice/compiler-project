@@ -317,7 +317,7 @@ TEST(Lexer, can_detect_id_starting_with_number) {
     ASSERT_EQ(expected, transformed);
 }*/
 
-//This test need in a parser
+// This test need in a parser
 /*
 TEST(Lexer, can_throw_id_starting_with_number) {
     StringVec source = {"int 1x"};
@@ -332,6 +332,11 @@ TEST(Lexer, can_throw_id_containing_special_symbols) {
 }
 
 TEST(Lexer, can_throw_literal_not_end_quote) {
+    StringVec source = {"\"quote"};
+    ASSERT_ANY_THROW(Lexer::process(source));
+}
+
+TEST(Lexer, can_throw_extra_spaces) {
     StringVec source = {"\"quote"};
     ASSERT_ANY_THROW(Lexer::process(source));
 }
