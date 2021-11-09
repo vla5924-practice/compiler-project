@@ -8,7 +8,7 @@
 #include "base_error.hpp"
 
 class ErrorBuffer : public std::exception {
-    std::list<std::unique_ptr<BaseError>> buffer;
+    std::list<std::shared_ptr<BaseError>> buffer;
 
   public:
     ErrorBuffer() = default;
@@ -18,15 +18,15 @@ class ErrorBuffer : public std::exception {
 
     template <typename ErrorT, typename... Args>
     void push(Args... args) {
-        buffer.emplace_back(std::make_unique<ErrorT>(args...));
+        buffer.emplace_back(std::make_shared<ErrorT>(args...));
     }
 
-    virtual const char *what() const noexcept {
+    std::string message() const {
         std::stringstream str;
         for (const auto &error : buffer) {
             str << error->what() << "\n";
         }
-        return str.str().c_str();
+        return str.str();
     }
 
     bool empty() const {
