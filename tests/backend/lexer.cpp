@@ -368,7 +368,7 @@ TEST(Lexer, can_throw_extra_spaces_with_several_lines) {
     expected.push<LexerError>(1, 1, "Extra spaces at the begining of line are not allowed");
     try {
         Lexer::process(source);
-    } catch (const ErrorBuffer& errors) {
+    } catch (const ErrorBuffer &errors) {
         ASSERT_EQ(*expected.what(), *errors.what());
     }
 }

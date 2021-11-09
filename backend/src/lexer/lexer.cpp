@@ -70,7 +70,8 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
         }
 
         if (*i == '@') {
-            errors.push<LexerError>(line_number, std::distance(i, str.begin()), "Identifier cannot contain special characters");
+            errors.push<LexerError>(line_number, std::distance(i, str.begin()),
+                                    "Identifier cannot contain special characters");
         }
 
         // pushing Keyword.
@@ -106,7 +107,8 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
             }
 
             if (i != str.end() && isalpha(*i)) {
-                errors.push<LexerError>(line_number, std::distance(i, str.begin()), "Identifier cannot start with numbers");
+                errors.push<LexerError>(line_number, std::distance(i, str.begin()),
+                                        "Identifier cannot start with numbers");
             }
 
             if (i != str.end() && *i == '.') { // pushing Float number
@@ -162,7 +164,7 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
 
         end_token++;
 
-        if(i + 1 != str.cend() && (*i == '-') && *(i + 1) == '>') {
+        if (i + 1 != str.cend() && (*i == '-') && *(i + 1) == '>') {
             tokens.emplace_back(Special::Arrow);
             i++;
             begin_token = i;
@@ -170,7 +172,7 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
             continue;
         }
 
-        if(*i == ':') {
+        if (*i == ':') {
             tokens.emplace_back(Special::Colon);
             begin_token = i;
             end_token = i;
