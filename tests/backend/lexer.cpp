@@ -188,12 +188,7 @@ TEST(Lexer, can_detect_indentation) {
 }
 
 TEST(Lexer, can_detect_arrow) {
-    StringVec source = {"->"};
-    TokenList transformed = Lexer::process(source);
-    TokenList expected;
-    expected.emplace_back(Special::Arrow);
-    expected.emplace_back(Special::EndOfExpression);
-    ASSERT_EQ(expected, transformed);
+    SINGLE_TOKEN_TEST_IMPL("->", Special::Arrow);
 }
 
 TEST(Lexer, can_detect_colon) {
