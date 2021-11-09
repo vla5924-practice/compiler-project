@@ -45,7 +45,7 @@ enum class Operator {
     RightBrace,
     RectLeftBrace,
     RectRightBrace,
-    Mod,  
+    Mod,
 };
 
 enum class Special {
