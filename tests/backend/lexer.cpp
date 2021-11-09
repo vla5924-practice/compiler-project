@@ -192,12 +192,7 @@ TEST(Lexer, can_detect_arrow) {
 }
 
 TEST(Lexer, can_detect_colon) {
-    StringVec source = {":"};
-    TokenList transformed = Lexer::process(source);
-    TokenList expected;
-    expected.emplace_back(Special::Colon);
-    expected.emplace_back(Special::EndOfExpression);
-    ASSERT_EQ(expected, transformed);
+    SINGLE_TOKEN_TEST_IMPL(":", Special::Colon);
 }
 
 TEST(Lexer, can_detect_identifier) {
@@ -341,22 +336,22 @@ TEST(Lexer, can_detect_operators_in_a_row) {
     ASSERT_EQ(expected, transformed);
 }
 
-TEST(Lexer, can_throw_id_starting_with_number) {
+TEST(Lexer, raise_error_on_id_starting_with_number) {
     StringVec source = {"int 1xx"};
     ASSERT_ANY_THROW(Lexer::process(source));
 }
 
-TEST(Lexer, can_throw_id_containing_special_symbols) {
+TEST(Lexer, raise_error_on_id_containing_special_symbols) {
     StringVec source = {"int x@x"};
     ASSERT_ANY_THROW(Lexer::process(source));
 }
 
-TEST(Lexer, can_throw_extra_spaces) {
+TEST(Lexer, raise_error_on_extra_spaces) {
     StringVec source = {"  int"};
     ASSERT_ANY_THROW(Lexer::process(source));
 }
 
-TEST(Lexer, can_throw_extra_spaces_with_several_lines) {
+TEST(Lexer, raise_error_on_extra_spaces_with_several_lines) {
     StringVec source = {"  int", " int"};
     ErrorBuffer expected;
     expected.push<LexerError>(1, 1, "Extra spaces at the begining of line are not allowed");
@@ -364,8 +359,9 @@ TEST(Lexer, can_throw_extra_spaces_with_several_lines) {
     try {
         Lexer::process(source);
     } catch (const ErrorBuffer &errors) {
-        ASSERT_EQ(*expected.what(), *errors.what());
+        ASSERT_EQ(std::string(expected.what()), std::string(errors.what()));
     }
+    FAIL() << "No expected errors were raised.";
 }
 
 TEST(Lexer, can_throw_literal_not_end_quote) {
