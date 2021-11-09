@@ -365,7 +365,7 @@ TEST(Lexer, raise_error_on_extra_spaces_with_several_lines) {
     FAIL() << "No expected errors were raised.";
 }
 
-TEST(Lexer, can_throw_literal_not_end_quote) {
+TEST(Lexer, raise_error_on_literal_without_closing_quote) {
     StringVec source = {"\"quote"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
