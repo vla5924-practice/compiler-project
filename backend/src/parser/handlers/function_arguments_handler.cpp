@@ -13,7 +13,7 @@ void FunctionArgumentsHandler::run(ParserState &state) {
         const Token &argName = currToken;
         const Token &colon = *std::next(state.tokenIter);
         const Token &argType = *std::next(state.tokenIter, 2);
-        if (argName.type != TokenType::Identifier || !colon.is(Operator::Colon) || !TypeRegistry::isTypename(argType)) {
+        if (argName.type != TokenType::Identifier || !colon.is(Special::Colon) || !TypeRegistry::isTypename(argType)) {
             // semantic error
         }
         auto node = state.pushChildNode(ast::NodeType::FunctionArgument);

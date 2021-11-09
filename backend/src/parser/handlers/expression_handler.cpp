@@ -177,7 +177,7 @@ size_t getOperandCount(OperationType type) {
 void ExpressionHandler::run(ParserState &state) {
     // find expression end (EndOfExpression or Colon)
     auto it = state.tokenIter;
-    while (!it->is(Operator::Colon) && !it->is(Special::EndOfExpression))
+    while (!it->is(Special::Colon) && !it->is(Special::EndOfExpression))
         it++;
     const auto &tokenIterBegin = state.tokenIter;
     const auto &tokenIterEnd = it;

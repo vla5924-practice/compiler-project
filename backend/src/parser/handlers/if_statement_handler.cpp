@@ -9,7 +9,7 @@ using namespace parser;
 void IfStatementHandler::run(ParserState &state) {
     const Token &currToken = state.token();
 
-    if (currToken.is(Operator::Colon)) {
+    if (currToken.is(Special::Colon)) {
         wasInExpression = false;
         state.node = state.pushChildNode(ast::NodeType::BranchRoot);
     } else if (currToken.is(Keyword::Elif)) {

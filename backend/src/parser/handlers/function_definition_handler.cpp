@@ -18,13 +18,13 @@ void FunctionDefinitionHandler::run(ParserState &state) {
         // start analyzing arguments
         state.node = state.pushChildNode(ast::NodeType::FunctionArguments);
         functionArgumentsEnd = true;
-    } else if (currToken.is(Operator::Arrow) && functionArgumentsEnd) {
+    } else if (currToken.is(Special::Arrow) && functionArgumentsEnd) {
         // save return type on next step
         functionArgumentsEnd = false;
-    } else if (TypeRegistry::isTypename(currToken) && prevToken.is(Operator::Arrow)) {
+    } else if (TypeRegistry::isTypename(currToken) && prevToken.is(Special::Arrow)) {
         auto node = state.pushChildNode(ast::NodeType::FunctionReturnType);
         node->value = TypeRegistry::typeId(currToken);
-    } else if (currToken.is(Operator::Colon) && TypeRegistry::isTypename(prevToken)) {
+    } else if (currToken.is(Special::Colon) && TypeRegistry::isTypename(prevToken)) {
         // end of function header
         state.node = state.pushChildNode(ast::NodeType::BranchRoot);
         functionBegin = true;

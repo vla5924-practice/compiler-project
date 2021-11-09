@@ -103,10 +103,6 @@ TEST(Lexer, can_detect_none) {
     SINGLE_TOKEN_TEST_IMPL("None", Keyword::None);
 }
 
-TEST(Lexer, can_detect_colon) {
-    SINGLE_TOKEN_TEST_IMPL(":", Operator::Colon);
-}
-
 TEST(Lexer, can_detect_comma) {
     SINGLE_TOKEN_TEST_IMPL(",", Operator::Comma);
 }
@@ -151,10 +147,6 @@ TEST(Lexer, can_detect_right_brace) {
     SINGLE_TOKEN_TEST_IMPL(")", Operator::RightBrace);
 }
 
-TEST(Lexer, can_detect_arrow) {
-    SINGLE_TOKEN_TEST_IMPL("->", Operator::Arrow);
-}
-
 TEST(Lexer, can_detect_dot) {
     SINGLE_TOKEN_TEST_IMPL(".", Operator::Dot);
 }
@@ -191,6 +183,24 @@ TEST(Lexer, can_detect_indentation) {
     expected.emplace_back(Special::EndOfExpression);
     expected.emplace_back(Special::Indentation);
     expected.emplace_back(Keyword::Int);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_arrow) {
+    StringVec source = {"->"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Special::Arrow);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_colon) {
+    StringVec source = {":"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Special::Colon);
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
 }
@@ -271,6 +281,15 @@ TEST(Lexer, can_detect_string_literal) {
     TokenList transformed = Lexer::process(source);
     TokenList expected;
     expected.emplace_back(TokenType::StringLiteral, "string");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_string_literal_with_arrow_colon) {
+    StringVec source = {"\"string : ->\""};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::StringLiteral, "string : ->");
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
 }

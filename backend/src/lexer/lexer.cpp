@@ -19,13 +19,12 @@ std::map<std::string_view, Keyword> Lexer::keywords = {
     {"True", Keyword::True},         {"None", Keyword::None}};
 
 std::map<std::string_view, Operator> Lexer::operators = {
-    {":", Operator::Colon},          {"%", Operator::Mod},        {".", Operator::Dot},
+    {"%", Operator::Mod},            {".", Operator::Dot},        {"]", Operator::RectRightBrace},
     {",", Operator::Comma},          {"=", Operator::Assign},     {"+", Operator::Add},
     {"-", Operator::Sub},            {"*", Operator::Mult},       {"/", Operator::Div},
     {"==", Operator::Equal},         {"!=", Operator::NotEqual},  {"<", Operator::Less},
     {">", Operator::Greater},        {"<=", Operator::LessEqual}, {">=", Operator::GreaterEqual},
-    {"(", Operator::LeftBrace},      {")", Operator::RightBrace}, {"[", Operator::RectLeftBrace},
-    {"]", Operator::RectRightBrace}, {"->", Operator::Arrow}};
+    {"(", Operator::LeftBrace},      {")", Operator::RightBrace}, {"[", Operator::RectLeftBrace}};
 // clang-format on
 
 TokenList Lexer::process(const StringVec &source) {
@@ -156,13 +155,27 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
 
         // pushing Operators
         if (i + 1 != str.cend())
-            if (((*i == '!' || *i == '=' || *i == '<' || *i == '>') && *(i + 1) == '=') ||
-                ((*i == '-') && *(i + 1) == '>')) {
+            if (((*i == '!' || *i == '=' || *i == '<' || *i == '>') && *(i + 1) == '=')) {
                 i++;
                 end_token++;
             }
 
         end_token++;
+
+        if(i + 1 != str.cend() && (*i == '-') && *(i + 1) == '>') {
+            tokens.emplace_back(Special::Arrow);
+            i++;
+            begin_token = i;
+            end_token = i;
+            continue;
+        }
+
+        if(*i == ':') {
+            tokens.emplace_back(Special::Colon);
+            begin_token = i;
+            end_token = i;
+            continue;
+        }
 
         auto tok_id =
             operators.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));

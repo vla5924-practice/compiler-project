@@ -28,7 +28,6 @@ enum class Keyword {
 };
 
 enum class Operator {
-    Colon,
     Dot,
     Comma,
     Assign,
@@ -46,13 +45,14 @@ enum class Operator {
     RightBrace,
     RectLeftBrace,
     RectRightBrace,
-    Mod,
-    Arrow,
+    Mod,  
 };
 
 enum class Special {
     Indentation,
     EndOfExpression,
+    Arrow,
+    Colon,
 };
 
 enum class TokenType {
