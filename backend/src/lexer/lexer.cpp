@@ -157,7 +157,7 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
 
         // pushing Operators
         if (i + 1 != str.cend())
-            if (((*i == '!' || *i == '=' || *i == '<' || *i == '>') && *(i + 1) == '=')) {
+            if ((*i == '!' || *i == '=' || *i == '<' || *i == '>') && *(i + 1) == '=') {
                 i++;
                 end_token++;
             }
