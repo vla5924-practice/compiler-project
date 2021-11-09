@@ -42,6 +42,7 @@ TokenList Lexer::process(const StringVec &source) {
 }
 
 TokenList Lexer::processString(const std::string &str, size_t line_number, ErrorBuffer &errors) {
+    constexpr const char *ID_ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
     TokenList tokens;
 
     auto space_count = str.find_first_not_of(' ');
@@ -69,11 +70,6 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
             continue;
         }
 
-        if (*i == '@') {
-            errors.push<LexerError>(line_number, std::distance(i, str.begin()),
-                                    "Identifier cannot contain special characters");
-        }
-
         // pushing Keyword.
         if (end_token != begin_token) {
             auto tok_id = keywords.find(
@@ -81,10 +77,15 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
             if (tok_id != keywords.cend())
                 tokens.emplace_back(tok_id->second);
             else {
-                while ((i != str.end()) && isalnum(*i)) // adding identifier with numbers
-                {
+                while ((i != str.end()) && isalnum(*i)) { // adding identifier with numbers
                     end_token++;
                     i++;
+                }
+                auto pos = std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token)))
+                               .find_first_not_of(ID_ALLOWED_SYMBOLS);
+                if (pos != std::string::npos) {
+                    errors.push<LexerError>(line_number, std::distance(str.begin(), begin_token),
+                                            "Identifier cannot contain special characters");
                 }
                 tokens.emplace_back(TokenType::Identifier, std::string(begin_token, end_token));
             }
@@ -198,8 +199,15 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
             tokens.emplace_back(tok_id->second);
         else if (tok_src != operators.end())
             tokens.emplace_back(tok_id->second);
-        else
+        else {
+            auto pos = std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token)))
+                           .find_first_not_of(ID_ALLOWED_SYMBOLS);
+            if (pos != std::string::npos) {
+                errors.push<LexerError>(line_number, std::distance(str.begin(), begin_token),
+                                        "Identifier cannot contain special characters");
+            }
             tokens.emplace_back(TokenType::Identifier, std::string(begin_token, end_token));
+        }
     }
 
     tokens.emplace_back(Special::EndOfExpression);

@@ -338,33 +338,34 @@ TEST(Lexer, can_detect_operators_in_a_row) {
 
 TEST(Lexer, raise_error_on_id_starting_with_number) {
     StringVec source = {"int 1xx"};
-    ASSERT_ANY_THROW(Lexer::process(source));
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
 
 TEST(Lexer, raise_error_on_id_containing_special_symbols) {
     StringVec source = {"int x@x"};
-    ASSERT_ANY_THROW(Lexer::process(source));
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
 
 TEST(Lexer, raise_error_on_extra_spaces) {
     StringVec source = {"  int"};
-    ASSERT_ANY_THROW(Lexer::process(source));
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
 
 TEST(Lexer, raise_error_on_extra_spaces_with_several_lines) {
     StringVec source = {"  int", " int"};
     ErrorBuffer expected;
     expected.push<LexerError>(1, 1, "Extra spaces at the begining of line are not allowed");
-    expected.push<LexerError>(1, 1, "Extra spaces at the begining of line are not allowed");
+    expected.push<LexerError>(2, 1, "Extra spaces at the begining of line are not allowed");
     try {
         Lexer::process(source);
     } catch (const ErrorBuffer &errors) {
-        ASSERT_EQ(std::string(expected.what()), std::string(errors.what()));
+        ASSERT_EQ(expected.message(), errors.message());
+        return;
     }
     FAIL() << "No expected errors were raised.";
 }
 
 TEST(Lexer, can_throw_literal_not_end_quote) {
     StringVec source = {"\"quote"};
-    ASSERT_ANY_THROW(Lexer::process(source));
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
