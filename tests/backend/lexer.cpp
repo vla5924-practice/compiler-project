@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "lexer/lexer.hpp"
+#include "lexer/lexer_error.hpp"
 #include "lexer/tokenlist.hpp"
 #include "stringvec.hpp"
 
@@ -236,11 +237,31 @@ TEST(Lexer, can_detect_integer_literal) {
     ASSERT_EQ(expected, transformed);
 }
 
+TEST(Lexer, can_detect_integer_literal_with_operators_no_spaces) {
+    StringVec source = {"6+6"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::IntegerLiteral, "6");
+    expected.emplace_back(Operator::Add);
+    expected.emplace_back(TokenType::IntegerLiteral, "6");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
 TEST(Lexer, can_detect_float_literal) {
     StringVec source = {"6.5"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
     expected.emplace_back(TokenType::FloatingPointLiteral, "6.5");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_float_literal_without_fractional_part) {
+    StringVec source = {"6."};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::FloatingPointLiteral, "6.");
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
 }
@@ -266,7 +287,7 @@ TEST(Lexer, can_detect_double_indentation) {
 }
 
 TEST(Lexer, can_detect_tokens_with_spaces) {
-    StringVec source = {"int   float  ", "  6  ==  7.99  "};
+    StringVec source = {"int   float  ", "6  ==  7.99  "};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
     expected.emplace_back(Keyword::Int);
@@ -306,27 +327,34 @@ TEST(Lexer, can_detect_operators_in_a_row) {
     ASSERT_EQ(expected, transformed);
 }
 
-// This test need in a parser
-/*
 TEST(Lexer, can_throw_id_starting_with_number) {
-    StringVec source = {"int 1x"};
+    StringVec source = {"int 1xx"};
     ASSERT_ANY_THROW(Lexer::process(source));
 }
-*/
 
-/*
 TEST(Lexer, can_throw_id_containing_special_symbols) {
     StringVec source = {"int x@x"};
     ASSERT_ANY_THROW(Lexer::process(source));
+}
+
+TEST(Lexer, can_throw_extra_spaces) {
+    StringVec source = {"  int"};
+    ASSERT_ANY_THROW(Lexer::process(source));
+}
+
+TEST(Lexer, can_throw_extra_spaces_with_several_lines) {
+    StringVec source = {"  int", " int"};
+    ErrorBuffer expected;
+    expected.push<LexerError>(1, 1, "Extra spaces at the begining of line are not allowed");
+    expected.push<LexerError>(1, 1, "Extra spaces at the begining of line are not allowed");
+    try {
+        Lexer::process(source);
+    } catch (const ErrorBuffer& errors) {
+        ASSERT_EQ(*expected.what(), *errors.what());
+    }
 }
 
 TEST(Lexer, can_throw_literal_not_end_quote) {
     StringVec source = {"\"quote"};
     ASSERT_ANY_THROW(Lexer::process(source));
 }
-
-TEST(Lexer, can_throw_extra_spaces) {
-    StringVec source = {"  "};
-    ASSERT_ANY_THROW(Lexer::process(source));
-}
-*/

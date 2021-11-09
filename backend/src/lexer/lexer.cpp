@@ -36,6 +36,9 @@ TokenList Lexer::process(const StringVec &source) {
         TokenList part = processString(str, line_number++, errors);
         tokens.splice(tokens.end(), part);
     }
+    if (!errors.empty()) {
+        throw errors;
+    }
     return tokens;
 }
 
@@ -67,6 +70,10 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
             continue;
         }
 
+        if (*i == '@') {
+            errors.push<LexerError>(line_number, std::distance(i, str.begin()), "Identifier cannot contain special characters");
+        }
+
         // pushing Keyword.
         if (end_token != begin_token) {
             auto tok_id = keywords.find(
@@ -94,9 +101,13 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
         if (isalnum(*i)) { // pushing Integer number
             begin_token = i;
             end_token = i;
-            while (i != str.end() && isalnum(*i)) {
+            while (i != str.end() && isdigit(*i)) {
                 end_token++;
                 i++;
+            }
+
+            if (i != str.end() && isalpha(*i)) {
+                errors.push<LexerError>(line_number, std::distance(i, str.begin()), "Identifier cannot start with numbers");
             }
 
             if (i != str.end() && *i == '.') { // pushing Float number
@@ -109,16 +120,14 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
                 tokens.emplace_back(TokenType::FloatingPointLiteral, std::string(begin_token, end_token));
                 begin_token = i;
                 end_token = i;
-                if (i == str.end())
-                    break;
+                i--;
                 continue;
             }
 
             tokens.emplace_back(TokenType::IntegerLiteral, std::string(begin_token, end_token));
             begin_token = i;
             end_token = i;
-            if (i == str.end())
-                break;
+            i--;
             continue;
         }
 
@@ -133,6 +142,12 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
             tokens.emplace_back(TokenType::StringLiteral, std::string(begin_token, end_token));
             begin_token = i;
             end_token = i;
+
+            if (i == str.end()) {
+                errors.push<LexerError>(line_number, str.size(), "No matching closing quote found");
+                break;
+            }
+
             continue;
         }
 
