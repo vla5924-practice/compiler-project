@@ -2,6 +2,23 @@
 
 namespace ast {
 
+enum class BinaryOperation {
+    Unknown,
+    Add,
+    Sub,
+    Mult,
+    Div,
+    And,
+    Or,
+    Equal,
+    NotEqual,
+    Less,
+    Greater,
+    LessEqual,
+    GreaterEqual,
+    Assign,
+};
+
 enum class NodeType {
     BinaryOperation,
     UnaryOperation,
@@ -24,4 +41,4 @@ enum class NodeType {
     WhileStatement,
 };
 
-}
+} // namespace ast
