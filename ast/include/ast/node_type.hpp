@@ -2,6 +2,32 @@
 
 namespace ast {
 
+enum class BinaryOperation {
+    Unknown,
+    Add,
+    Sub,
+    Mult,
+    Div,
+    FAdd,
+    FSub,
+    FMul,
+    FDiv,
+    And,
+    Or,
+    Equal,
+    NotEqual,
+    Less,
+    Greater,
+    LessEqual,
+    GreaterEqual,
+    Assign,
+};
+
+enum class UnaryOperation {
+    Unknown,
+    Not,
+};
+
 enum class NodeType {
     BinaryOperation,
     UnaryOperation,
@@ -22,6 +48,7 @@ enum class NodeType {
     IfStatement,
     ElifStatement,
     WhileStatement,
+    TypeConversion,
 };
 
-}
+} // namespace ast

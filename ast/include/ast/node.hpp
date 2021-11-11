@@ -18,7 +18,7 @@ struct Node {
     Ptr parent;
 
     NodeType type;
-    std::variant<long int, double, std::string, size_t> value;
+    std::variant<long int, double, std::string, size_t, BinaryOperation, UnaryOperation> value;
 
     VariablesTable variables;
 
@@ -36,6 +36,12 @@ struct Node {
     }
     const size_t &uid() const {
         return std::get<size_t>(value);
+    }
+    const BinaryOperation &binOp() const {
+        return std::get<BinaryOperation>(value);
+    }
+    const UnaryOperation &unOp() const {
+        return std::get<UnaryOperation>(value);
     }
 
     Node() = default;

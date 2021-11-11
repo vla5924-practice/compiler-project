@@ -2,35 +2,16 @@
 
 #include <stack>
 
+#include "ast/node_type.hpp"
 #include "lexer/token_types.hpp"
 #include "parser/register_handler.hpp"
 
+using ast::BinaryOperation;
+using ast::UnaryOperation;
 using namespace lexer;
 using namespace parser;
 
 namespace {
-
-enum class BinaryOperation {
-    Unknown,
-    Add,
-    Sub,
-    Mult,
-    Div,
-    And,
-    Or,
-    Equal,
-    NotEqual,
-    Less,
-    Greater,
-    LessEqual,
-    GreaterEqual,
-    Assign,
-};
-
-enum class UnaryOperation {
-    Unknown,
-    Not,
-};
 
 enum class OperationType {
     Unknown,
@@ -177,7 +158,7 @@ size_t getOperandCount(OperationType type) {
 void ExpressionHandler::run(ParserState &state) {
     // find expression end (EndOfExpression or Colon)
     auto it = state.tokenIter;
-    while (!it->is(Operator::Colon) && !it->is(Special::EndOfExpression))
+    while (!it->is(Special::Colon) && !it->is(Special::EndOfExpression))
         it++;
     const auto &tokenIterBegin = state.tokenIter;
     const auto &tokenIterEnd = it;
@@ -227,6 +208,7 @@ void ExpressionHandler::run(ParserState &state) {
             operandMaxCount = getOperandCount(opType);
             if (opType == OperationType::Binary) {
                 currNode = ParserState::pushChildNode(currNode, ast::NodeType::BinaryOperation);
+                currNode->value = getBinaryOperation(token);
             } else {
                 currNode = ParserState::pushChildNode(currNode, ast::NodeType::UnaryOperation);
             }

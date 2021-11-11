@@ -1,5 +1,7 @@
 #include "lexer/lexer.hpp"
 
+#include "lexer/lexer_error.hpp"
+
 using namespace lexer;
 
 // clang-format off
@@ -17,31 +19,40 @@ std::map<std::string_view, Keyword> Lexer::keywords = {
     {"True", Keyword::True},         {"None", Keyword::None}};
 
 std::map<std::string_view, Operator> Lexer::operators = {
-    {":", Operator::Colon},          {"%", Operator::Mod},        {".", Operator::Dot},
+    {"%", Operator::Mod},            {".", Operator::Dot},        {"]", Operator::RectRightBrace},
     {",", Operator::Comma},          {"=", Operator::Assign},     {"+", Operator::Add},
     {"-", Operator::Sub},            {"*", Operator::Mult},       {"/", Operator::Div},
     {"==", Operator::Equal},         {"!=", Operator::NotEqual},  {"<", Operator::Less},
     {">", Operator::Greater},        {"<=", Operator::LessEqual}, {">=", Operator::GreaterEqual},
-    {"(", Operator::LeftBrace},      {")", Operator::RightBrace}, {"[", Operator::RectLeftBrace},
-    {"]", Operator::RectRightBrace}, {"->", Operator::Arrow}};
+    {"(", Operator::LeftBrace},      {")", Operator::RightBrace}, {"[", Operator::RectLeftBrace}};
 // clang-format on
 
 TokenList Lexer::process(const StringVec &source) {
     TokenList tokens;
+    size_t line_number = 1;
+    ErrorBuffer errors;
     for (const auto &str : source) {
-        TokenList part = processString(str);
+        TokenList part = processString(str, line_number++, errors);
         tokens.splice(tokens.end(), part);
+    }
+    if (!errors.empty()) {
+        throw errors;
     }
     return tokens;
 }
 
-TokenList Lexer::processString(const std::string &str) {
+TokenList Lexer::processString(const std::string &str, size_t line_number, ErrorBuffer &errors) {
+    constexpr const char *ID_ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
     TokenList tokens;
 
     auto space_count = str.find_first_not_of(' ');
 
     if (space_count == std::string::npos) {
         return tokens;
+    }
+
+    if (space_count % 4 != 0) {
+        errors.push<LexerError>(line_number, 1, "Extra spaces at the begining of line are not allowed");
     }
 
     int indentation_count = space_count / 4;
@@ -66,10 +77,15 @@ TokenList Lexer::processString(const std::string &str) {
             if (tok_id != keywords.cend())
                 tokens.emplace_back(tok_id->second);
             else {
-                while ((i != str.end()) && isalnum(*i)) // adding identifier with numbers
-                {
+                while ((i != str.end()) && isalnum(*i)) { // adding identifier with numbers
                     end_token++;
                     i++;
+                }
+                auto pos = std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token)))
+                               .find_first_not_of(ID_ALLOWED_SYMBOLS);
+                if (pos != std::string::npos) {
+                    errors.push<LexerError>(line_number, std::distance(str.begin(), begin_token),
+                                            "Identifier cannot contain special characters");
                 }
                 tokens.emplace_back(TokenType::Identifier, std::string(begin_token, end_token));
             }
@@ -78,15 +94,22 @@ TokenList Lexer::processString(const std::string &str) {
         }
 
         if (isspace(*i)) {
+            begin_token = i + 1;
+            end_token = i + 1;
             continue;
         }
 
         if (isalnum(*i)) { // pushing Integer number
             begin_token = i;
             end_token = i;
-            while (i != str.end() && isalnum(*i)) {
+            while (i != str.end() && isdigit(*i)) {
                 end_token++;
                 i++;
+            }
+
+            if (i != str.end() && isalpha(*i)) {
+                errors.push<LexerError>(line_number, std::distance(i, str.begin()),
+                                        "Identifier cannot start with numbers");
             }
 
             if (i != str.end() && *i == '.') { // pushing Float number
@@ -99,16 +122,14 @@ TokenList Lexer::processString(const std::string &str) {
                 tokens.emplace_back(TokenType::FloatingPointLiteral, std::string(begin_token, end_token));
                 begin_token = i;
                 end_token = i;
-                if (i == str.end())
-                    break;
+                i--;
                 continue;
             }
 
             tokens.emplace_back(TokenType::IntegerLiteral, std::string(begin_token, end_token));
-            if (i == str.end())
-                break;
             begin_token = i;
             end_token = i;
+            i--;
             continue;
         }
 
@@ -123,6 +144,12 @@ TokenList Lexer::processString(const std::string &str) {
             tokens.emplace_back(TokenType::StringLiteral, std::string(begin_token, end_token));
             begin_token = i;
             end_token = i;
+
+            if (i == str.end()) {
+                errors.push<LexerError>(line_number, str.size(), "No matching closing quote found");
+                break;
+            }
+
             continue;
         }
 
@@ -130,15 +157,34 @@ TokenList Lexer::processString(const std::string &str) {
         end_token = i;
 
         // pushing Operators
-        if (((*i == '!' || *i == '=' || *i == '<' || *i == '>') && *(i + 1) == '=') ||
-            ((*i == '-') && *(i + 1) == '>')) {
-            i++;
-        }
+        if (i + 1 != str.cend())
+            if ((*i == '!' || *i == '=' || *i == '<' || *i == '>') && *(i + 1) == '=') {
+                i++;
+                end_token++;
+            }
+
         end_token++;
+
+        if (i + 1 != str.cend() && (*i == '-') && *(i + 1) == '>') {
+            tokens.emplace_back(Special::Arrow);
+            i++;
+            begin_token = i;
+            end_token = i;
+            continue;
+        }
+
+        if (*i == ':') {
+            tokens.emplace_back(Special::Colon);
+            begin_token = i;
+            end_token = i;
+            continue;
+        }
+
         auto tok_id =
             operators.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
         if (tok_id != operators.end())
             tokens.emplace_back(tok_id->second);
+
         begin_token = i;
         end_token = i;
     }
@@ -153,9 +199,18 @@ TokenList Lexer::processString(const std::string &str) {
             tokens.emplace_back(tok_id->second);
         else if (tok_src != operators.end())
             tokens.emplace_back(tok_id->second);
+        else {
+            auto pos = std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token)))
+                           .find_first_not_of(ID_ALLOWED_SYMBOLS);
+            if (pos != std::string::npos) {
+                errors.push<LexerError>(line_number, std::distance(str.begin(), begin_token),
+                                        "Identifier cannot contain special characters");
+            }
+            tokens.emplace_back(TokenType::Identifier, std::string(begin_token, end_token));
+        }
     }
 
-    tokens.emplace_back(Special::Indentation);
+    tokens.emplace_back(Special::EndOfExpression);
 
     return tokens;
 }

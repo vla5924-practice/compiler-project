@@ -32,6 +32,14 @@ struct Token {
         return std::get<std::string>(value);
     }
 
+    bool operator==(const Token &other) const {
+        return value == other.value && type == other.type;
+    }
+
+    bool operator!=(const Token &other) const {
+        return !(*this == other);
+    }
+
     bool is(const Keyword &value) const {
         return type == TokenType::Keyword && kw() == value;
     }
