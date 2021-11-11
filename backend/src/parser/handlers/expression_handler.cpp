@@ -7,15 +7,11 @@
 #include "parser/register_handler.hpp"
 
 using ast::BinaryOperation;
+using ast::UnaryOperation;
 using namespace lexer;
 using namespace parser;
 
 namespace {
-
-enum class UnaryOperation {
-    Unknown,
-    Not,
-};
 
 enum class OperationType {
     Unknown,

@@ -8,6 +8,10 @@ enum class BinaryOperation {
     Sub,
     Mult,
     Div,
+    FAdd,
+    FSub,
+    FMul,
+    FDiv,
     And,
     Or,
     Equal,
@@ -17,6 +21,11 @@ enum class BinaryOperation {
     LessEqual,
     GreaterEqual,
     Assign,
+};
+
+enum class UnaryOperation {
+    Unknown,
+    Not,
 };
 
 enum class NodeType {
@@ -39,6 +48,7 @@ enum class NodeType {
     IfStatement,
     ElifStatement,
     WhileStatement,
+    TypeConversion,
 };
 
 } // namespace ast
