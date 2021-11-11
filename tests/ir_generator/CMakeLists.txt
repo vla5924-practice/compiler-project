@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.19)
 
-set(TARGET_NAME "backend_test")
+set(TARGET_NAME "ir_generator_test")
 
 file(GLOB_RECURSE TARGET_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
@@ -13,7 +13,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
 )
 
 target_link_libraries(${TARGET_NAME} PUBLIC
-    backend
+    ir_generator
     gtest
     gtest_main
 )
