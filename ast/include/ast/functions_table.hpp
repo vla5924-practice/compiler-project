@@ -4,11 +4,13 @@
 #include <string>
 #include <vector>
 
+#include "ast/types.hpp"
+
 namespace ast {
 
 struct Function {
-    size_t returnType;
-    std::vector<size_t> arguments;
+    TypeId returnType;
+    std::vector<TypeId> argumentsTypes;
 };
 
 using FunctionsTable = std::map<std::string, Function>;
