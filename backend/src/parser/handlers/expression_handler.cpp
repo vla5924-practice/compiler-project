@@ -220,7 +220,7 @@ void ExpressionHandler::run(ParserState &state) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::IntegerLiteralValue);
                 node->value = std::atol(token.literal().c_str());
             } else if (token.type == TokenType::FloatingPointLiteral) {
-                ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::FPointLiteralValue);
+                ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::FloatingPointLiteralValue);
                 node->value = std::stod(token.literal());
             } else if (token.type == TokenType::StringLiteral) {
                 ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::StringLiteralValue);
