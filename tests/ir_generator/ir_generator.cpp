@@ -60,7 +60,7 @@ TEST(IRGenerator, generic_test) {
     Node::Ptr _chil1 = std::make_shared<Node>(NodeType::VariableName, _child3);
     _chil1->value = "x";
     Node::Ptr _chil2 = std::make_shared<Node>(NodeType::IntegerLiteralValue, _child3);
-    _chil1->value = 3l;
+    _chil2->value = 3l;
     _child3->children.push_back(_chil1);
     _child3->children.push_back(_chil2);
     generator.process(tree1);

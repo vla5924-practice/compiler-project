@@ -9,15 +9,6 @@ IRGenerator::IRGenerator(const std::string &moduleName, bool emitDebugInfo)
 }
 
 void IRGenerator::process(const ast::SyntaxTree &tree) {
-    /*std::vector<llvm::Type *> params;
-    llvm::FunctionType *ft = llvm::FunctionType::get(llvm::Type::getVoidTy(context), params, false);
-    llvm::Function *inz = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, "INZ", this->module.get());
-    llvm::BasicBlock *BB = llvm::BasicBlock::Create(context, "", inz);
-    builder->SetInsertPoint(BB);
-    llvm::Constant *initValue;
-    module->getOrInsertGlobal("XYZ", builder->getInt64Ty());
-    llvm::GlobalVariable *var = module->getNamedGlobal("XYZ");
-    builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, 12345, true)), var);*/
     initializeFunctions(tree);
     visit(tree.root);
 }
@@ -58,9 +49,7 @@ llvm::Value *IRGenerator::visitFloatingPointLiteralValue(ast::Node *node) {
 
 llvm::Value *IRGenerator::visitBinaryOperation(ast::Node *node) {
     llvm::Value *lhs = visit(node->children.front());
-    assert(lhs && "lhs null");
     llvm::Value *rhs = visit(node->children.back());
-    assert(rhs && "rhs null");
     BinaryOperation op = node->binOp();
     switch (op) {
     case BinaryOperation::Add:
