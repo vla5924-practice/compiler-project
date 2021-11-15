@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ast/node.hpp>
+#include <ast/types.hpp>
 
 #include "lexer/tokenlist.hpp"
 #include "parser/type_registry.hpp"
@@ -36,7 +37,7 @@ struct ParserState {
                 return it->second;
             currNode = currNode->parent;
         }
-        return TypeRegistry::UnknownType;
+        return ast::UnknownType;
     }
 };
 
