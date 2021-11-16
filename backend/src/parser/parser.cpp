@@ -15,7 +15,7 @@ SyntaxTree Parser::process(const TokenList &tokens) {
         handler->reset();
     }
 
-    ParserState state = {tree.root, tokens.begin()};
+    ParserState state = {tree.root, tokens.begin(), tokens.end()};
     while (state.tokenIter != tokens.end()) {
         HandlerRegistry()[state.node->type]->run(state);
     }

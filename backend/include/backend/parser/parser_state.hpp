@@ -11,6 +11,7 @@ namespace parser {
 struct ParserState {
     ast::Node::Ptr node;
     lexer::TokenList::const_iterator tokenIter;
+    lexer::TokenList::const_iterator tokenEnd;
 
     const lexer::Token &token() const {
         return *tokenIter;

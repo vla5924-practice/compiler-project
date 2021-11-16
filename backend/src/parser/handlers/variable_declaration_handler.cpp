@@ -21,7 +21,7 @@ void VariableDeclarationHandler::run(ParserState &state) {
     auto node = state.pushChildNode(ast::NodeType::TypeName);
     node->value = TypeRegistry::typeId(varType);
     node = state.pushChildNode(ast::NodeType::VariableName);
-    node->value = varType.id();
+    node->value = varName.id();
 
     auto endOfDecl = std::next(state.tokenIter, 2);
     if (endOfDecl->is(Special::EndOfExpression)) {
