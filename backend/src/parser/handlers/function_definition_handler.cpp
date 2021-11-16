@@ -12,8 +12,8 @@ void FunctionDefinitionHandler::run(ParserState &state) {
     const Token &prevToken = *std::prev(state.tokenIter);
     // in function definition
     if (currToken.type == TokenType::Identifier && prevToken.is(Keyword::Definition)) {
-        // save function name
-        state.node->value = currToken.id();
+        auto node = state.pushChildNode(ast::NodeType::FunctionName);
+        node->value = currToken.id();
     } else if (currToken.is(Operator::LeftBrace) && prevToken.type == TokenType::Identifier) {
         // start analyzing arguments
         state.node = state.pushChildNode(ast::NodeType::FunctionArguments);

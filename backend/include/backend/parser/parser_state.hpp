@@ -11,6 +11,7 @@ namespace parser {
 struct ParserState {
     ast::Node::Ptr node;
     lexer::TokenList::const_iterator tokenIter;
+    lexer::TokenList::const_iterator tokenEnd;
 
     const lexer::Token &token() const {
         return *tokenIter;
@@ -19,6 +20,11 @@ struct ParserState {
     static ast::Node::Ptr pushChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType) {
         node->children.emplace_back(new ast::Node(nodeType, node));
         return node->children.back();
+    }
+
+    static ast::Node::Ptr unshiftChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType) {
+        node->children.emplace_front(new ast::Node(nodeType, node));
+        return node->children.front();
     }
 
     ast::Node::Ptr pushChildNode(const ast::NodeType &nodeType) {

@@ -20,6 +20,7 @@ void IfStatementHandler::run(ParserState &state) {
         } else {
             // syntax error
         }
+        state.goNextToken();
     } else if (currToken.is(Keyword::Else)) {
         if (branch == Branch::If || branch == Branch::Elif) {
             branch = Branch::Else;
@@ -27,11 +28,11 @@ void IfStatementHandler::run(ParserState &state) {
         } else {
             // syntax error
         }
+        state.goNextToken();
     } else {
         wasInExpression = true;
         state.node = state.pushChildNode(ast::NodeType::Expression);
     }
-    state.goNextToken();
 }
 
 void IfStatementHandler::reset() {
