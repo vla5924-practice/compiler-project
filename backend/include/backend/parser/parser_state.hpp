@@ -22,6 +22,11 @@ struct ParserState {
         return node->children.back();
     }
 
+    static ast::Node::Ptr unshiftChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType) {
+        node->children.emplace_front(new ast::Node(nodeType, node));
+        return node->children.front();
+    }
+
     ast::Node::Ptr pushChildNode(const ast::NodeType &nodeType) {
         return pushChildNode(node, nodeType);
     }

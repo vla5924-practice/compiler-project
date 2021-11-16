@@ -23,7 +23,7 @@ bool isVariableDeclaration(const TokenList::const_iterator &tokenIter, const Tok
 
 void BranchRootHandler::run(ParserState &state) {
     int currNestingLevel = 0;
-    while (state.token().is(Special::EndOfExpression)) {
+    while (state.token().is(Special::EndOfExpression) || state.token().is(Special::Colon)) {
         state.goNextToken();
         if (state.tokenIter == state.tokenEnd)
             return;
@@ -45,18 +45,27 @@ void BranchRootHandler::run(ParserState &state) {
 
     if (currToken.is(Keyword::If)) {
         state.node = state.pushChildNode(ast::NodeType::IfStatement);
-    } else if (currToken.is(Keyword::While)) {
-        state.node = state.pushChildNode(ast::NodeType::WhileStatement);
-    } else if (isVariableDeclaration(state.tokenIter, state.tokenEnd)) {
-        state.node = state.pushChildNode(ast::NodeType::VariableDeclaration);
-    } else if (currToken.is(Keyword::Elif) || currToken.is(Keyword::Else)) {
-        // syntax error
-    } else {
-        state.node = state.pushChildNode(ast::NodeType::Expression);
+        state.goNextToken();
+        return;
     }
+    if (currToken.is(Keyword::While)) {
+        state.node = state.pushChildNode(ast::NodeType::WhileStatement);
+        state.goNextToken();
+        return;
+    }
+    if (isVariableDeclaration(state.tokenIter, state.tokenEnd)) {
+        state.node = state.pushChildNode(ast::NodeType::VariableDeclaration);
+        state.goNextToken();
+        return;
+    }
+    if (currToken.is(Keyword::Elif) || currToken.is(Keyword::Else)) {
+        // syntax error
+        return;
+    }
+    state.node = state.pushChildNode(ast::NodeType::Expression);
+
     // TODO: add range-based for
     // TODO: add errors handling
-    state.goNextToken();
 }
 
 void BranchRootHandler::reset() {

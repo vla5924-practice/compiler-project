@@ -214,16 +214,16 @@ void ExpressionHandler::run(ParserState &state) {
             }
         } else if (expType == ExpressionTokenType::Operand) {
             if (token.type == TokenType::Identifier) {
-                ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::VariableName);
+                ast::Node::Ptr node = ParserState::unshiftChildNode(currNode, ast::NodeType::VariableName);
                 node->value = token.id();
             } else if (token.type == TokenType::IntegerLiteral) {
-                ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::IntegerLiteralValue);
+                ast::Node::Ptr node = ParserState::unshiftChildNode(currNode, ast::NodeType::IntegerLiteralValue);
                 node->value = std::atol(token.literal().c_str());
             } else if (token.type == TokenType::FloatingPointLiteral) {
-                ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::FloatingPointLiteralValue);
+                ast::Node::Ptr node = ParserState::unshiftChildNode(currNode, ast::NodeType::FloatingPointLiteralValue);
                 node->value = std::stod(token.literal());
             } else if (token.type == TokenType::StringLiteral) {
-                ast::Node::Ptr node = ParserState::pushChildNode(currNode, ast::NodeType::StringLiteralValue);
+                ast::Node::Ptr node = ParserState::unshiftChildNode(currNode, ast::NodeType::StringLiteralValue);
                 node->value = token.literal();
             }
         }
