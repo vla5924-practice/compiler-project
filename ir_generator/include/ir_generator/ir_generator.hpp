@@ -26,22 +26,21 @@ class IRGenerator {
     std::list<std::unordered_map<std::string, llvm::AllocaInst *>> localVariables;
     std::unordered_map<std::string, llvm::Function *> functions;
 
+    llvm::Type *createLLVMType(ast::TypeId id);
+    void initializeFunctions(const ast::SyntaxTree &tree);
     llvm::Value *visit(ast::Node::Ptr node);
-    llvm::Value *visitIntegerLiteralValue(ast::Node *node);
-    llvm::Value *visitFloatingPointLiteralValue(ast::Node *node);
-    llvm::Value *visitBinaryOperation(ast::Node *node);
-    llvm::Value *visitFunctionDefinition(ast::Node *node);
-    llvm::Value *visitVariableDeclaration(ast::Node *node);
-    llvm::Value *visitIfStatement(ast::Node *node);
-    llvm::Value *visitVariableName(ast::Node *node);
-    llvm::Value *visitExpression(ast::Node *node);
-    llvm::Value *visitReturnStatement(ast::Node *node);
-    llvm::Value *visitProgramRoot(ast::Node *node);
-
     llvm::BasicBlock *visitBranchRoot(ast::Node::Ptr node);
 
-    void initializeFunctions(const ast::SyntaxTree &tree);
-    llvm::Type *createLLVMType(ast::TypeId id);
+    llvm::Value *visitBinaryOperation(ast::Node *node);
+    llvm::Value *visitExpression(ast::Node *node);
+    llvm::Value *visitFloatingPointLiteralValue(ast::Node *node);
+    llvm::Value *visitFunctionDefinition(ast::Node *node);
+    llvm::Value *visitIfStatement(ast::Node *node);
+    llvm::Value *visitIntegerLiteralValue(ast::Node *node);
+    llvm::Value *visitProgramRoot(ast::Node *node);
+    llvm::Value *visitReturnStatement(ast::Node *node);
+    llvm::Value *visitVariableDeclaration(ast::Node *node);
+    llvm::Value *visitVariableName(ast::Node *node);
 
   public:
     explicit IRGenerator(const std::string &moduleName, bool emitDebugInfo = false);
