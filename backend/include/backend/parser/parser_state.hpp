@@ -28,17 +28,6 @@ struct ParserState {
     void goNextToken() {
         tokenIter++;
     }
-
-    size_t findVariable(const std::string &name) const {
-        auto currNode = node;
-        while (currNode) {
-            auto it = currNode->variables.find(name);
-            if (it != currNode->variables.end())
-                return it->second;
-            currNode = currNode->parent;
-        }
-        return ast::UnknownType;
-    }
 };
 
 } // namespace parser
