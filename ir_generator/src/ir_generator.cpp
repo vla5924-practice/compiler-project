@@ -155,7 +155,7 @@ llvm::Value *IRGenerator::visitFloatingPointLiteralValue(ast::Node *node) {
 llvm::Value *IRGenerator::visitFunctionDefinition(ast::Node *node) {
     assert(node && node->type == NodeType::FunctionDefinition);
 
-    std::string name = node->children.front()->id();
+    std::string name = node->children.front()->str();
     llvm::Function *function = module->getFunction(name);
     llvm::BasicBlock *body = llvm::BasicBlock::Create(context, name + "_entry", function);
     currentBlock = body;
@@ -205,8 +205,8 @@ llvm::Value *IRGenerator::visitReturnStatement(ast::Node *node) {
 llvm::Value *IRGenerator::visitVariableDeclaration(ast::Node *node) {
     assert(node && node->type == NodeType::VariableDeclaration);
 
-    ast::TypeId typeId = node->children.front()->uid();
-    std::string name = std::next(node->children.begin())->get()->id();
+    ast::TypeId typeId = node->children.front()->typeId();
+    std::string name = std::next(node->children.begin())->get()->str();
     llvm::AllocaInst *inst = new llvm::AllocaInst(createLLVMType(typeId), 0, name, currentBlock);
     localVariables.back().insert_or_assign(name, inst);
     if (node->children.size() == 3u) { // with definition
@@ -220,7 +220,7 @@ llvm::Value *IRGenerator::visitVariableName(ast::Node *node) {
     assert(node && node->type == NodeType::VariableName);
 
     for (const auto &layer : localVariables) {
-        auto it = layer.find(node->id());
+        auto it = layer.find(node->str());
         if (it != layer.end()) {
             return it->second;
         }
