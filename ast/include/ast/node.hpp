@@ -17,10 +17,19 @@ struct Node {
     std::list<Ptr> children;
     Ptr parent;
 
+    /**
+     * value type      : node type
+     * long int        : IntegerLiteralValue
+     * double          : FloatingPointLiteralValue
+     * std::string     : StringLiteralValue, FunctionName, VariableName
+     * TypeId          : TypeName
+     * BinaryOperation : BinaryOperation
+     * UnaryOperation  : UnaryOperation
+     * VariablesTable  : BranchRoot
+     * nothing         : other types
+     */
     NodeType type;
-    std::variant<long int, double, std::string, size_t, BinaryOperation, UnaryOperation> value;
-
-    VariablesTable variables;
+    std::variant<long int, double, std::string, TypeId, BinaryOperation, UnaryOperation, VariablesTable> value;
 
     const long int &intNum() const {
         return std::get<long int>(value);
@@ -31,11 +40,8 @@ struct Node {
     const std::string &str() const {
         return std::get<std::string>(value);
     }
-    const std::string &id() const {
-        return std::get<std::string>(value);
-    }
-    const size_t &uid() const {
-        return std::get<size_t>(value);
+    const TypeId &typeId() const {
+        return std::get<TypeId>(value);
     }
     const BinaryOperation &binOp() const {
         return std::get<BinaryOperation>(value);
@@ -43,10 +49,28 @@ struct Node {
     const UnaryOperation &unOp() const {
         return std::get<UnaryOperation>(value);
     }
+    const VariablesTable &variables() const {
+        return std::get<VariablesTable>(value);
+    }
+    VariablesTable &variables() {
+        return std::get<VariablesTable>(value);
+    }
 
     Node() = default;
-    Node(const NodeType &type_, Ptr parent_ = Ptr()) : type(type_), parent(parent_){};
     ~Node() = default;
+
+    explicit Node(const NodeType &type_, Ptr parent_ = Ptr()) : type(type_), parent(parent_){};
+    explicit Node(long int intNum_, Ptr parent_ = Ptr())
+        : type(NodeType::IntegerLiteralValue), value(intNum_), parent(parent_){};
+    explicit Node(double fpNum_, Ptr parent_ = Ptr())
+        : type(NodeType::FloatingPointLiteralValue), value(fpNum_), parent(parent_){};
+    Node(const NodeType &type_, const std::string &str_, Ptr parent_ = Ptr())
+        : type(type_), value(str_), parent(parent_){};
+    explicit Node(TypeId typeId_, Ptr parent_ = Ptr()) : type(NodeType::TypeName), value(typeId_), parent(parent_){};
+    explicit Node(BinaryOperation binOp_, Ptr parent_ = Ptr())
+        : type(NodeType::BinaryOperation), value(binOp_), parent(parent_){};
+    explicit Node(UnaryOperation unOp_, Ptr parent_ = Ptr())
+        : type(NodeType::UnaryOperation), value(unOp_), parent(parent_){};
 };
 
 } // namespace ast
