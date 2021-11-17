@@ -13,7 +13,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/archive)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-option(ENABLE_IR_GENERATOR "Enables LLVM-based IR generation backend" OFF)
+option(ENABLE_IR_GENERATOR "Enables LLVM-based IR generation backend" ON)
 option(ENABLE_CLI "Enables command-line interface application" ON)
 option(ENABLE_TESTS "Enables tests for components" ON)
 
