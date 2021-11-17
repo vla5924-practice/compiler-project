@@ -7,6 +7,7 @@ using namespace parser;
     registerParsingHandler__##HandlerType();
 
 HandlerRegistryImpl::HandlerRegistryImpl() {
+    using namespace parser;
     INIT_PARSING_HANDLER(BranchRootHandler);
     INIT_PARSING_HANDLER(ElifStatementHandler);
     INIT_PARSING_HANDLER(ExpressionHandler);

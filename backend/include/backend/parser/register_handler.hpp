@@ -8,9 +8,11 @@
 #include "parser/handlers/base_handler.hpp"
 
 #define REGISTER_PARSING_HANDLER(HandlerType, AstNodeType)                                                             \
+    namespace parser {                                                                                                 \
     extern void registerParsingHandler__##HandlerType();                                                               \
     void registerParsingHandler__##HandlerType() {                                                                     \
         static parser::RegisterHandler<HandlerType> handler(AstNodeType);                                              \
+    }                                                                                                                  \
     }
 
 namespace parser {
