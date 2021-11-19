@@ -28,19 +28,22 @@ class IRGenerator {
 
     llvm::Type *createLLVMType(ast::TypeId id);
     void initializeFunctions(const ast::SyntaxTree &tree);
-    llvm::Value *visit(ast::Node::Ptr node);
-    llvm::BasicBlock *visitBranchRoot(ast::Node::Ptr node);
+    llvm::BasicBlock *processBranchRoot(ast::Node::Ptr node);
 
+    llvm::Value *visitNode(ast::Node::Ptr node);
     llvm::Value *visitBinaryOperation(ast::Node *node);
     llvm::Value *visitExpression(ast::Node *node);
     llvm::Value *visitFloatingPointLiteralValue(ast::Node *node);
-    llvm::Value *visitFunctionDefinition(ast::Node *node);
-    llvm::Value *visitIfStatement(ast::Node *node);
     llvm::Value *visitIntegerLiteralValue(ast::Node *node);
-    llvm::Value *visitProgramRoot(ast::Node *node);
-    llvm::Value *visitReturnStatement(ast::Node *node);
-    llvm::Value *visitVariableDeclaration(ast::Node *node);
     llvm::Value *visitVariableName(ast::Node *node);
+
+    void processNode(ast::Node::Ptr node);
+    void processExpression(ast::Node *node);
+    void processFunctionDefinition(ast::Node *node);
+    void processIfStatement(ast::Node *node);
+    void processProgramRoot(ast::Node *node);
+    void processReturnStatement(ast::Node *node);
+    void processVariableDeclaration(ast::Node *node);
 
   public:
     explicit IRGenerator(const std::string &moduleName, bool emitDebugInfo = false);

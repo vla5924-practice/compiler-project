@@ -24,7 +24,7 @@ IRGenerator::IRGenerator(const std::string &moduleName, bool emitDebugInfo)
 
 void IRGenerator::process(const ast::SyntaxTree &tree) {
     initializeFunctions(tree);
-    visit(tree.root);
+    processNode(tree.root);
 }
 
 void IRGenerator::writeToFile(const std::string &filename) {
@@ -36,18 +36,6 @@ void IRGenerator::writeToFile(const std::string &filename) {
 
 void IRGenerator::dump() {
     module->print(llvm::outs(), nullptr);
-}
-
-void IRGenerator::initializeFunctions(const ast::SyntaxTree &tree) {
-    for (const auto &[funcName, function] : tree.functions) {
-        std::vector<llvm::Type *> arguments(function.argumentsTypes.size());
-        for (size_t i = 0; i < arguments.size(); i++)
-            arguments[i] = createLLVMType(function.argumentsTypes[i]);
-        llvm::FunctionType *funcType = llvm::FunctionType::get(createLLVMType(function.returnType), arguments, false);
-        llvm::Function *llvmFunc =
-            llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, this->module.get());
-        functions.insert_or_assign(funcName, llvmFunc);
-    }
 }
 
 llvm::Type *IRGenerator::createLLVMType(ast::TypeId id) {
@@ -63,31 +51,19 @@ llvm::Type *IRGenerator::createLLVMType(ast::TypeId id) {
     return llvm::Type::getInt64Ty(context);
 }
 
-llvm::Value *IRGenerator::visit(ast::Node::Ptr node) {
-    switch (node->type) {
-    case NodeType::BinaryOperation:
-        return visitBinaryOperation(node.get());
-    case NodeType::IntegerLiteralValue:
-        return visitIntegerLiteralValue(node.get());
-    case NodeType::FloatingPointLiteralValue:
-        return visitFloatingPointLiteralValue(node.get());
-    case NodeType::FunctionDefinition:
-        return visitFunctionDefinition(node.get());
-    case NodeType::VariableDeclaration:
-        return visitVariableDeclaration(node.get());
-    case NodeType::IfStatement:
-        return visitIfStatement(node.get());
-    case NodeType::Expression:
-        return visitExpression(node.get());
-    case NodeType::ProgramRoot:
-        return visitProgramRoot(node.get());
-    case NodeType::VariableName:
-        return visitVariableName(node.get());
+void IRGenerator::initializeFunctions(const ast::SyntaxTree &tree) {
+    for (const auto &[funcName, function] : tree.functions) {
+        std::vector<llvm::Type *> arguments(function.argumentsTypes.size());
+        for (size_t i = 0; i < arguments.size(); i++)
+            arguments[i] = createLLVMType(function.argumentsTypes[i]);
+        llvm::FunctionType *funcType = llvm::FunctionType::get(createLLVMType(function.returnType), arguments, false);
+        llvm::Function *llvmFunc =
+            llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, this->module.get());
+        functions.insert_or_assign(funcName, llvmFunc);
     }
-    return nullptr;
 }
 
-llvm::BasicBlock *IRGenerator::visitBranchRoot(ast::Node::Ptr node) {
+llvm::BasicBlock *IRGenerator::processBranchRoot(ast::Node::Ptr node) {
     assert(node && node->type == NodeType::BranchRoot);
 
     if (node->type != NodeType::BranchRoot)
@@ -97,9 +73,29 @@ llvm::BasicBlock *IRGenerator::visitBranchRoot(ast::Node::Ptr node) {
     localVariables.emplace_back();
     builder->SetInsertPoint(block);
     for (auto &n : node->children)
-        visit(n);
+        processNode(n);
     localVariables.pop_back();
     return block;
+}
+
+llvm::Value *IRGenerator::visitNode(ast::Node::Ptr node) {
+    assert(node->type == NodeType::BinaryOperation || node->type == NodeType::Expression ||
+           node->type == NodeType::FloatingPointLiteralValue || node->type == NodeType::IntegerLiteralValue ||
+           node->type == NodeType::VariableName);
+
+    switch (node->type) {
+    case NodeType::BinaryOperation:
+        return visitBinaryOperation(node.get());
+    case NodeType::Expression:
+        return visitExpression(node.get());
+    case NodeType::FloatingPointLiteralValue:
+        return visitFloatingPointLiteralValue(node.get());
+    case NodeType::IntegerLiteralValue:
+        return visitIntegerLiteralValue(node.get());
+    case NodeType::VariableName:
+        return visitVariableName(node.get());
+    }
+    return nullptr;
 }
 
 llvm::Value *IRGenerator::visitBinaryOperation(ast::Node *node) {
@@ -107,8 +103,8 @@ llvm::Value *IRGenerator::visitBinaryOperation(ast::Node *node) {
 
     ast::Node::Ptr &lhsNode = node->children.front();
     ast::Node::Ptr &rhsNode = node->children.back();
-    llvm::Value *lhs = visit(lhsNode);
-    llvm::Value *rhs = visit(rhsNode);
+    llvm::Value *lhs = visitNode(lhsNode);
+    llvm::Value *rhs = visitNode(rhsNode);
 
     BinaryOperation op = node->binOp();
     if (lhsNode->type == NodeType::VariableName && !lhsRequiresPtr(op))
@@ -142,7 +138,7 @@ llvm::Value *IRGenerator::visitBinaryOperation(ast::Node *node) {
 
 llvm::Value *IRGenerator::visitExpression(ast::Node *node) {
     assert(node && node->type == NodeType::Expression);
-    return visit(node->children.front());
+    return visitNode(node->children.front());
 }
 
 llvm::Value *IRGenerator::visitFloatingPointLiteralValue(ast::Node *node) {
@@ -152,68 +148,11 @@ llvm::Value *IRGenerator::visitFloatingPointLiteralValue(ast::Node *node) {
     return llvm::ConstantFP::get(context, llvm::APFloat(value));
 }
 
-llvm::Value *IRGenerator::visitFunctionDefinition(ast::Node *node) {
-    assert(node && node->type == NodeType::FunctionDefinition);
-
-    std::string name = node->children.front()->str();
-    llvm::Function *function = module->getFunction(name);
-    llvm::BasicBlock *body = llvm::BasicBlock::Create(context, name + "_entry", function);
-    currentBlock = body;
-    currentFunction = function;
-    builder->SetInsertPoint(body);
-    visitBranchRoot(node->children.back());
-    return body;
-}
-
-llvm::Value *IRGenerator::visitIfStatement(ast::Node *node) {
-    assert(node && node->type == NodeType::IfStatement);
-
-    llvm::Value *condition = visit(node->children.front());
-    llvm::BasicBlock *trueBlock = visitBranchRoot(*std::next(node->children.begin()));
-    llvm::BasicBlock *falseBlock = nullptr;
-    if (node->children.size() == 3u) { // has elif/else block
-        falseBlock = visitBranchRoot(node->children.back());
-    } else {
-        falseBlock = llvm::BasicBlock::Create(context, "else", currentFunction);
-    }
-    return builder->CreateCondBr(condition, trueBlock, falseBlock);
-}
-
 llvm::Value *IRGenerator::visitIntegerLiteralValue(ast::Node *node) {
     assert(node && node->type == NodeType::IntegerLiteralValue);
 
     long value = node->intNum();
     return llvm::ConstantInt::get(context, llvm::APInt(64, value, true));
-}
-
-llvm::Value *IRGenerator::visitProgramRoot(ast::Node *node) {
-    assert(node && node->type == NodeType::ProgramRoot);
-
-    for (auto &func : node->children) {
-        visit(func);
-    }
-    return nullptr;
-}
-
-llvm::Value *IRGenerator::visitReturnStatement(ast::Node *node) {
-    assert(node && node->type == NodeType::ReturnStatement);
-
-    llvm::Value *ret = visit(node->children.front());
-    return builder->CreateRet(ret);
-}
-
-llvm::Value *IRGenerator::visitVariableDeclaration(ast::Node *node) {
-    assert(node && node->type == NodeType::VariableDeclaration);
-
-    ast::TypeId typeId = node->children.front()->typeId();
-    std::string name = std::next(node->children.begin())->get()->str();
-    llvm::AllocaInst *inst = new llvm::AllocaInst(createLLVMType(typeId), 0, name, currentBlock);
-    localVariables.back().insert_or_assign(name, inst);
-    if (node->children.size() == 3u) { // with definition
-        return builder->CreateStore(visit(node->children.back()), inst);
-    } else {
-        return inst;
-    }
 }
 
 llvm::Value *IRGenerator::visitVariableName(ast::Node *node) {
@@ -226,4 +165,84 @@ llvm::Value *IRGenerator::visitVariableName(ast::Node *node) {
         }
     }
     return nullptr;
+}
+
+void IRGenerator::processNode(ast::Node::Ptr node) {
+    assert(node->type == NodeType::Expression || node->type == NodeType::FunctionDefinition ||
+           node->type == NodeType::IfStatement || node->type == NodeType::ProgramRoot ||
+           node->type == NodeType::VariableDeclaration);
+
+    switch (node->type) {
+    case NodeType::Expression:
+        visitExpression(node.get());
+        return;
+    case NodeType::FunctionDefinition:
+        processFunctionDefinition(node.get());
+        return;
+    case NodeType::IfStatement:
+        processIfStatement(node.get());
+        return;
+    case NodeType::ProgramRoot:
+        processProgramRoot(node.get());
+        return;
+    case NodeType::VariableDeclaration:
+        processVariableDeclaration(node.get());
+        return;
+    }
+}
+
+void IRGenerator::processExpression(ast::Node *node) {
+    assert(node && node->type == NodeType::Expression);
+    visitNode(node->children.front());
+}
+
+void IRGenerator::processFunctionDefinition(ast::Node *node) {
+    assert(node && node->type == NodeType::FunctionDefinition);
+
+    std::string name = node->children.front()->str();
+    llvm::Function *function = module->getFunction(name);
+    llvm::BasicBlock *body = llvm::BasicBlock::Create(context, name + "_entry", function);
+    currentBlock = body;
+    currentFunction = function;
+    builder->SetInsertPoint(body);
+    processBranchRoot(node->children.back());
+}
+
+void IRGenerator::processIfStatement(ast::Node *node) {
+    assert(node && node->type == NodeType::IfStatement);
+
+    llvm::Value *condition = visitNode(node->children.front());
+    llvm::BasicBlock *trueBlock = processBranchRoot(*std::next(node->children.begin()));
+    llvm::BasicBlock *falseBlock = nullptr;
+    if (node->children.size() == 3u) { // has elif/else block
+        falseBlock = processBranchRoot(node->children.back());
+    } else {
+        falseBlock = llvm::BasicBlock::Create(context, "else", currentFunction);
+    }
+    builder->CreateCondBr(condition, trueBlock, falseBlock);
+}
+
+void IRGenerator::processProgramRoot(ast::Node *node) {
+    assert(node && node->type == NodeType::ProgramRoot);
+
+    for (auto &func : node->children)
+        processNode(func);
+}
+
+void IRGenerator::processReturnStatement(ast::Node *node) {
+    assert(node && node->type == NodeType::ReturnStatement);
+
+    llvm::Value *ret = visitNode(node->children.front());
+    builder->CreateRet(ret);
+}
+
+void IRGenerator::processVariableDeclaration(ast::Node *node) {
+    assert(node && node->type == NodeType::VariableDeclaration);
+
+    ast::TypeId typeId = node->children.front()->typeId();
+    std::string name = std::next(node->children.begin())->get()->str();
+    llvm::AllocaInst *inst = new llvm::AllocaInst(createLLVMType(typeId), 0, name, currentBlock);
+    localVariables.back().insert_or_assign(name, inst);
+    if (node->children.size() == 3u) // with definition
+        builder->CreateStore(visitNode(node->children.back()), inst);
 }
