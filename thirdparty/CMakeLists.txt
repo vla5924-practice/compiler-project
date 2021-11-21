@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.16)
 
 if(ENABLE_CLI)
     add_subdirectory(argparse)
