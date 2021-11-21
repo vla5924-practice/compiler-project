@@ -7,6 +7,13 @@
 
 #include "parser/handlers/base_handler.hpp"
 
+#if defined(_WIN32) || defined(_WIN64)
+#define REGISTER_PARSING_HANDLER(HandlerType, AstNodeType)                                                             \
+    extern void registerParsingHandler__##HandlerType();                                                               \
+    void registerParsingHandler__##HandlerType() {                                                                     \
+        static parser::RegisterHandler<HandlerType> handler(AstNodeType);                                              \
+    }
+#else
 #define REGISTER_PARSING_HANDLER(HandlerType, AstNodeType)                                                             \
     namespace parser {                                                                                                 \
     extern void registerParsingHandler__##HandlerType();                                                               \
@@ -14,6 +21,7 @@
         static parser::RegisterHandler<HandlerType> handler(AstNodeType);                                              \
     }                                                                                                                  \
     }
+#endif
 
 namespace parser {
 
