@@ -336,6 +336,66 @@ TEST(Lexer, can_detect_operators_in_a_row) {
     ASSERT_EQ(expected, transformed);
 }
 
+TEST(Lexer, can_rofl1) {
+    StringVec source = {"main(a)"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "main");
+    expected.emplace_back(Operator::LeftBrace);
+    expected.emplace_back(TokenType::Identifier, "a");
+    expected.emplace_back(Operator::RightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_rofl2) {
+    StringVec source = {"main[a]"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "main");
+    expected.emplace_back(Operator::RectLeftBrace);
+    expected.emplace_back(TokenType::Identifier, "a");
+    expected.emplace_back(Operator::RectRightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_rofl3) {
+    StringVec source = {"[main]"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Operator::RectLeftBrace);
+    expected.emplace_back(TokenType::Identifier, "main");
+    expected.emplace_back(Operator::RectRightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+/* TEST(Lexer, can_rofl4) {
+    StringVec source = {"a+b"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "a");
+    expected.emplace_back(Operator::Add);
+    expected.emplace_back(TokenType::Identifier, "b");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+} */
+
+TEST(Lexer, can_rofl5) {
+    StringVec source = {"abc:int,abc1:int"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "abc");
+    expected.emplace_back(Special::Colon);
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(Operator::Comma);
+    expected.emplace_back(TokenType::Identifier, "abc1");
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
 TEST(Lexer, raise_error_on_id_starting_with_number) {
     StringVec source = {"int 1xx"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
