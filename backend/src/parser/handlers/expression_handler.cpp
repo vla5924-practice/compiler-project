@@ -4,6 +4,7 @@
 
 #include "ast/node_type.hpp"
 #include "lexer/token_types.hpp"
+#include "parser/parser_error.hpp"
 #include "parser/register_handler.hpp"
 
 using ast::BinaryOperation;
@@ -58,6 +59,16 @@ OperationType getOperationType(const Token &token) {
         default:
             return OperationType::Unknown;
         }
+    }
+    return OperationType::Unknown;
+}
+
+OperationType getOperationType(const ast::Node &node) {
+    switch (node.type) {
+    case ast::NodeType::BinaryOperation:
+        return OperationType::Binary;
+    case ast::NodeType::UnaryOperation:
+        return OperationType::Unary;
     }
     return OperationType::Unknown;
 }
@@ -169,29 +180,39 @@ void ExpressionHandler::run(ParserState &state) {
         const Token &token = *tokenIter;
         OperationType opType = getOperationType(token);
         ExpressionTokenType expType = getExpressionTokenType(token);
-        if (expType == ExpressionTokenType::Operand)
+        if (expType == ExpressionTokenType::Operand) {
             postfixForm.push(tokenIter);
-        else if (expType == ExpressionTokenType::OpeningBrace) {
+        } else if (expType == ExpressionTokenType::OpeningBrace) {
             operations.push(tokenIter);
         } else if (expType == ExpressionTokenType::ClosingBrace) {
-            while (getExpressionTokenType(*operations.top()) != ExpressionTokenType::OpeningBrace) {
-                postfixForm.push(operations.top());
-                operations.pop();
+            bool foundBrace = false;
+            while (!operations.empty()) {
+                if (getExpressionTokenType(*operations.top()) != ExpressionTokenType::OpeningBrace) {
+                    postfixForm.push(operations.top());
+                    operations.pop();
+                } else {
+                    foundBrace = true;
+                    break;
+                }
+            }
+            if (!foundBrace) {
+                state.errors.push<ParserError>(token, "Unexpected closing brance in an expression");
             }
             if (!operations.empty())
                 operations.pop(); // remove opening brace
         } else if (expType == ExpressionTokenType::Operation) {
-            if (operations.empty() || getOperationPriority(*operations.top()) <= getOperationPriority(token))
+            if (operations.empty() || getOperationPriority(token) < getOperationPriority(*operations.top())) {
                 operations.push(tokenIter);
-            else {
-                while (!operations.empty() && getOperationPriority(*operations.top()) >= getOperationPriority(token)) {
+            } else {
+                while (!operations.empty() && getOperationPriority(*operations.top()) <= getOperationPriority(token)) {
                     postfixForm.push(operations.top());
                     operations.pop();
                 }
                 operations.push(tokenIter);
             }
-        } else
-            throw -1; // something unknown
+        } else {
+            state.errors.push<ParserError>(token, "Unexpected token inside an expression");
+        }
     }
     while (!operations.empty()) {
         postfixForm.push(operations.top());
@@ -202,15 +223,16 @@ void ExpressionHandler::run(ParserState &state) {
     while (!postfixForm.empty()) {
         const Token &token = *postfixForm.top();
         ExpressionTokenType expType = getExpressionTokenType(token);
-        size_t operandMaxCount = -1;
         if (expType == ExpressionTokenType::Operation) {
             OperationType opType = getOperationType(token);
-            operandMaxCount = getOperandCount(opType);
             if (opType == OperationType::Binary) {
-                currNode = ParserState::pushChildNode(currNode, ast::NodeType::BinaryOperation);
+                currNode = ParserState::unshiftChildNode(currNode, ast::NodeType::BinaryOperation);
                 currNode->value = getBinaryOperation(token);
+            } else if (opType == OperationType::Unary) {
+                currNode = ParserState::unshiftChildNode(currNode, ast::NodeType::UnaryOperation);
             } else {
-                currNode = ParserState::pushChildNode(currNode, ast::NodeType::UnaryOperation);
+                state.errors.push<ParserError>(
+                    token, "Unknown operator found in expression, it must be either unary or binary");
             }
         } else if (expType == ExpressionTokenType::Operand) {
             if (token.type == TokenType::Identifier) {
@@ -227,7 +249,7 @@ void ExpressionHandler::run(ParserState &state) {
                 node->value = token.literal();
             }
         }
-        while (currNode->children.size() >= operandMaxCount)
+        while (currNode->children.size() >= getOperandCount(getOperationType(*currNode)))
             currNode = currNode->parent;
         postfixForm.pop();
     }
