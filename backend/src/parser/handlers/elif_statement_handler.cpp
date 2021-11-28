@@ -12,14 +12,31 @@ void ElifStatementHandler::run(ParserState &state) {
     if (currToken.is(Special::Colon)) {
         wasInExpression = false;
         state.node = state.pushChildNode(ast::NodeType::BranchRoot);
+    } else if (currToken.is(Keyword::Elif)) {
+        if (branch == Branch::Elif) {
+            wasInExpression = true;
+            branch = Branch::Elif;
+            state.node = state.pushChildNode(ast::NodeType::ElifStatement);
+        } else {
+            // syntax error
+        }
+        state.goNextToken();
+    } else if (currToken.is(Keyword::Else)) {
+        if (branch == Branch::Elif) {
+            branch = Branch::Else;
+            state.node = state.pushChildNode(ast::NodeType::BranchRoot);
+        } else {
+            // syntax error
+        }
+        state.goNextToken();
     } else {
         wasInExpression = true;
         state.node = state.pushChildNode(ast::NodeType::Expression);
     }
-    state.goNextToken();
 }
 
 void ElifStatementHandler::reset() {
+    branch = Branch::Elif;
     wasInExpression = false;
 }
 

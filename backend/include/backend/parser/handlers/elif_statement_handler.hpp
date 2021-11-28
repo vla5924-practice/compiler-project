@@ -5,6 +5,12 @@
 namespace parser {
 
 class ElifStatementHandler : public BaseHandler {
+    enum class Branch {
+        None,
+        Elif,
+        Else,
+    };
+    Branch branch;
     bool wasInExpression;
 
   public:

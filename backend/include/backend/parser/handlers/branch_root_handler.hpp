@@ -6,6 +6,8 @@ namespace parser {
 
 class BranchRootHandler : public BaseHandler {
     int nestingLevel;
+    bool waitForNesting;
+    int wasInIfStatement;
 
   public:
     virtual void run(ParserState &state) override;
