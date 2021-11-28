@@ -371,7 +371,7 @@ TEST(Lexer, can_rofl3) {
     ASSERT_EQ(expected, transformed);
 }
 
-/* TEST(Lexer, can_rofl4) {
+TEST(Lexer, can_rofl4) {
     StringVec source = {"a+b"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
@@ -380,7 +380,7 @@ TEST(Lexer, can_rofl3) {
     expected.emplace_back(TokenType::Identifier, "b");
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
-} */
+}
 
 TEST(Lexer, can_rofl5) {
     StringVec source = {"abc:int,abc1:int"};
@@ -391,6 +391,7 @@ TEST(Lexer, can_rofl5) {
     expected.emplace_back(Keyword::Int);
     expected.emplace_back(Operator::Comma);
     expected.emplace_back(TokenType::Identifier, "abc1");
+    expected.emplace_back(Special::Colon);
     expected.emplace_back(Keyword::Int);
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
@@ -401,8 +402,13 @@ TEST(Lexer, raise_error_on_id_starting_with_number) {
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
 
-TEST(Lexer, raise_error_on_id_containing_special_symbols) {
+TEST(Lexer, raise_error_on_id_containing_special_symbol_commat) {
     StringVec source = {"int x@x"};
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
+}
+
+TEST(Lexer, raise_error_on_id_containing_special_symbol_dollar) {
+    StringVec source = {"int x$x"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
 

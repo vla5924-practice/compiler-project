@@ -77,7 +77,7 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
             if (tok_id != keywords.cend())
                 tokens.emplace_back(tok_id->second);
             else {
-                while ((i != str.end()) && isalnum(*i)) { // adding identifier with numbers
+                while ((i + 1 != str.end()) && (isalnum(*i) || *i == '@' || *i == '$')) { // adding identifier with numbers
                     end_token++;
                     i++;
                 }
@@ -168,15 +168,13 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
         if (i + 1 != str.cend() && (*i == '-') && *(i + 1) == '>') {
             tokens.emplace_back(Special::Arrow);
             i++;
-            begin_token = i;
-            end_token = i;
+            begin_token = end_token;
             continue;
         }
 
         if (*i == ':') {
             tokens.emplace_back(Special::Colon);
-            begin_token = i;
-            end_token = i;
+            begin_token = end_token;
             continue;
         }
 
@@ -185,8 +183,7 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
         if (tok_id != operators.end())
             tokens.emplace_back(tok_id->second);
 
-        begin_token = i;
-        end_token = i;
+        begin_token = end_token;
     }
 
     // adding a word or symbol at the end of a line
