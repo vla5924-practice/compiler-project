@@ -77,7 +77,8 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
             if (tok_id != keywords.cend())
                 tokens.emplace_back(tok_id->second);
             else {
-                while ((i + 1 != str.end()) && (isalnum(*i) || *i == '@' || *i == '$')) { // adding identifier with numbers
+                while ((i + 1 != str.end()) &&
+                       (isalnum(*i) || *i == '@' || *i == '$')) { // adding identifier with numbers
                     end_token++;
                     i++;
                 }
