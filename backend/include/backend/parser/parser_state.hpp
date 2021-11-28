@@ -3,9 +3,9 @@
 #include <ast/node.hpp>
 #include <ast/types.hpp>
 
+#include "error_buffer.hpp"
 #include "lexer/tokenlist.hpp"
 #include "parser/type_registry.hpp"
-#include "error_buffer.hpp"
 
 namespace parser {
 
