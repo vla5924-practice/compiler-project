@@ -5,6 +5,7 @@
 
 #include "lexer/tokenlist.hpp"
 #include "parser/type_registry.hpp"
+#include "error_buffer.hpp"
 
 namespace parser {
 
@@ -12,6 +13,7 @@ struct ParserState {
     ast::Node::Ptr node;
     lexer::TokenList::const_iterator tokenIter;
     lexer::TokenList::const_iterator tokenEnd;
+    ErrorBuffer errors;
 
     const lexer::Token &token() const {
         return *tokenIter;

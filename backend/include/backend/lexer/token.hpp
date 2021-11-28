@@ -7,8 +7,10 @@
 namespace lexer {
 
 struct Token {
-    TokenType type;
+    size_t line = 0u;
+    size_t column = 0u;
 
+    TokenType type;
     std::variant<Keyword, Operator, Special, std::string> value;
 
     explicit Token(Keyword kw) : type(TokenType::Keyword), value(kw){};

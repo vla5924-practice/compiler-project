@@ -1,6 +1,7 @@
 #include "parser/handlers/variable_declaration_handler.hpp"
 
 #include "lexer/token_types.hpp"
+#include "parser/parser_error.hpp"
 #include "parser/register_handler.hpp"
 #include "parser/type_registry.hpp"
 
@@ -34,7 +35,7 @@ void VariableDeclarationHandler::run(ParserState &state) {
         wasInDefinition = true;
         std::advance(state.tokenIter, 3);
     } else {
-        // syntax error
+        state.errors.push<ParserError>(*endOfDecl, "Definition expression or line break was expected");
     }
 }
 

@@ -1,6 +1,7 @@
 #include "parser/handlers/branch_root_handler.hpp"
 
 #include "lexer/token_types.hpp"
+#include "parser/parser_error.hpp"
 #include "parser/register_handler.hpp"
 #include "parser/type_registry.hpp"
 
@@ -45,8 +46,10 @@ void BranchRootHandler::run(ParserState &state) {
         } else if (nestingLevel == currNestingLevel) {
             // it's ok
         } else {
-            throw 1;
-            // syntax error
+            state.errors.push<ParserError>(state.token(),
+                                           "Unexpected indentation mismatch: " + std::to_string(nestingLevel) +
+                                               " indentation(s) expected, " + std::to_string(currNestingLevel) +
+                                               " indentation(s) given");
         }
     }
 
@@ -76,14 +79,13 @@ void BranchRootHandler::run(ParserState &state) {
             wasInIfStatement--;
             state.node = state.node->parent;
         } else {
-            // syntax error
+            state.errors.push<ParserError>(currToken,
+                                           (currToken.is(Keyword::Elif) ? std::string("elif") : std::string("else")) +
+                                               " is not allowed here");
         }
         return;
     }
     state.node = state.pushChildNode(ast::NodeType::Expression);
-
-    // TODO: add range-based for
-    // TODO: add errors handling
 }
 
 void BranchRootHandler::reset() {
