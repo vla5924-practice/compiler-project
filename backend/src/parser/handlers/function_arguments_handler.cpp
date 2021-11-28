@@ -9,9 +9,8 @@ using namespace lexer;
 using namespace parser;
 
 void FunctionArgumentsHandler::run(ParserState &state) {
-    const Token &currToken = state.token();
-    while (!currToken.is(Operator::RightBrace)) {
-        const Token &argName = currToken;
+    while (!state.token().is(Operator::RightBrace)) {
+        const Token &argName = *state.tokenIter;
         const Token &colon = *std::next(state.tokenIter);
         const Token &argType = *std::next(state.tokenIter, 2);
         if (argName.type != TokenType::Identifier || !colon.is(Special::Colon) || !TypeRegistry::isTypename(argType)) {
