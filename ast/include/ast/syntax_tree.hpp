@@ -7,11 +7,19 @@ namespace ast {
 
 class SyntaxTree {
   public:
+    Node::Ptr root;
+    FunctionsTable functions;
+
     SyntaxTree() = default;
     ~SyntaxTree() = default;
 
-    Node::Ptr root;
-    FunctionsTable functions;
+    bool operator==(const SyntaxTree &other) const {
+        return *root == *other.root;
+    }
+
+    bool operator!=(const SyntaxTree &other) const {
+        return !(*this == other);
+    }
 };
 
 } // namespace ast

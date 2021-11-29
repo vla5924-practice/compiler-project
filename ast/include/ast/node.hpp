@@ -56,6 +56,21 @@ struct Node {
         return std::get<VariablesTable>(value);
     }
 
+    bool operator==(const Node &other) const {
+        if (children.size() != other.children.size())
+            return false;
+        if (children.size() > 0) {
+            for (auto i = children.begin(), j = other.children.begin(); i != children.end(); i++, j++)
+                if (**i != **j)
+                    return false;
+        }
+        return type == other.type && value == other.value;
+    }
+
+    bool operator!=(const Node &other) const {
+        return !(*this == other);
+    }
+
     Node() = default;
     ~Node() = default;
 

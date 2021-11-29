@@ -17,7 +17,7 @@ bool isVariableDeclaration(const TokenList::const_iterator &tokenIter, const Tok
     const Token &varName = *tokenIter;
     const Token &colon = *std::next(tokenIter);
     const Token &varType = *std::next(tokenIter, 2);
-    return varName.type == TokenType::Identifier && colon.is(Special::Colon) || TypeRegistry::isTypename(varType);
+    return varName.type == TokenType::Identifier && colon.is(Special::Colon) && TypeRegistry::isTypename(varType);
 }
 
 } // namespace
