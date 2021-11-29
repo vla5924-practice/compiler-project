@@ -53,6 +53,8 @@ struct Token {
     bool is(const Special &value) const {
         return type == TokenType::Special && spec() == value;
     }
+
+    std::string dump() const;
 };
 
 } // namespace lexer
