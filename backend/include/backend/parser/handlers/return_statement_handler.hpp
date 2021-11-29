@@ -4,14 +4,9 @@
 
 namespace parser {
 
-class BranchRootHandler : public BaseHandler {
-    int nestingLevel;
-    bool waitForNesting;
-    int wasInIfStatement;
-
+class ReturnStatementHandler : public BaseHandler {
   public:
     virtual void run(ParserState &state) override;
-    virtual void reset() override;
 };
 
 } // namespace parser

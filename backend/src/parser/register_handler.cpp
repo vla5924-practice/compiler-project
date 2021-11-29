@@ -7,12 +7,17 @@ using namespace parser;
     registerParsingHandler__##HandlerType();
 
 HandlerRegistryImpl::HandlerRegistryImpl() {
+    using namespace parser;
+    INIT_PARSING_HANDLER(BranchRootHandler);
+    INIT_PARSING_HANDLER(ElifStatementHandler);
     INIT_PARSING_HANDLER(ExpressionHandler);
     INIT_PARSING_HANDLER(FunctionArgumentsHandler);
-    INIT_PARSING_HANDLER(FunctionBodyHandler);
     INIT_PARSING_HANDLER(FunctionDefinitionHandler);
+    INIT_PARSING_HANDLER(IfStatementHandler);
     INIT_PARSING_HANDLER(ProgramRootHandler);
+    INIT_PARSING_HANDLER(ReturnStatementHandler);
     INIT_PARSING_HANDLER(VariableDeclarationHandler);
+    INIT_PARSING_HANDLER(WhileStatementHandler);
 }
 
 void HandlerRegistryImpl::registerHandler(const ast::NodeType &nodeType, BaseHandler *handler) {

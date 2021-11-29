@@ -1,6 +1,7 @@
 #include "parser/handlers/if_statement_handler.hpp"
 
 #include "lexer/token_types.hpp"
+#include "parser/parser_error.hpp"
 #include "parser/register_handler.hpp"
 
 using namespace lexer;
@@ -18,20 +19,21 @@ void IfStatementHandler::run(ParserState &state) {
             branch = Branch::Elif;
             state.node = state.pushChildNode(ast::NodeType::ElifStatement);
         } else {
-            // syntax error
+            state.errors.push<ParserError>(currToken, "elif is not allowed here");
         }
+        state.goNextToken();
     } else if (currToken.is(Keyword::Else)) {
         if (branch == Branch::If || branch == Branch::Elif) {
             branch = Branch::Else;
             state.node = state.pushChildNode(ast::NodeType::BranchRoot);
         } else {
-            // syntax error
+            state.errors.push<ParserError>(currToken, "else is not allowed here");
         }
+        state.goNextToken();
     } else {
         wasInExpression = true;
         state.node = state.pushChildNode(ast::NodeType::Expression);
     }
-    state.goNextToken();
 }
 
 void IfStatementHandler::reset() {

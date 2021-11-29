@@ -12,11 +12,11 @@ void WhileStatementHandler::run(ParserState &state) {
     if (currToken.is(Special::Colon)) {
         wasInExpression = false;
         state.node = state.pushChildNode(ast::NodeType::BranchRoot);
+        state.goNextToken();
     } else {
         wasInExpression = true;
         state.node = state.pushChildNode(ast::NodeType::Expression);
     }
-    state.goNextToken();
 }
 
 void WhileStatementHandler::reset() {

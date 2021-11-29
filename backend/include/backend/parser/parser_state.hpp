@@ -1,7 +1,9 @@
 #pragma once
 
 #include <ast/node.hpp>
+#include <ast/types.hpp>
 
+#include "error_buffer.hpp"
 #include "lexer/tokenlist.hpp"
 #include "parser/type_registry.hpp"
 
@@ -10,6 +12,8 @@ namespace parser {
 struct ParserState {
     ast::Node::Ptr node;
     lexer::TokenList::const_iterator tokenIter;
+    lexer::TokenList::const_iterator tokenEnd;
+    ErrorBuffer errors;
 
     const lexer::Token &token() const {
         return *tokenIter;
@@ -20,23 +24,17 @@ struct ParserState {
         return node->children.back();
     }
 
+    static ast::Node::Ptr unshiftChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType) {
+        node->children.emplace_front(new ast::Node(nodeType, node));
+        return node->children.front();
+    }
+
     ast::Node::Ptr pushChildNode(const ast::NodeType &nodeType) {
         return pushChildNode(node, nodeType);
     }
 
     void goNextToken() {
         tokenIter++;
-    }
-
-    size_t findVariable(const std::string &name) const {
-        auto currNode = node;
-        while (currNode) {
-            auto it = currNode->variables.find(name);
-            if (it != currNode->variables.end())
-                return it->second;
-            currNode = currNode->parent;
-        }
-        return TypeRegistry::UnknownType;
     }
 };
 
