@@ -34,9 +34,13 @@ void BranchRootHandler::run(ParserState &state) {
             currNestingLevel++;
             state.goNextToken();
         }
-        if (nestingLevel - currNestingLevel == 1) {
-            nestingLevel--;
-            state.node = state.node->parent;
+        if (nestingLevel - currNestingLevel >= 1) {
+            while (nestingLevel != currNestingLevel) {
+                state.node = state.node->parent;
+                if (state.node->type == ast::NodeType::Expression)
+                    state.node = state.node->parent;
+                nestingLevel--;
+            }
             if (state.token().is(Keyword::Else) || state.token().is(Keyword::Elif))
                 waitForNesting = true;
             return;
@@ -83,6 +87,11 @@ void BranchRootHandler::run(ParserState &state) {
                                            (currToken.is(Keyword::Elif) ? std::string("elif") : std::string("else")) +
                                                " is not allowed here");
         }
+        return;
+    }
+    if (currToken.is(Keyword::Return)) {
+        state.node = state.pushChildNode(ast::NodeType::ReturnStatement);
+        state.goNextToken();
         return;
     }
     state.node = state.pushChildNode(ast::NodeType::Expression);
