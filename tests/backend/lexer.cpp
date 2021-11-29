@@ -336,7 +336,7 @@ TEST(Lexer, can_detect_operators_in_a_row) {
     ASSERT_EQ(expected, transformed);
 }
 
-TEST(Lexer, can_rofl1) {
+TEST(Lexer, can_detect_id_in_braces_without_spaces) {
     StringVec source = {"main(a)"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
@@ -348,7 +348,7 @@ TEST(Lexer, can_rofl1) {
     ASSERT_EQ(expected, transformed);
 }
 
-TEST(Lexer, can_rofl2) {
+TEST(Lexer, can_can_detect_id_in_rect_braces_no_spaces) {
     StringVec source = {"main[a]"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
@@ -360,18 +360,7 @@ TEST(Lexer, can_rofl2) {
     ASSERT_EQ(expected, transformed);
 }
 
-TEST(Lexer, can_rofl3) {
-    StringVec source = {"[main]"};
-    TokenList transformed = Lexer::process(source);
-    TokenList expected;
-    expected.emplace_back(Operator::RectLeftBrace);
-    expected.emplace_back(TokenType::Identifier, "main");
-    expected.emplace_back(Operator::RectRightBrace);
-    expected.emplace_back(Special::EndOfExpression);
-    ASSERT_EQ(expected, transformed);
-}
-
-TEST(Lexer, can_rofl4) {
+TEST(Lexer, can_detect_id_with_operators_no_spaces) {
     StringVec source = {"a+b"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
@@ -382,7 +371,7 @@ TEST(Lexer, can_rofl4) {
     ASSERT_EQ(expected, transformed);
 }
 
-TEST(Lexer, can_rofl5) {
+TEST(Lexer, can_detect_declarations_no_spaces) {
     StringVec source = {"abc:int,abc1:int"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
@@ -433,5 +422,10 @@ TEST(Lexer, raise_error_on_extra_spaces_with_several_lines) {
 
 TEST(Lexer, raise_error_on_literal_without_closing_quote) {
     StringVec source = {"\"quote"};
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
+}
+
+TEST(Lexer, raise_error_on_float_literal_with_alpha) {
+    StringVec source = {"6.5A"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
