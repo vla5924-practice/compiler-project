@@ -1,6 +1,8 @@
 #pragma once
 
 #include "token_types.hpp"
+
+#include <ostream>
 #include <string>
 #include <variant>
 
@@ -55,6 +57,7 @@ struct Token {
     }
 
     std::string dump() const;
+    void dump(std::ostream &stream) const;
 };
 
 } // namespace lexer

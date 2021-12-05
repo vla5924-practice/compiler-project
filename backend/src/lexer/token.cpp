@@ -116,29 +116,33 @@ const char *const specialToString(Special spec) {
 
 std::string Token::dump() const {
     std::stringstream str;
-    // str << "0x" << &token << " ";
+    dump(str);
+    return str.str();
+}
+
+void Token::dump(std::ostream &stream) const {
+    // stream << "0x" << this << " ";
     switch (type) {
     case TokenType::Identifier:
-        str << "Identifier           : " << id();
+        stream << "Identifier           : " << id();
         break;
     case TokenType::Keyword:
-        str << "Keyword              : " << keywordToString(kw());
+        stream << "Keyword              : " << keywordToString(kw());
         break;
     case TokenType::Operator:
-        str << "Operator             : " << operatorToString(op());
+        stream << "Operator             : " << operatorToString(op());
         break;
     case TokenType::Special:
-        str << "Special              : " << specialToString(spec());
+        stream << "Special              : " << specialToString(spec());
         break;
     case TokenType::FloatingPointLiteral:
-        str << "FloatingPointLiteral : " << literal();
+        stream << "FloatingPointLiteral : " << literal();
         break;
     case TokenType::IntegerLiteral:
-        str << "IntegerLiteral       : " << literal();
+        stream << "IntegerLiteral       : " << literal();
         break;
     case TokenType::StringLiteral:
-        str << "StringLiteral        : " << literal();
+        stream << "StringLiteral        : " << literal();
         break;
     }
-    return str.str();
 }

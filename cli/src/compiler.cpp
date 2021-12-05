@@ -84,7 +84,7 @@ int Compiler::exec(int argc, char *argv[]) {
             std::cout << "PARSER:" << std::endl;
         auto tree = Parser::process(tokens);
         if (verbose)
-            std::cout << dumping::dump(tree) << std::endl;
+            tree.dump(std::cout);
     } catch (ErrorBuffer &errors) {
         std::cerr << errors.message();
         return 3;
