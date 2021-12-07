@@ -112,7 +112,6 @@ void Semantizer::parseBranchRoot(ast::Node::Ptr &node, ast::FunctionsTable &func
                     functions.emplace(it->str(), Function(BuiltInTypes::NoneType));
                     continue;
                 }
-                
                 // err
             }
 
