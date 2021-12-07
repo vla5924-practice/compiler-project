@@ -35,7 +35,7 @@ void Semantizer::parseExpression(ast::Node::Ptr &node, TypeId var_type, ast::Nod
             auto table_var = branch->variables().find(it->str());
 
             if (table_var == branch.get()->variables().cend()) {
-                    // error
+                // error
             }
 
             if (table_var->second != var_type) {
