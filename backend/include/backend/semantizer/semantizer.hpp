@@ -15,7 +15,7 @@ class Semantizer {
     static ast::SyntaxTree &process(ast::SyntaxTree &tree);
     static void parseFunctions(std::list<ast::Node::Ptr> &children, ast::FunctionsTable &functions);
     static std::vector<ast::TypeId> getFunctionArguments(std::list<ast::Node::Ptr> &children);
-    static void parseBranchRoot(ast::Node::Ptr &);
+    static void parseBranchRoot(ast::Node::Ptr &, ast::FunctionsTable &functions);
     static void parseExpression(ast::Node::Ptr &, ast::TypeId, ast::Node::Ptr &);
     static void pushTypeConversion(ast::Node::Ptr &, ast::NodeType);
     static void pushTypeConversion(ast::Node::Ptr &, ast::TypeId);

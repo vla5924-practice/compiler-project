@@ -66,7 +66,7 @@ void Semantizer::pushTypeConversion(ast::Node::Ptr &node, NodeType type) {
     node = conv_node;
 }
 
-void Semantizer::parseBranchRoot(ast::Node::Ptr &node) {
+void Semantizer::parseBranchRoot(ast::Node::Ptr &node, ast::FunctionsTable &functions) {
 
     for (auto &it : node->children) {
         if (it->type == NodeType::VariableDeclaration) {
@@ -76,7 +76,7 @@ void Semantizer::parseBranchRoot(ast::Node::Ptr &node) {
             auto name = list_it->get()->str();
             if (!std::holds_alternative<VariablesTable>(node->value))
                 node->value.emplace<VariablesTable>();
-            node->variables().insert_or_assign(name, type);
+            node->variables().emplace(name, type);
             list_it++;
 
             if (list_it != it->children.end() && list_it->get()->type == NodeType::Expression) {
@@ -85,6 +85,7 @@ void Semantizer::parseBranchRoot(ast::Node::Ptr &node) {
 
             continue;
         }
+
         if (it->type == NodeType::Expression) {
             auto list_it = it->children.begin();
             if (list_it->get()->type == NodeType::BinaryOperation &&
@@ -102,7 +103,23 @@ void Semantizer::parseBranchRoot(ast::Node::Ptr &node) {
 
             continue;
         }
-        parseBranchRoot(it);
+
+        if (it->type == NodeType::FunctionCall) {
+            auto funct = functions.find(it->str());
+
+            if (funct == functions.cend()) {
+                if (it->str() == "print" || it->str() == "input") {
+                    functions.emplace(it->str(), Function(BuiltInTypes::NoneType));
+                    continue;
+                }
+                
+                // err
+            }
+
+            continue;
+        }
+
+        parseBranchRoot(it, functions);
     }
 };
 
@@ -115,9 +132,9 @@ void Semantizer::parseFunctions(std::list<Node::Ptr> &children, ast::FunctionsTa
             auto args = getFunctionArguments((it)->get()->children);
             it++;
             auto ret_type = (it)->get()->typeId();
-            functions.emplace(std::make_pair(name, Function(ret_type, args)));
+            functions.emplace(name, Function(ret_type, args));
             it++;
-            parseBranchRoot(*it);
+            parseBranchRoot(*it, functions);
         }
     }
 }
