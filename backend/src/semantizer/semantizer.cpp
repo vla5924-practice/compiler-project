@@ -4,41 +4,7 @@
 using namespace semantizer;
 using namespace ast;
 
-bool Semantizer::ch(NodeType type, TypeId type_id) {
-
-    switch (type_id) {
-    case BuiltInTypes::IntType:
-        if (type == NodeType::IntegerLiteralValue) {
-            return true;
-        } else {
-            // add TypeConverting node
-        }
-        break;
-
-    case BuiltInTypes::FloatType:
-        if (type == NodeType::FloatingPointLiteralValue) {
-            return true;
-        } else {
-            // add TypeConverting node
-        }
-        break;
-
-    case BuiltInTypes::StrType:
-        if (type == NodeType::FloatingPointLiteralValue) {
-            return true;
-        } else {
-            // add TypeConverting node
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    return true;
-}
-
-std::vector<TypeId> Semantizer::test1(std::list<ast::Node::Ptr> &children) {
+std::vector<TypeId> Semantizer::getFunctionArguments(std::list<ast::Node::Ptr> &children) {
     std::vector<TypeId> result;
 
     for (auto &node : children) {
@@ -48,7 +14,7 @@ std::vector<TypeId> Semantizer::test1(std::list<ast::Node::Ptr> &children) {
     return result;
 }
 
-void Semantizer::test3(ast::Node::Ptr &node, TypeId var_type) {
+void Semantizer::parseExpression(ast::Node::Ptr &node, TypeId var_type, ast::Node::Ptr &branch) {
     NodeType type;
 
     if (var_type == BuiltInTypes::IntType) {
@@ -61,24 +27,46 @@ void Semantizer::test3(ast::Node::Ptr &node, TypeId var_type) {
 
     for (auto &it : node->children) {
         if (it->type == NodeType::UnaryOperation || it->type == NodeType::BinaryOperation) {
-            test3(it, var_type);
+            parseExpression(it, var_type, branch);
+            continue;
+        }
+
+        if (it->type == NodeType::VariableName) {
+            auto table_var = branch->variables().find(it->str());
+
+            if (table_var == branch.get()->variables().cend()) {
+                    // error
+            }
+
+            if (table_var->second != var_type) {
+                pushTypeConversion(it, type);
+            }
             continue;
         }
 
         if (it->type != type) {
-            type_conv(it, type);
+            pushTypeConversion(it, type);
         }
     }
 }
 
-void Semantizer::type_conv(ast::Node::Ptr &node, NodeType type) {
-    Node::Ptr type_node = std::make_shared<Node>(Node(NodeType::TypeConversion, node->parent));
-    type_node->children.push_front(node);
-    // push other node
-    node = type_node;
+void Semantizer::pushTypeConversion(ast::Node::Ptr &node, TypeId type) {
+    Node::Ptr conv_node = std::make_shared<Node>(Node(NodeType::TypeConversion, node->parent));
+    conv_node->children.push_front(node);
+    Node::Ptr type_node = std::make_shared<Node>(Node(type, conv_node));
+    conv_node->children.push_front(type_node);
+    node = conv_node;
 }
 
-void Semantizer::test2(ast::Node::Ptr &node) {
+void Semantizer::pushTypeConversion(ast::Node::Ptr &node, NodeType type) {
+    Node::Ptr conv_node = std::make_shared<Node>(Node(NodeType::TypeConversion, node->parent));
+    conv_node->children.push_front(node);
+    Node::Ptr type_node = std::make_shared<Node>(Node(type, conv_node));
+    conv_node->children.push_front(type_node);
+    node = conv_node;
+}
+
+void Semantizer::parseBranchRoot(ast::Node::Ptr &node) {
 
     for (auto &it : node->children) {
         if (it->type == NodeType::VariableDeclaration) {
@@ -86,15 +74,15 @@ void Semantizer::test2(ast::Node::Ptr &node) {
             auto type = list_it->get()->typeId();
             list_it++;
             auto name = list_it->get()->str();
-            node->value.emplace<VariablesTable>();
-            node->variables().emplace(std::make_pair(name, type));
+            if (!std::holds_alternative<VariablesTable>(node->value))
+                node->value.emplace<VariablesTable>();
+            node->variables().insert_or_assign(name, type);
             list_it++;
 
             if (list_it != it->children.end() && list_it->get()->type == NodeType::Expression) {
-                test3(*list_it, type);
+                parseExpression(*list_it, type, node);
             }
 
-            // test2(it);
             continue;
         }
         if (it->type == NodeType::Expression) {
@@ -108,35 +96,34 @@ void Semantizer::test2(ast::Node::Ptr &node) {
                 }
                 auto type = var_table->second;
                 a++;
-                test3(*a, type);
+                parseExpression(*a, type, node);
                 continue;
             }
 
-            std::cout << "111" << std::endl;
             continue;
         }
-        test2(it);
+        parseBranchRoot(it);
     }
 };
 
-void Semantizer::test(std::list<Node::Ptr> &children, ast::FunctionsTable &functions) {
+void Semantizer::parseFunctions(std::list<Node::Ptr> &children, ast::FunctionsTable &functions) {
     for (auto &node : children) {
         if (node->type == NodeType::FunctionDefinition) {
             auto it = node->children.begin();
             auto name = it->get()->str();
             it++;
-            auto args = test1((it)->get()->children);
+            auto args = getFunctionArguments((it)->get()->children);
             it++;
             auto ret_type = (it)->get()->typeId();
             functions.emplace(std::make_pair(name, Function(ret_type, args)));
             it++;
-            test2(*it);
+            parseBranchRoot(*it);
         }
     }
 }
 
 ast::SyntaxTree &Semantizer::process(ast::SyntaxTree &tree) {
-    test(tree.root->children, tree.functions);
+    parseFunctions(tree.root->children, tree.functions);
 
     return tree;
 }
