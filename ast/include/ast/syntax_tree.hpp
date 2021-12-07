@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ostream>
+
 #include "ast/functions_table.hpp"
 #include "ast/node.hpp"
 
@@ -12,6 +14,9 @@ class SyntaxTree {
 
     Node::Ptr root;
     FunctionsTable functions;
+
+    std::string dump() const;
+    void dump(std::ostream &stream) const;
 };
 
 } // namespace ast

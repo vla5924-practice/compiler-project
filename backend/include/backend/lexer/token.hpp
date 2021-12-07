@@ -1,6 +1,8 @@
 #pragma once
 
 #include "token_types.hpp"
+
+#include <ostream>
 #include <string>
 #include <variant>
 
@@ -53,6 +55,9 @@ struct Token {
     bool is(const Special &value) const {
         return type == TokenType::Special && spec() == value;
     }
+
+    std::string dump() const;
+    void dump(std::ostream &stream) const;
 };
 
 } // namespace lexer
