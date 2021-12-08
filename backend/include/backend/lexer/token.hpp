@@ -1,14 +1,18 @@
 #pragma once
 
 #include "token_types.hpp"
+
+#include <ostream>
 #include <string>
 #include <variant>
 
 namespace lexer {
 
 struct Token {
-    TokenType type;
+    size_t line = 0u;
+    size_t column = 0u;
 
+    TokenType type;
     std::variant<Keyword, Operator, Special, std::string> value;
 
     explicit Token(Keyword kw) : type(TokenType::Keyword), value(kw){};
@@ -51,6 +55,9 @@ struct Token {
     bool is(const Special &value) const {
         return type == TokenType::Special && spec() == value;
     }
+
+    std::string dump() const;
+    void dump(std::ostream &stream) const;
 };
 
 } // namespace lexer

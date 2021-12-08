@@ -1,6 +1,7 @@
 #include "parser/handlers/variable_declaration_handler.hpp"
 
 #include "lexer/token_types.hpp"
+#include "parser/parser_error.hpp"
 #include "parser/register_handler.hpp"
 #include "parser/type_registry.hpp"
 
@@ -26,14 +27,16 @@ void VariableDeclarationHandler::run(ParserState &state) {
     auto endOfDecl = std::next(state.tokenIter, 2);
     if (endOfDecl->is(Special::EndOfExpression)) {
         // declaration without definition
+        std::advance(state.tokenIter, 3);
+        state.node = state.node->parent;
     } else if (endOfDecl->is(Operator::Assign)) {
         // declaration with definition
         state.node = state.pushChildNode(ast::NodeType::Expression);
         wasInDefinition = true;
+        std::advance(state.tokenIter, 3);
     } else {
-        // semantic error
+        state.errors.push<ParserError>(*endOfDecl, "Definition expression or line break was expected");
     }
-    std::advance(state.tokenIter, 3);
 }
 
 void VariableDeclarationHandler::reset() {

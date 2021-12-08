@@ -1,6 +1,7 @@
 #include "parser/handlers/branch_root_handler.hpp"
 
 #include "lexer/token_types.hpp"
+#include "parser/parser_error.hpp"
 #include "parser/register_handler.hpp"
 #include "parser/type_registry.hpp"
 
@@ -22,33 +23,52 @@ bool isVariableDeclaration(const TokenList::const_iterator &tokenIter, const Tok
 } // namespace
 
 void BranchRootHandler::run(ParserState &state) {
-    int currNestingLevel = 0;
     while (state.token().is(Special::EndOfExpression) || state.token().is(Special::Colon)) {
         state.goNextToken();
         if (state.tokenIter == state.tokenEnd)
             return;
     }
-    while (state.token().is(Special::Indentation)) {
-        currNestingLevel++;
-        state.goNextToken();
-    }
-    if (nestingLevel - currNestingLevel == 1) {
-        state.node = state.node->parent;
-        state.goNextToken();
-        return;
-    } else if (currNestingLevel != nestingLevel) {
-        // syntax error
+    if (state.token().is(Special::Indentation)) {
+        int currNestingLevel = 0;
+        while (state.token().is(Special::Indentation)) {
+            currNestingLevel++;
+            state.goNextToken();
+        }
+        if (nestingLevel - currNestingLevel >= 1) {
+            while (nestingLevel != currNestingLevel) {
+                state.node = state.node->parent;
+                if (state.node->type == ast::NodeType::Expression)
+                    state.node = state.node->parent;
+                nestingLevel--;
+            }
+            if (state.token().is(Keyword::Else) || state.token().is(Keyword::Elif))
+                waitForNesting = true;
+            return;
+        } else if (waitForNesting && currNestingLevel - nestingLevel == 1) {
+            nestingLevel++;
+            waitForNesting = false;
+        } else if (nestingLevel == currNestingLevel) {
+            // it's ok
+        } else {
+            state.errors.push<ParserError>(state.token(),
+                                           "Unexpected indentation mismatch: " + std::to_string(nestingLevel) +
+                                               " indentation(s) expected, " + std::to_string(currNestingLevel) +
+                                               " indentation(s) given");
+        }
     }
 
     const Token &currToken = state.token();
     const Token &prevToken = *std::prev(state.tokenIter);
 
     if (currToken.is(Keyword::If)) {
+        waitForNesting = true;
+        wasInIfStatement++;
         state.node = state.pushChildNode(ast::NodeType::IfStatement);
         state.goNextToken();
         return;
     }
     if (currToken.is(Keyword::While)) {
+        waitForNesting = true;
         state.node = state.pushChildNode(ast::NodeType::WhileStatement);
         state.goNextToken();
         return;
@@ -59,17 +79,28 @@ void BranchRootHandler::run(ParserState &state) {
         return;
     }
     if (currToken.is(Keyword::Elif) || currToken.is(Keyword::Else)) {
-        // syntax error
+        if (wasInIfStatement) {
+            wasInIfStatement--;
+            state.node = state.node->parent;
+        } else {
+            state.errors.push<ParserError>(currToken,
+                                           (currToken.is(Keyword::Elif) ? std::string("elif") : std::string("else")) +
+                                               " is not allowed here");
+        }
+        return;
+    }
+    if (currToken.is(Keyword::Return)) {
+        state.node = state.pushChildNode(ast::NodeType::ReturnStatement);
+        state.goNextToken();
         return;
     }
     state.node = state.pushChildNode(ast::NodeType::Expression);
-
-    // TODO: add range-based for
-    // TODO: add errors handling
 }
 
 void BranchRootHandler::reset() {
-    nestingLevel = 0;
+    nestingLevel = 1;
+    waitForNesting = false;
+    wasInIfStatement = 0;
 }
 
 REGISTER_PARSING_HANDLER(BranchRootHandler, ast::NodeType::BranchRoot);

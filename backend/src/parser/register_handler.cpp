@@ -15,6 +15,7 @@ HandlerRegistryImpl::HandlerRegistryImpl() {
     INIT_PARSING_HANDLER(FunctionDefinitionHandler);
     INIT_PARSING_HANDLER(IfStatementHandler);
     INIT_PARSING_HANDLER(ProgramRootHandler);
+    INIT_PARSING_HANDLER(ReturnStatementHandler);
     INIT_PARSING_HANDLER(VariableDeclarationHandler);
     INIT_PARSING_HANDLER(WhileStatementHandler);
 }

@@ -35,6 +35,7 @@ enum class NodeType {
     Expression,
     FunctionArgument,
     FunctionArguments,
+    FunctionCall,
     FunctionDefinition,
     FunctionName,
     FunctionReturnType,

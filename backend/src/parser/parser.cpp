@@ -18,6 +18,10 @@ SyntaxTree Parser::process(const TokenList &tokens) {
     ParserState state = {tree.root, tokens.begin(), tokens.end()};
     while (state.tokenIter != tokens.end()) {
         HandlerRegistry()[state.node->type]->run(state);
+        if (!state.errors.empty()) {
+            throw state.errors;
+        }
     }
+
     return tree;
 }
