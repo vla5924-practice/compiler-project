@@ -2,6 +2,7 @@
 
 #include <list>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <variant>
 
@@ -86,6 +87,9 @@ struct Node {
         : type(NodeType::BinaryOperation), value(binOp_), parent(parent_){};
     explicit Node(UnaryOperation unOp_, Ptr parent_ = Ptr())
         : type(NodeType::UnaryOperation), value(unOp_), parent(parent_){};
+
+    std::string dump(int depth = 0) const;
+    void dump(std::ostream &stream, int depth = 0) const;
 };
 
 } // namespace ast

@@ -7,6 +7,12 @@
 #include <backend/parser/parser.hpp>
 #include <backend/preprocessor/preprocessor.hpp>
 
+#include "dumping.hpp"
+
+using lexer::Lexer;
+using parser::Parser;
+using preprocessor::Preprocessor;
+
 argparse::ArgumentParser Compiler::createArgumentParser() {
     argparse::ArgumentParser parser("cli", "1.0");
     parser.add_argument("-h", "--help").help("show help message and exit").default_value(false).implicit_value(true);
@@ -61,15 +67,27 @@ int Compiler::exec(int argc, char *argv[]) {
             std::cout << "Read file " << path << std::endl;
     }
 
-    source = preprocessor::Preprocessor::process(source);
-    if (verbose) {
-        std::cout << "Preprocessor:" << std::endl;
-        std::cout << source;
-    }
-    auto tokens = lexer::Lexer::process(source);
-    if (verbose) {
-        std::cout << "Lexer:" << std::endl;
-        std::cout << tokens;
+    try {
+        if (verbose)
+            std::cout << std::endl << "PREPROCESSOR:" << std::endl;
+        source = Preprocessor::process(source);
+        if (verbose)
+            std::cout << dumping::dump(source) << std::endl;
+
+        if (verbose)
+            std::cout << "LEXER:" << std::endl;
+        auto tokens = Lexer::process(source);
+        if (verbose)
+            std::cout << dumping::dump(tokens) << std::endl;
+
+        if (verbose)
+            std::cout << "PARSER:" << std::endl;
+        auto tree = Parser::process(tokens);
+        if (verbose)
+            tree.dump(std::cout);
+    } catch (ErrorBuffer &errors) {
+        std::cerr << errors.message();
+        return 3;
     }
 
     return 0;
