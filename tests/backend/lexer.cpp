@@ -336,13 +336,86 @@ TEST(Lexer, can_detect_operators_in_a_row) {
     ASSERT_EQ(expected, transformed);
 }
 
+TEST(Lexer, can_detect_id_in_braces_without_spaces) {
+    StringVec source = {"main(a)"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "main");
+    expected.emplace_back(Operator::LeftBrace);
+    expected.emplace_back(TokenType::Identifier, "a");
+    expected.emplace_back(Operator::RightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_can_detect_id_in_rect_braces_no_spaces) {
+    StringVec source = {"main[a]"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "main");
+    expected.emplace_back(Operator::RectLeftBrace);
+    expected.emplace_back(TokenType::Identifier, "a");
+    expected.emplace_back(Operator::RectRightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_id_with_operators_no_spaces) {
+    StringVec source = {"a+b"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "a");
+    expected.emplace_back(Operator::Add);
+    expected.emplace_back(TokenType::Identifier, "b");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_declarations_no_spaces) {
+    StringVec source = {"abc:int,abc1:int"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "abc");
+    expected.emplace_back(Special::Colon);
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(Operator::Comma);
+    expected.emplace_back(TokenType::Identifier, "abc1");
+    expected.emplace_back(Special::Colon);
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_first_symbol_of_id_is_underscore) {
+    StringVec source = {"_id"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "_id");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_on_symbol_of_id_is_underscore) {
+    StringVec source = {"i_d"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "i_d");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
 TEST(Lexer, raise_error_on_id_starting_with_number) {
     StringVec source = {"int 1xx"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
 
-TEST(Lexer, raise_error_on_id_containing_special_symbols) {
+TEST(Lexer, raise_error_on_id_containing_special_symbol_commat) {
     StringVec source = {"int x@x"};
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
+}
+
+TEST(Lexer, raise_error_on_id_containing_special_symbol_dollar) {
+    StringVec source = {"int x$x"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
 
@@ -367,5 +440,15 @@ TEST(Lexer, raise_error_on_extra_spaces_with_several_lines) {
 
 TEST(Lexer, raise_error_on_literal_without_closing_quote) {
     StringVec source = {"\"quote"};
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
+}
+
+TEST(Lexer, raise_error_on_float_literal_with_alpha) {
+    StringVec source = {"6.5A"};
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
+}
+
+TEST(Lexer, raise_error_on_id_starting_with_special) {
+    StringVec source = {"int @x"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
