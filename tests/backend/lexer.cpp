@@ -386,6 +386,24 @@ TEST(Lexer, can_detect_declarations_no_spaces) {
     ASSERT_EQ(expected, transformed);
 }
 
+TEST(Lexer, can_detect_first_symbol_of_id_is_underscore) {
+    StringVec source = {"_id"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "_id");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, can_detect_on_symbol_of_id_is_underscore) {
+    StringVec source = {"i_d"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "i_d");
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
 TEST(Lexer, raise_error_on_id_starting_with_number) {
     StringVec source = {"int 1xx"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
@@ -427,5 +445,10 @@ TEST(Lexer, raise_error_on_literal_without_closing_quote) {
 
 TEST(Lexer, raise_error_on_float_literal_with_alpha) {
     StringVec source = {"6.5A"};
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
+}
+
+TEST(Lexer, raise_error_on_id_starting_with_special) {
+    StringVec source = {"int @x"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
 }
