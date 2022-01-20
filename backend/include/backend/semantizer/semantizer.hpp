@@ -12,11 +12,12 @@ class Semantizer {
     Semantizer(Semantizer &&) = delete;
     ~Semantizer() = delete;
 
-    static ast::SyntaxTree &process(ast::SyntaxTree &tree);
+    static void process(ast::SyntaxTree &tree);
+  private:
     static void parseFunctions(std::list<ast::Node::Ptr> &children, ast::FunctionsTable &functions);
     static std::vector<ast::TypeId> getFunctionArguments(std::list<ast::Node::Ptr> &children);
-    static void parseBranchRoot(ast::Node::Ptr &, ast::FunctionsTable &functions);
-    static void parseExpression(ast::Node::Ptr &, ast::TypeId, ast::Node::Ptr &);
+    static void processBranchRoot(ast::Node::Ptr &, ast::FunctionsTable &functions);
+    static void processExpression(ast::Node::Ptr &, ast::TypeId, ast::Node::Ptr &);
     static void pushTypeConversion(ast::Node::Ptr &, ast::NodeType);
     static void pushTypeConversion(ast::Node::Ptr &, ast::TypeId);
 };
