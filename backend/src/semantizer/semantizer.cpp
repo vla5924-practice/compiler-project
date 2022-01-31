@@ -100,11 +100,11 @@ void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions) {
         }
 
         if (it->type == NodeType::Expression) {
-            auto list_it = it->children.begin();
-            if ((*list_it)->type == NodeType::BinaryOperation &&
-                (*list_it)->binOp() == BinaryOperation::Assign) {
-                auto a = (*list_it)->children.begin();
-                auto var_table = node.get()->variables().find((*a)->str()); //TODO: recursive searching
+            Node::Ptr &expr_root = it->children.front();;
+            if (expr_root->type == NodeType::BinaryOperation &&
+                expr_root->binOp() == BinaryOperation::Assign) {
+                auto a = expr_root->children.begin();
+                auto var_table = node.get()->variables().find((*a)->str()); //TODO: recursive search
                 if (var_table == node.get()->variables().cend()) {
                     // error
                 }
