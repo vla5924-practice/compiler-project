@@ -9,10 +9,10 @@ using namespace lexer;
 using namespace parser;
 using namespace semantizer;
 
-TEST(Parser, test) {
-    StringVec source = {"def main() -> None:", "    x: int = 1 ", "    x = 3 + 1.0"};
+TEST(Semantizer, test) {
+    StringVec source = {"def main() -> None:", "    x: int", "    y: float ", "    if x > y:", "        z: int", "        z = 1.0 + 2"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    tree = Semantizer::process(tree);
+    Semantizer::process(tree);
     ASSERT_EQ(2 + 2, 4);
 }
