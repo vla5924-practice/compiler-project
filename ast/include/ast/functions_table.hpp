@@ -14,7 +14,8 @@ struct Function {
 
     Function() = default;
     Function(const Function &) = default;
-    explicit Function(const TypeId type, const std::vector<TypeId> &args = {}) : returnType(type), argumentsTypes(args){};
+    explicit Function(const TypeId type, const std::vector<TypeId> &args = {})
+        : returnType(type), argumentsTypes(args){};
     Function(Function &&) = default;
     ~Function() = default;
 };
