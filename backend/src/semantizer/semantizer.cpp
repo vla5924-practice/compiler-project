@@ -99,7 +99,6 @@ void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions) {
 
         if (it->type == NodeType::Expression) {
             Node::Ptr &expr_root = it->children.front();
-            ;
             if (expr_root->type == NodeType::BinaryOperation && expr_root->binOp() == BinaryOperation::Assign) {
                 auto a = expr_root->children.begin();
                 auto var_table = node.get()->variables().find((*a)->str()); // TODO: recursive search
