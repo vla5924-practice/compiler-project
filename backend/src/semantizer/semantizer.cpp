@@ -32,7 +32,7 @@ void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &
         }
 
         if (it->type == NodeType::VariableName) {
-            auto table_var = branch->variables().find(it->str()); //TODO: recursive searching
+            auto table_var = branch->variables().find(it->str()); // TODO: recursive searching
 
             if (table_var == branch.get()->variables().cend()) {
                 // error
@@ -50,7 +50,7 @@ void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &
     }
 
     if (node->type == NodeType::VariableName) {
-        auto table_var = branch->variables().find(node->str()); //TODO: recursive searching
+        auto table_var = branch->variables().find(node->str()); // TODO: recursive searching
 
         if (table_var == branch.get()->variables().cend()) {
             // error
@@ -60,7 +60,6 @@ void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &
             pushTypeConversion(node, type);
         }
     }
-
 }
 
 void Semantizer::pushTypeConversion(Node::Ptr &node, TypeId type) {
@@ -80,7 +79,6 @@ void Semantizer::pushTypeConversion(Node::Ptr &node, NodeType type) {
 }
 
 void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions) {
-
     for (auto &it : node->children) {
         if (it->type == NodeType::VariableDeclaration) {
             auto list_it = it->children.begin();
@@ -100,11 +98,11 @@ void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions) {
         }
 
         if (it->type == NodeType::Expression) {
-            Node::Ptr &expr_root = it->children.front();;
-            if (expr_root->type == NodeType::BinaryOperation &&
-                expr_root->binOp() == BinaryOperation::Assign) {
+            Node::Ptr &expr_root = it->children.front();
+            ;
+            if (expr_root->type == NodeType::BinaryOperation && expr_root->binOp() == BinaryOperation::Assign) {
                 auto a = expr_root->children.begin();
-                auto var_table = node.get()->variables().find((*a)->str()); //TODO: recursive search
+                auto var_table = node.get()->variables().find((*a)->str()); // TODO: recursive search
                 if (var_table == node.get()->variables().cend()) {
                     // error
                 }

@@ -13,6 +13,7 @@ class Semantizer {
     ~Semantizer() = delete;
 
     static void process(ast::SyntaxTree &tree);
+
   private:
     static void parseFunctions(std::list<ast::Node::Ptr> &children, ast::FunctionsTable &functions);
     static std::vector<ast::TypeId> getFunctionArguments(std::list<ast::Node::Ptr> &children);
