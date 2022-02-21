@@ -3,7 +3,6 @@
 #include "ast/node.hpp"
 #include "base_error.hpp"
 
-
 namespace semantizer {
 
 class SemantizerError : public BaseError {
