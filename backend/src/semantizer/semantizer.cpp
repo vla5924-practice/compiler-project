@@ -13,25 +13,32 @@ std::vector<TypeId> Semantizer::getFunctionArguments(std::list<Node::Ptr> &child
     return result;
 }
 
-void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &branch) {
+void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &branch,
+                                   const std::list<VariablesTable *> &tables) {
     NodeType type;
 
-    if (var_type == BuiltInTypes::IntType) {
+    switch (var_type) {
+    case BuiltInTypes::IntType:
         type = NodeType::IntegerLiteralValue;
-    }
+        break;
 
-    if (var_type == BuiltInTypes::FloatType) {
+    case BuiltInTypes::FloatType:
         type = NodeType::FloatingPointLiteralValue;
+        break;
+
+    default:
+        // err
+        break;
     }
 
     for (auto &child : node->children) {
         if (child->type == NodeType::UnaryOperation || child->type == NodeType::BinaryOperation) {
-            processExpression(child, var_type, branch);
+            processExpression(child, var_type, branch, tables);
             continue;
         }
 
         if (child->type == NodeType::VariableName) {
-            auto find_type = searchVariable(branch, child->str());
+            auto find_type = searchVariable(child->str(), tables);
             if (find_type != var_type) {
                 pushTypeConversion(child, type);
             }
@@ -44,7 +51,7 @@ void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &
     }
 
     if (node->type == NodeType::VariableName) {
-        auto find_type = searchVariable(branch, node->str());
+        auto find_type = searchVariable(node->str(), tables);
         if (find_type != var_type) {
             pushTypeConversion(node, type);
         }
@@ -67,20 +74,21 @@ void Semantizer::pushTypeConversion(Node::Ptr &node, NodeType type) {
     node = conv_node;
 }
 
-void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions) {
+void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::list<VariablesTable *> &tables) {
+    if (!std::holds_alternative<VariablesTable>(node->value))
+        node->value.emplace<VariablesTable>();
+    tables.push_front(&node->variables());
     for (auto &child : node->children) {
         if (child->type == NodeType::VariableDeclaration) {
             auto list_child = child->children.begin();
             auto type = (*list_child)->typeId();
             list_child++;
             auto name = (*list_child)->str();
-            if (!std::holds_alternative<VariablesTable>(node->value))
-                node->value.emplace<VariablesTable>();
             node->variables().emplace(name, type);
             list_child++;
 
             if (list_child != child->children.end() && (*list_child)->type == NodeType::Expression) {
-                processExpression(*list_child, type, node);
+                processExpression(*list_child, type, node, tables);
             }
 
             continue;
@@ -90,8 +98,8 @@ void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions) {
             Node::Ptr &expr_root = child->children.front();
             if (expr_root->type == NodeType::BinaryOperation && expr_root->binOp() == BinaryOperation::Assign) {
                 auto name = expr_root->children.front()->str();
-                auto type = searchVariable(node, name);
-                processExpression(expr_root->children.back(), type, node);
+                auto type = searchVariable(name, tables);
+                processExpression(expr_root->children.back(), type, node, tables);
             }
 
             continue;
@@ -105,29 +113,31 @@ void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions) {
                     functions.emplace(child->str(), Function(BuiltInTypes::NoneType));
                     continue;
                 }
-                // err
+                // errors.push<SemantizerError>();
             }
 
             continue;
         }
 
-        processBranchRoot(child, functions);
+        processBranchRoot(child, functions, tables);
     }
+    tables.pop_front();
 }
 
-ast::TypeId Semantizer::searchVariable(ast::Node::Ptr &node, const std::string &name) {
-    ast::VariablesTable::iterator table_name;
-    TypeId type;
-    if (node->type == NodeType::BranchRoot) {
-        table_name = node->variables().find(name);
-        if (table_name != node->variables().cend()) {
+ast::TypeId Semantizer::searchVariable(const std::string &name, const std::list<VariablesTable *> &tables) {
+    TypeId type = BuiltInTypes::BuiltInTypesCount;
+    for (const auto &table : tables) {
+        ast::VariablesTable::const_iterator table_name = table->find(name);
+        if (table_name != table->cend()) {
             type = table_name->second;
-        } else {
-            type = searchVariable(node->parent, name);
+            break;
         }
-    } else {
-        type = searchVariable(node->parent, name);
     }
+
+    if (type == BuiltInTypes::BuiltInTypesCount) {
+        // err
+    }
+
     return type;
 }
 
@@ -142,11 +152,13 @@ void Semantizer::parseFunctions(std::list<Node::Ptr> &children, FunctionsTable &
             auto ret_type = (*child)->typeId();
             functions.emplace(name, Function(ret_type, args));
             child++;
-            processBranchRoot(*child, functions);
+            std::list<VariablesTable *> variables_table;
+            processBranchRoot(*child, functions, variables_table);
         }
     }
 }
 
 void Semantizer::process(SyntaxTree &tree) {
+    ErrorBuffer errors;
     parseFunctions(tree.root->children, tree.functions);
 }
