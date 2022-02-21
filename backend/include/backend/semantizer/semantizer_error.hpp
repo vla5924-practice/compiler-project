@@ -1,7 +1,8 @@
 #pragma once
 
-#include "base_error.hpp"
 #include "ast/node.hpp"
+#include "base_error.hpp"
+
 
 namespace semantizer {
 

@@ -17,7 +17,8 @@ class Semantizer {
     static void process(ast::SyntaxTree &tree);
 
   private:
-    static void parseFunctions(std::list<ast::Node::Ptr> &children, ast::FunctionsTable &functions, ErrorBuffer &errors);
+    static void parseFunctions(std::list<ast::Node::Ptr> &children, ast::FunctionsTable &functions,
+                               ErrorBuffer &errors);
     static std::vector<ast::TypeId> getFunctionArguments(std::list<ast::Node::Ptr> &children);
     static void processBranchRoot(ast::Node::Ptr &node, ast::FunctionsTable &functions,
                                   std::list<ast::VariablesTable *> &variables_table, ErrorBuffer &errors);
@@ -25,7 +26,8 @@ class Semantizer {
                                   const std::list<ast::VariablesTable *> &tables, ErrorBuffer &errors);
     static void pushTypeConversion(ast::Node::Ptr &node, ast::NodeType);
     static void pushTypeConversion(ast::Node::Ptr &node, ast::TypeId);
-    static ast::TypeId searchVariable(const ast::Node::Ptr &node, const std::list<ast::VariablesTable *> &tables, ErrorBuffer &errors);
+    static ast::TypeId searchVariable(const ast::Node::Ptr &node, const std::list<ast::VariablesTable *> &tables,
+                                      ErrorBuffer &errors);
 };
 
 } // namespace semantizer
