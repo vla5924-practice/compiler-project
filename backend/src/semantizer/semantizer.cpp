@@ -26,11 +26,13 @@ void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &
         type = NodeType::FloatingPointLiteralValue;
         break;
 
-        // add char type
+    case BuiltInTypes::StrType:
+        type = NodeType::StringLiteralValue;
+        break;
 
     default:
         std::stringstream ss;
-        ss << "Invalid conversion from " << var_type << " to " << var_type;
+        ss << "Invalid conversion from " << var_type;
         errors.push<SemantizerError>(*node, ss.str());
         break;
     }
@@ -44,6 +46,11 @@ void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &
         if (child->type == NodeType::VariableName) {
             auto find_type = searchVariable(child, tables, errors);
             if (find_type != var_type) {
+                if (find_type == BuiltInTypes::StrType && child->str().size() != 1) {
+                    std::stringstream ss;
+                    ss << "Invalid conversion from string to " << var_type;
+                    errors.push<SemantizerError>(*node, ss.str());
+                }
                 pushTypeConversion(child, type);
             }
             continue;
