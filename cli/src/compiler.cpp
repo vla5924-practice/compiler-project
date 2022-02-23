@@ -6,6 +6,7 @@
 #include <backend/lexer/lexer.hpp>
 #include <backend/parser/parser.hpp>
 #include <backend/preprocessor/preprocessor.hpp>
+#include <utils/source_file.hpp>
 
 #include "dumping.hpp"
 
