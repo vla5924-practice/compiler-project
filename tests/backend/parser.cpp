@@ -286,8 +286,8 @@ TEST(Parser, can_parse_nested_if_statement) {
     ASSERT_EQ(tree1, tree);
 }
 
-TEST(Parser, can_parse_nested_if_statement) {
-    StringVec source = {"def main() -> None:", "    if x == 2:", "        if x > 1:", "            x = 3"};
+TEST(Parser, can_parse_function_call) {
+    StringVec source = {"def main() -> None:", "    function(x, y, z)"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     SyntaxTree tree1;
