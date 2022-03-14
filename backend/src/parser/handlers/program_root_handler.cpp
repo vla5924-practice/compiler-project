@@ -2,7 +2,6 @@
 
 #include "lexer/token_types.hpp"
 #include "parser/parser_error.hpp"
-#include "parser/register_handler.hpp"
 
 using namespace lexer;
 using namespace parser;
@@ -16,5 +15,3 @@ void ProgramRootHandler::run(ParserState &state) {
     }
     state.goNextToken();
 }
-
-REGISTER_PARSING_HANDLER(ProgramRootHandler, ast::NodeType::ProgramRoot);

@@ -1,7 +1,6 @@
 #include "parser/handlers/while_statement_handler.hpp"
 
 #include "lexer/token_types.hpp"
-#include "parser/register_handler.hpp"
 
 using namespace lexer;
 using namespace parser;
@@ -22,5 +21,3 @@ void WhileStatementHandler::run(ParserState &state) {
 void WhileStatementHandler::reset() {
     wasInExpression = false;
 }
-
-REGISTER_PARSING_HANDLER(WhileStatementHandler, ast::NodeType::WhileStatement);

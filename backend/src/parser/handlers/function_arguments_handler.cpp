@@ -2,7 +2,6 @@
 
 #include "lexer/token_types.hpp"
 #include "parser/parser_error.hpp"
-#include "parser/register_handler.hpp"
 #include "parser/type_registry.hpp"
 
 using namespace lexer;
@@ -34,5 +33,3 @@ void FunctionArgumentsHandler::run(ParserState &state) {
     state.node = state.node->parent;
     state.goNextToken();
 }
-
-REGISTER_PARSING_HANDLER(FunctionArgumentsHandler, ast::NodeType::FunctionArguments);

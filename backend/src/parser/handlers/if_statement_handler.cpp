@@ -2,7 +2,6 @@
 
 #include "lexer/token_types.hpp"
 #include "parser/parser_error.hpp"
-#include "parser/register_handler.hpp"
 
 using namespace lexer;
 using namespace parser;
@@ -40,5 +39,3 @@ void IfStatementHandler::reset() {
     branch = Branch::If;
     wasInExpression = false;
 }
-
-REGISTER_PARSING_HANDLER(IfStatementHandler, ast::NodeType::IfStatement);

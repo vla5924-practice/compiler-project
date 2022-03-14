@@ -2,7 +2,6 @@
 
 #include "lexer/token_types.hpp"
 #include "parser/parser_error.hpp"
-#include "parser/register_handler.hpp"
 #include "parser/type_registry.hpp"
 
 using namespace lexer;
@@ -42,5 +41,3 @@ void VariableDeclarationHandler::run(ParserState &state) {
 void VariableDeclarationHandler::reset() {
     wasInDefinition = false;
 }
-
-REGISTER_PARSING_HANDLER(VariableDeclarationHandler, ast::NodeType::VariableDeclaration);

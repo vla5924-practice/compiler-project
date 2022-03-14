@@ -2,7 +2,6 @@
 
 #include "lexer/token_types.hpp"
 #include "parser/parser_error.hpp"
-#include "parser/register_handler.hpp"
 
 using namespace lexer;
 using namespace parser;
@@ -26,5 +25,3 @@ void ReturnStatementHandler::run(ParserState &state) {
     }
     state.node = state.pushChildNode(ast::NodeType::Expression);
 }
-
-REGISTER_PARSING_HANDLER(ReturnStatementHandler, ast::NodeType::ReturnStatement);

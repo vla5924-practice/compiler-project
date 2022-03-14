@@ -7,10 +7,10 @@
 #include "ast/node_type.hpp"
 #include "lexer/token_types.hpp"
 #include "parser/parser_error.hpp"
-#include "parser/register_handler.hpp"
 
 using ast::BinaryOperation;
 using ast::UnaryOperation;
+
 using namespace lexer;
 using namespace parser;
 
@@ -312,5 +312,3 @@ void ExpressionHandler::run(ParserState &state) {
     state.tokenIter = tokenIterEnd;
     state.node = state.node->parent;
 }
-
-REGISTER_PARSING_HANDLER(ExpressionHandler, ast::NodeType::Expression);

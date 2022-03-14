@@ -1,7 +1,7 @@
 #include "parser/parser.hpp"
 
 #include "parser/parser_state.hpp"
-#include "parser/register_handler.hpp"
+#include "parser/handler_registry.hpp"
 
 using namespace ast;
 using namespace lexer;
@@ -11,13 +11,14 @@ SyntaxTree Parser::process(const TokenList &tokens) {
     SyntaxTree tree;
     tree.root = std::make_shared<Node>(NodeType::ProgramRoot);
 
-    for (auto &[nodeType, handler] : HandlerRegistry()) {
+    HandlerRegistry registry;
+    for (auto &[nodeType, handler] : registry) {
         handler->reset();
     }
 
     ParserState state = {tree.root, tokens.begin(), tokens.end()};
     while (state.tokenIter != tokens.end()) {
-        HandlerRegistry()[state.node->type]->run(state);
+        registry[state.node->type]->run(state);
         if (!state.errors.empty()) {
             throw state.errors;
         }

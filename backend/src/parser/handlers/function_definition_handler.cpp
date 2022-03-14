@@ -2,7 +2,6 @@
 
 #include "lexer/token_types.hpp"
 #include "parser/parser_error.hpp"
-#include "parser/register_handler.hpp"
 #include "parser/type_registry.hpp"
 
 using namespace lexer;
@@ -35,5 +34,3 @@ void FunctionDefinitionHandler::reset() {
     functionArgumentsEnd = false;
     functionBegin = false;
 }
-
-REGISTER_PARSING_HANDLER(FunctionDefinitionHandler, ast::NodeType::FunctionDefinition);
