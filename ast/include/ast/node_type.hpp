@@ -32,6 +32,7 @@ enum class NodeType {
     BinaryOperation,
     BranchRoot,
     ElifStatement,
+    ElseStatement,
     Expression,
     FunctionArgument,
     FunctionArguments,
