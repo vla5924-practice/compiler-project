@@ -540,7 +540,7 @@ static void parseWhileStatement(ParserContext &ctx) {
 }
 
 // clang-format off
-#define SUBPARSER(NodeTypeVal) {ast::NodeType::##NodeTypeVal, parse##NodeTypeVal}
+#define SUBPARSER(NodeTypeVal) {ast::NodeType::NodeTypeVal, parse##NodeTypeVal}
 
 static std::unordered_map<ast::NodeType, std::function<void(ParserContext &)>> subparsers = {
     SUBPARSER(BranchRoot),
