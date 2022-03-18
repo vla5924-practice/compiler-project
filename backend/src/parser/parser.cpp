@@ -311,6 +311,8 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
 
 static void parseBranchRoot(ParserContext &ctx) {
     while (ctx.nestingLevel > 0) {
+        if (ctx.tokenIter == ctx.tokenEnd)
+            return;
         while (ctx.token().is(Special::EndOfExpression) || ctx.token().is(Special::Colon)) {
             ctx.goNextToken();
             if (ctx.tokenIter == ctx.tokenEnd)
@@ -325,10 +327,12 @@ static void parseBranchRoot(ParserContext &ctx) {
             ctx.pushError("Unexpected indentation mismatch: " + std::to_string(ctx.nestingLevel) +
                           " indentation(s) expected, " + std::to_string(currNestingLevel) + " indentation(s) given");
         } else if (currNestingLevel < ctx.nestingLevel) {
+            ctx.goParentNode();
             while (ctx.node->type != ast::NodeType::BranchRoot) {
-                ctx.node = ctx.node->parent;
+                ctx.goParentNode();
             }
             ctx.nestingLevel--;
+            std::advance(ctx.tokenIter, -currNestingLevel);
             return;
         }
 
@@ -340,11 +344,11 @@ static void parseBranchRoot(ParserContext &ctx) {
         } else if (isVariableDeclaration(ctx.tokenIter, ctx.tokenEnd)) {
             ctx.node = ctx.pushChildNode(ast::NodeType::VariableDeclaration);
         } else if (currToken.is(Keyword::Elif) || currToken.is(Keyword::Else)) {
-            auto lastNodeType = ctx.node->children.back()->type;
-            if (lastNodeType == ast::NodeType::IfStatement) {
+            auto lastNode = ctx.node->children.back();
+            if (lastNode->type == ast::NodeType::IfStatement) {
                 auto nodeType =
                     currToken.is(Keyword::Elif) ? ast::NodeType::ElifStatement : ast::NodeType::ElseStatement;
-                ctx.node = ctx.pushChildNode(nodeType);
+                ctx.node = ParserContext::pushChildNode(lastNode, nodeType);
             } else {
                 ctx.pushError((currToken.is(Keyword::Elif) ? std::string("elif") : std::string("else")) +
                               " is not allowed here");
@@ -393,7 +397,7 @@ static void parseExpression(ParserContext &ctx) {
     std::stack<SubExpression> postfixForm = generatePostfixForm(tokenIterBegin, tokenIterEnd, ctx.errors);
     buildExpressionSubtree(postfixForm, ctx.node, ctx.errors);
     ctx.tokenIter = tokenIterEnd;
-    ctx.node = ctx.node->parent;
+    ctx.goParentNode();
 }
 
 static void parseFunctionArguments(ParserContext &ctx) {
@@ -421,7 +425,7 @@ static void parseFunctionArguments(ParserContext &ctx) {
         else
             std::advance(ctx.tokenIter, 3);
     }
-    ctx.node = ctx.node->parent;
+    ctx.goParentNode();
     ctx.goNextToken();
 }
 
@@ -484,7 +488,7 @@ static void parseReturnStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::Return));
     ctx.goNextToken();
     if (ctx.token().is(Special::EndOfExpression)) {
-        ctx.node = ctx.node->parent;
+        ctx.goParentNode();
         ctx.goNextToken();
         return;
     }
@@ -501,6 +505,7 @@ static void parseReturnStatement(ParserContext &ctx) {
 }
 
 static void parseVariableDeclaration(ParserContext &ctx) {
+    ctx.goNextToken();
     const Token &colon = ctx.token();
     const Token &varName = *std::prev(ctx.tokenIter);
     const Token &varType = *std::next(ctx.tokenIter);
@@ -514,12 +519,13 @@ static void parseVariableDeclaration(ParserContext &ctx) {
     if (endOfDecl->is(Special::EndOfExpression)) {
         // declaration without definition
         std::advance(ctx.tokenIter, 3);
-        ctx.node = ctx.node->parent;
+        ctx.goParentNode();
     } else if (endOfDecl->is(Operator::Assign)) {
         // declaration with definition
         ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
-        // wasInDefinition = true;
         std::advance(ctx.tokenIter, 3);
+        ctx.propagate();
+        ctx.goParentNode();
     } else {
         ctx.errors.push<ParserError>(*endOfDecl, "Definition expression or line break was expected");
     }
@@ -562,11 +568,9 @@ SyntaxTree Parser::process(const TokenList &tokens) {
     tree.root = std::make_shared<Node>(NodeType::ProgramRoot);
 
     ParserContext ctx = {subparsers, tree.root, tokens.begin(), tokens.end(), 0};
-    while (ctx.tokenIter != tokens.end()) {
-        ctx.propagate();
-        if (!ctx.errors.empty()) {
-            throw ctx.errors;
-        }
+    ctx.propagate();
+    if (!ctx.errors.empty()) {
+        throw ctx.errors;
     }
 
     return tree;

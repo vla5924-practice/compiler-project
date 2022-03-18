@@ -60,6 +60,10 @@ struct ParserContext {
         }
         goNextToken();
     }
+
+    void goParentNode() {
+        node = node->parent;
+    }
 };
 
 } // namespace parser
