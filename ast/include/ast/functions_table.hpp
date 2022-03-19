@@ -18,6 +18,9 @@ struct Function {
         : returnType(type), argumentsTypes(args){};
     Function(Function &&) = default;
     ~Function() = default;
+
+    Function &operator=(const Function &) = default;
+    Function &operator=(Function &&) = default;
 };
 
 using FunctionsTable = std::map<std::string, Function>;
