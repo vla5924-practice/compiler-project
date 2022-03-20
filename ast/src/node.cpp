@@ -88,6 +88,9 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::ElifStatement:
         stream << "ElifStatement\n";
         break;
+    case NodeType::ElseStatement:
+        stream << "ElseStatement\n";
+        break;
     case NodeType::Expression:
         stream << "Expression\n";
         break;
