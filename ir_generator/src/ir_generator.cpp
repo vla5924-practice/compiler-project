@@ -7,15 +7,15 @@ using namespace ir_generator;
 
 namespace {
 
-Node::Ptr firstChild(Node *node) {
+Node::Ptr &firstChild(Node *node) {
     return node->children.front();
 }
 
-Node::Ptr secondChild(Node *node) {
+Node::Ptr &secondChild(Node *node) {
     return *std::next(node->children.begin());
 }
 
-Node::Ptr lastChild(Node *node) {
+Node::Ptr &lastChild(Node *node) {
     return node->children.back();
 }
 
