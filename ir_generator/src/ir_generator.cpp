@@ -27,11 +27,62 @@ bool lhsRequiresPtr(BinaryOperation op) {
     return false;
 }
 
+constexpr const char *const PLACEHOLDER_INT_NAME = "__placeholder_int";
+constexpr const char *const PLACEHOLDER_FLOAT_NAME = "__placeholder_float";
+constexpr const char *const PLACEHOLDER_STR_NAME = "__placeholder_str";
+constexpr const char *const PLACEHOLDER_POINTER_NAME = "__placeholder_pointer";
+
+const char *const placeholderNameByTypeId(TypeId id) {
+    switch (id) {
+    case BuiltInTypes::IntType:
+        return PLACEHOLDER_INT_NAME;
+    case BuiltInTypes::FloatType:
+        return PLACEHOLDER_FLOAT_NAME;
+    case BuiltInTypes::StrType:
+        return PLACEHOLDER_STR_NAME;
+    }
+    return PLACEHOLDER_POINTER_NAME;
+}
+
+TypeId findVariableType(Node::Ptr node) {
+    const std::string &name = node->str();
+    auto currentNode = node->parent;
+    while (currentNode) {
+        if (currentNode->type == NodeType::BranchRoot) {
+            auto &variables = currentNode->variables();
+            auto it = variables.find(name);
+            if (it != variables.end())
+                return it->second;
+        }
+        currentNode = currentNode->parent;
+    }
+    return BuiltInTypes::NoneType;
+}
+
 } // namespace
+
+static const std::unordered_map<std::string, std::string> placeholders = {
+    {PLACEHOLDER_INT_NAME, "%d"},
+    {PLACEHOLDER_FLOAT_NAME, "%f"},
+    {PLACEHOLDER_STR_NAME, "%s"},
+    {PLACEHOLDER_POINTER_NAME, "%x"},
+};
 
 IRGenerator::IRGenerator(const std::string &moduleName, bool emitDebugInfo)
     : context(), module(new llvm::Module(llvm::StringRef(moduleName), context)), builder(new llvm::IRBuilder(context)),
       currentBlock(nullptr), currentFunction(nullptr) {
+    {
+        std::vector<llvm::Type *> arguments = {llvm::PointerType::get(llvm::Type::getInt8Ty(context), 0)};
+        llvm::Function *printFunc =
+            llvm::Function::Create(llvm::FunctionType::get(llvm::IntegerType::getInt32Ty(context), arguments,
+                                                           true /* this is var arg func type*/),
+                                   llvm::Function::ExternalLinkage, "printf", module.get());
+        internalFunctions.insert_or_assign("printf", printFunc);
+    }
+
+    for (const auto &[name, value] : placeholders) {
+        declareString(value, name);
+    }
 }
 
 void IRGenerator::process(const SyntaxTree &tree) {
@@ -72,17 +123,6 @@ void IRGenerator::initializeFunctions(const SyntaxTree &tree) {
             llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, funcName, module.get());
         functions.insert_or_assign(funcName, llvmFunc);
     }
-    // built-in print function
-    {
-        llvm::Function *printFunc = module->getFunction("printf");
-        if (printFunc == nullptr)
-            printFunc = llvm::Function::Create(
-                llvm::FunctionType::get(llvm::IntegerType::getInt32Ty(context),
-                                        llvm::PointerType::get(llvm::Type::getInt8Ty(context), 0),
-                                        true /* this is var arg func type*/),
-                llvm::Function::ExternalLinkage, "printf", module.get());
-        functions.insert_or_assign("print", printFunc);
-    }
 }
 
 llvm::BasicBlock *IRGenerator::processBranchRoot(Node::Ptr node, bool createBlock) {
@@ -99,22 +139,45 @@ llvm::BasicBlock *IRGenerator::processBranchRoot(Node::Ptr node, bool createBloc
     return currentBlock;
 }
 
+llvm::Value *IRGenerator::declareString(const std::string &str, std::string name) {
+    if (name.empty()) {
+        static size_t counter = 0;
+        name = ".str" + std::to_string(counter++);
+    }
+    auto charType = llvm::IntegerType::get(context, 8);
+    std::vector<llvm::Constant *> chars(str.length());
+    for (size_t i = 0; i < str.size(); i++) {
+        chars[i] = llvm::ConstantInt::get(charType, str[i]);
+    }
+    chars.push_back(llvm::ConstantInt::get(charType, 0));
+    llvm::ArrayType *stringType = llvm::ArrayType::get(charType, chars.size());
+    auto globalDeclaration = reinterpret_cast<llvm::GlobalVariable *>(module->getOrInsertGlobal(name, stringType));
+    globalDeclaration->setInitializer(llvm::ConstantArray::get(stringType, chars));
+    globalDeclaration->setConstant(true);
+    globalDeclaration->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
+    globalDeclaration->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+    return llvm::ConstantExpr::getBitCast(globalDeclaration, charType->getPointerTo());
+}
+
 llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
     assert(node && (node->type == NodeType::BinaryOperation || node->type == NodeType::Expression ||
                     node->type == NodeType::FloatingPointLiteralValue || node->type == NodeType::IntegerLiteralValue ||
-                    node->type == NodeType::VariableName));
+                    node->type == NodeType::StringLiteralValue || node->type == NodeType::VariableName));
 
+    Node *rawNode = node.get();
     switch (node->type) {
     case NodeType::BinaryOperation:
-        return visitBinaryOperation(node.get());
+        return visitBinaryOperation(rawNode);
     case NodeType::Expression:
-        return visitExpression(node.get());
+        return visitExpression(rawNode);
     case NodeType::FloatingPointLiteralValue:
-        return visitFloatingPointLiteralValue(node.get());
+        return visitFloatingPointLiteralValue(rawNode);
     case NodeType::IntegerLiteralValue:
-        return visitIntegerLiteralValue(node.get());
+        return visitIntegerLiteralValue(rawNode);
+    case NodeType::StringLiteralValue:
+        return visitStringLiteralValue(rawNode);
     case NodeType::VariableName:
-        return visitVariableName(node.get());
+        return visitVariableName(rawNode);
     }
     return nullptr;
 }
@@ -188,6 +251,13 @@ llvm::Value *IRGenerator::visitIntegerLiteralValue(Node *node) {
 
     long value = node->intNum();
     return llvm::ConstantInt::get(context, llvm::APInt(64, value, true));
+}
+
+llvm::Value *IRGenerator::visitStringLiteralValue(ast::Node *node) {
+    assert(node && node->type == NodeType::StringLiteralValue);
+
+    const std::string &value = node->str();
+    return declareString(value);
 }
 
 llvm::Value *IRGenerator::visitVariableName(Node *node) {
@@ -296,6 +366,33 @@ void IRGenerator::processIfStatement(Node *node) {
     builder->SetInsertPoint(endBlock);
 
     node->children.erase(std::next(node->children.begin(), 2));
+}
+
+void IRGenerator::processPrintFunctionCall(Node *node) {
+    assert(node && node->type == NodeType::FunctionCall && firstChild(node)->str() == "print");
+
+    auto argsNode = lastChild(node).get();
+    assert(argsNode->children.size() == 1); // print requires only one argument
+
+    auto valueNode = firstChild(argsNode);
+    TypeId typeId = BuiltInTypes::NoneType;
+    switch (valueNode->type) {
+    case NodeType::IntegerLiteralValue:
+        typeId = BuiltInTypes::IntType;
+        break;
+    case NodeType::FloatingPointLiteralValue:
+        typeId = BuiltInTypes::FloatType;
+        break;
+    case NodeType::StringLiteralValue:
+        typeId = BuiltInTypes::StrType;
+        break;
+    case NodeType::VariableName:
+        typeId = findVariableType(valueNode);
+        break;
+    }
+    auto placeholderName = placeholderNameByTypeId(typeId);
+    std::vector<llvm::Value *> arguments = {module->getNamedGlobal(placeholderName), visitNode(valueNode)};
+    builder->CreateCall(internalFunctions["printf"], arguments);
 }
 
 void IRGenerator::processProgramRoot(Node *node) {
