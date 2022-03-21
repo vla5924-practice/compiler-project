@@ -7,6 +7,18 @@ using namespace ir_generator;
 
 namespace {
 
+Node::Ptr firstChild(Node *node) {
+    return node->children.front();
+}
+
+Node::Ptr secondChild(Node *node) {
+    return *std::next(node->children.begin());
+}
+
+Node::Ptr lastChild(Node *node) {
+    return node->children.back();
+}
+
 bool lhsRequiresPtr(BinaryOperation op) {
     switch (op) {
     case BinaryOperation::Assign:
@@ -73,17 +85,18 @@ void IRGenerator::initializeFunctions(const SyntaxTree &tree) {
     }
 }
 
-llvm::BasicBlock *IRGenerator::processBranchRoot(Node::Ptr node) {
+llvm::BasicBlock *IRGenerator::processBranchRoot(Node::Ptr node, bool createBlock) {
     assert(node && node->type == NodeType::BranchRoot);
 
-    llvm::BasicBlock *block = llvm::BasicBlock::Create(context, "block", currentFunction);
-    currentBlock = block;
+    if (createBlock) {
+        currentBlock = llvm::BasicBlock::Create(context, "block", currentFunction);
+    }
     localVariables.emplace_back();
-    builder->SetInsertPoint(block);
+    builder->SetInsertPoint(currentBlock);
     for (auto &n : node->children)
         processNode(n);
     localVariables.pop_back();
-    return block;
+    return currentBlock;
 }
 
 llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
@@ -109,8 +122,8 @@ llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
 llvm::Value *IRGenerator::visitBinaryOperation(Node *node) {
     assert(node && node->type == NodeType::BinaryOperation);
 
-    Node::Ptr &lhsNode = node->children.front();
-    Node::Ptr &rhsNode = node->children.back();
+    Node::Ptr &lhsNode = firstChild(node);
+    Node::Ptr &rhsNode = lastChild(node);
     llvm::Value *lhs = visitNode(lhsNode);
     llvm::Value *rhs = visitNode(rhsNode);
 
@@ -121,32 +134,46 @@ llvm::Value *IRGenerator::visitBinaryOperation(Node *node) {
         rhs = builder->CreateLoad(rhs);
     switch (op) {
     case BinaryOperation::Add:
-        return builder->CreateAdd(lhs, rhs, "addtmp");
+        return builder->CreateAdd(lhs, rhs);
     case BinaryOperation::Sub:
-        return builder->CreateSub(lhs, rhs, "subtmp");
+        return builder->CreateSub(lhs, rhs);
     case BinaryOperation::Mult:
-        return builder->CreateMul(lhs, rhs, "multmp");
+        return builder->CreateMul(lhs, rhs);
     case BinaryOperation::Div:
-        return builder->CreateSDiv(lhs, rhs, "sdivtmp");
+        return builder->CreateSDiv(lhs, rhs);
     case BinaryOperation::FAdd:
-        return builder->CreateFAdd(lhs, rhs, "faddtmp");
+        return builder->CreateFAdd(lhs, rhs);
     case BinaryOperation::FSub:
-        return builder->CreateFSub(lhs, rhs, "fsubtmp");
+        return builder->CreateFSub(lhs, rhs);
     case BinaryOperation::FMul:
-        return builder->CreateFMul(lhs, rhs, "fmultmp");
+        return builder->CreateFMul(lhs, rhs);
     case BinaryOperation::FDiv:
-        return builder->CreateFDiv(lhs, rhs, "fdivtmp");
+        return builder->CreateFDiv(lhs, rhs);
     case BinaryOperation::Assign:
         return builder->CreateStore(rhs, lhs);
     case BinaryOperation::Equal:
-        return builder->CreateICmp(llvm::ICmpInst::ICMP_EQ, lhs, rhs, "eqtmp");
+        return builder->CreateICmp(llvm::ICmpInst::ICMP_EQ, lhs, rhs);
+    case BinaryOperation::NotEqual:
+        return builder->CreateICmp(llvm::ICmpInst::ICMP_NE, lhs, rhs);
+    case BinaryOperation::Greater:
+        return builder->CreateICmp(llvm::ICmpInst::ICMP_SGT, lhs, rhs);
+    case BinaryOperation::GreaterEqual:
+        return builder->CreateICmp(llvm::ICmpInst::ICMP_SGE, lhs, rhs);
+    case BinaryOperation::Less:
+        return builder->CreateICmp(llvm::ICmpInst::ICMP_SLT, lhs, rhs);
+    case BinaryOperation::LessEqual:
+        return builder->CreateICmp(llvm::ICmpInst::ICMP_SLE, lhs, rhs);
+    case BinaryOperation::And:
+        return builder->CreateAnd(lhs, rhs);
+    case BinaryOperation::Or:
+        return builder->CreateOr(lhs, rhs);
     }
     return nullptr;
 }
 
 llvm::Value *IRGenerator::visitExpression(Node *node) {
     assert(node && node->type == NodeType::Expression);
-    return visitNode(node->children.front());
+    return visitNode(firstChild(node));
 }
 
 llvm::Value *IRGenerator::visitFloatingPointLiteralValue(Node *node) {
@@ -201,33 +228,74 @@ void IRGenerator::processNode(Node::Ptr node) {
 
 void IRGenerator::processExpression(Node *node) {
     assert(node && node->type == NodeType::Expression);
-    visitNode(node->children.front());
+    visitNode(firstChild(node));
 }
 
 void IRGenerator::processFunctionDefinition(Node *node) {
     assert(node && node->type == NodeType::FunctionDefinition);
 
-    std::string name = node->children.front()->str();
+    std::string name = firstChild(node)->str();
     llvm::Function *function = module->getFunction(name);
     llvm::BasicBlock *body = llvm::BasicBlock::Create(context, name + "_entry", function);
     currentBlock = body;
     currentFunction = function;
     builder->SetInsertPoint(body);
-    processBranchRoot(node->children.back());
+    processBranchRoot(lastChild(node));
 }
 
 void IRGenerator::processIfStatement(Node *node) {
     assert(node && node->type == NodeType::IfStatement);
 
-    llvm::Value *condition = visitNode(node->children.front());
-    llvm::BasicBlock *trueBlock = processBranchRoot(*std::next(node->children.begin()));
-    llvm::BasicBlock *falseBlock = nullptr;
-    if (node->children.size() == 3u) { // has elif/else block
-        falseBlock = processBranchRoot(node->children.back());
-    } else {
-        falseBlock = llvm::BasicBlock::Create(context, "else", currentFunction);
+    llvm::BasicBlock *endBlock = llvm::BasicBlock::Create(context, "endif");
+    llvm::BasicBlock *elseBlock = nullptr;
+
+    bool hasAdditionals = node->children.size() > 2u;
+    Node *lastElse = lastChild(node).get();
+
+    if (hasAdditionals && lastElse->type == NodeType::ElseStatement) {
+        elseBlock = llvm::BasicBlock::Create(context, "else");
     }
-    builder->CreateCondBr(condition, trueBlock, falseBlock);
+
+    auto tempElif = std::make_shared<Node>(NodeType::ElifStatement);
+    tempElif->children.push_back(firstChild(node));
+    tempElif->children.push_back(secondChild(node));
+    node->children.insert(std::next(node->children.begin(), 2), tempElif);
+
+    for (auto nodeIter = std::next(node->children.begin(), 2);
+         nodeIter != node->children.end() && (*nodeIter)->type == NodeType::ElifStatement; nodeIter++) {
+        llvm::BasicBlock *trueBlock = llvm::BasicBlock::Create(context, "iftrue", currentFunction);
+        llvm::BasicBlock *falseBlock = nullptr;
+        auto nextNode = std::next(nodeIter);
+        bool lastNode = nextNode == node->children.end() || (*nextNode)->type == NodeType::ElseStatement;
+        if (lastNode) {
+            if (elseBlock) {
+                falseBlock = elseBlock;
+            } else {
+                falseBlock = endBlock;
+            }
+        } else {
+            falseBlock = llvm::BasicBlock::Create(context, "elseif");
+        }
+        Node *currentNode = nodeIter->get();
+        llvm::Value *condition = visitNode(firstChild(currentNode));
+        builder->CreateCondBr(condition, trueBlock, falseBlock);
+        // builder->SetInsertPoint(trueBlock);
+        currentBlock = trueBlock;
+        processBranchRoot(lastChild(currentNode), false);
+        builder->CreateBr(endBlock);
+        builder->SetInsertPoint(falseBlock);
+    }
+
+    if (elseBlock) {
+        // builder->SetInsertPoint(elseBlock);
+        currentBlock = elseBlock;
+        processBranchRoot(lastChild(lastElse), false);
+        builder->CreateBr(endBlock);
+    }
+    endBlock->insertInto(currentFunction);
+    builder->SetInsertPoint(endBlock);
+
+    node->children.erase(std::next(node->children.begin(), 2));
 }
 
 void IRGenerator::processProgramRoot(Node *node) {
@@ -240,17 +308,20 @@ void IRGenerator::processProgramRoot(Node *node) {
 void IRGenerator::processReturnStatement(Node *node) {
     assert(node && node->type == NodeType::ReturnStatement);
 
-    llvm::Value *ret = visitNode(node->children.front());
+    llvm::Value *ret = visitNode(firstChild(node));
     builder->CreateRet(ret);
 }
 
 void IRGenerator::processVariableDeclaration(Node *node) {
     assert(node && node->type == NodeType::VariableDeclaration);
 
-    TypeId typeId = node->children.front()->typeId();
-    std::string name = std::next(node->children.begin())->get()->str();
+    auto nodeIter = node->children.begin();
+    TypeId typeId = (*nodeIter)->typeId();
+    nodeIter++;
+    std::string name = (*nodeIter)->str();
     llvm::AllocaInst *inst = new llvm::AllocaInst(createLLVMType(typeId), 0, name, currentBlock);
     localVariables.back().insert_or_assign(name, inst);
-    if (node->children.size() == 3u) // with definition
-        builder->CreateStore(visitNode(node->children.back()), inst);
+    nodeIter++;
+    if (nodeIter != node->children.end())
+        builder->CreateStore(visitNode(*nodeIter), inst);
 }

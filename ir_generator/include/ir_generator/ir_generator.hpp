@@ -28,7 +28,7 @@ class IRGenerator {
 
     llvm::Type *createLLVMType(ast::TypeId id);
     void initializeFunctions(const ast::SyntaxTree &tree);
-    llvm::BasicBlock *processBranchRoot(ast::Node::Ptr node);
+    llvm::BasicBlock *processBranchRoot(ast::Node::Ptr node, bool createBlock = true);
 
     llvm::Value *visitNode(ast::Node::Ptr node);
     llvm::Value *visitBinaryOperation(ast::Node *node);
