@@ -31,9 +31,7 @@ void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &
         break;
 
     default:
-        std::stringstream ss;
-        ss << "Invalid conversion from " << var_type;
-        errors.push<SemantizerError>(*node, ss.str());
+        errors.push<SemantizerError>(*node, "Invalid conversion from " + var_type);
         break;
     }
 
@@ -47,9 +45,7 @@ void Semantizer::processExpression(Node::Ptr &node, TypeId var_type, Node::Ptr &
             auto find_type = searchVariable(child, tables, errors);
             if (find_type != var_type) {
                 if (find_type == BuiltInTypes::StrType && child->str().size() != 1) {
-                    std::stringstream ss;
-                    ss << "Invalid conversion from string to " << var_type;
-                    errors.push<SemantizerError>(*node, ss.str());
+                    errors.push<SemantizerError>(*node, "Invalid conversion from string to " + var_type);
                 }
                 pushTypeConversion(child, type);
             }
@@ -99,9 +95,7 @@ void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions, s
 
             ast::VariablesTable::const_iterator table_name = tables.front()->find(name);
             if (table_name != tables.front()->cend()) {
-                std::stringstream ss;
-                ss << "Redeclaration of " << name;
-                errors.push<SemantizerError>(*child, ss.str());
+                errors.push<SemantizerError>(*child, "Redeclaration of " + name);
             }
 
             node->variables().emplace(name, type);
@@ -133,10 +127,10 @@ void Semantizer::processBranchRoot(Node::Ptr &node, FunctionsTable &functions, s
                     functions.emplace(child->str(), Function(BuiltInTypes::NoneType));
                     continue;
                 }
-                std::stringstream ss;
-                ss << node->str() << " was not declared in this scope";
-                errors.push<SemantizerError>(*child, ss.str());
+                errors.push<SemantizerError>(*child, node->str() + " was not declared in this scope");
             }
+
+            //auto args = funct->second.argumentsTypes;
 
             continue;
         }
@@ -158,9 +152,7 @@ ast::TypeId Semantizer::searchVariable(const Node::Ptr &node, const std::list<Va
     }
 
     if (type == BuiltInTypes::BuiltInTypesCount) {
-        std::stringstream ss;
-        ss << node->str() << " was not declared in this scope";
-        errors.push<SemantizerError>(*node, ss.str());
+        errors.push<SemantizerError>(*node, node->str() + " was not declared in this scope");
     }
 
     return type;
@@ -178,9 +170,19 @@ void Semantizer::parseFunctions(std::list<Node::Ptr> &children, FunctionsTable &
             functions.emplace(name, Function(ret_type, args));
             child++;
             std::list<VariablesTable *> variables_table;
-            processBranchRoot(*child, functions, variables_table, errors);
+           processBranchRoot(*child, functions, variables_table, errors);
         }
     }
+
+    //for (auto &node : children) {
+    //    if (node->type == NodeType::FunctionDefinition) {
+    //        auto child = node->children.begin();
+    //        std::advance(child, 2);
+    //        std::list<VariablesTable *> variables_table;
+    //        processBranchRoot(*child, functions, variables_table, errors);
+    //    }
+    //}
+
 }
 
 void Semantizer::process(SyntaxTree &tree) {
