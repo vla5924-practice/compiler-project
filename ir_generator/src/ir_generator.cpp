@@ -163,8 +163,9 @@ llvm::Value *IRGenerator::declareString(const std::string &str, std::string name
 
 llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
     assert(node && (node->type == NodeType::BinaryOperation || node->type == NodeType::Expression ||
-                    node->type == NodeType::FloatingPointLiteralValue || node->type == NodeType::IntegerLiteralValue ||
-                    node->type == NodeType::StringLiteralValue || node->type == NodeType::VariableName));
+                    node->type == NodeType::FloatingPointLiteralValue || node->type == NodeType::FunctionCall ||
+                    node->type == NodeType::IntegerLiteralValue || node->type == NodeType::StringLiteralValue ||
+                    node->type == NodeType::TypeConversion || node->type == NodeType::VariableName));
 
     Node *rawNode = node.get();
     switch (node->type) {
@@ -174,10 +175,14 @@ llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
         return visitExpression(rawNode);
     case NodeType::FloatingPointLiteralValue:
         return visitFloatingPointLiteralValue(rawNode);
+    case NodeType::FunctionCall:
+        return visitFunctionCall(rawNode);
     case NodeType::IntegerLiteralValue:
         return visitIntegerLiteralValue(rawNode);
     case NodeType::StringLiteralValue:
         return visitStringLiteralValue(rawNode);
+    case NodeType::TypeConversion:
+        return visitTypeConversion(rawNode);
     case NodeType::VariableName:
         return visitVariableName(rawNode);
     }
@@ -276,6 +281,17 @@ llvm::Value *IRGenerator::visitStringLiteralValue(ast::Node *node) {
 
     const std::string &value = node->str();
     return declareString(value);
+}
+
+llvm::Value *IRGenerator::visitTypeConversion(ast::Node *node) {
+    assert(node && node->type == NodeType::TypeConversion);
+
+    llvm::Value *base = visitNode(firstChild(node)); // fix
+    TypeId typeId = lastChild(node)->typeId();
+    llvm::Instruction *inst =
+        llvm::CastInst::Create(typeId == BuiltInTypes::IntType ? llvm::Instruction::FPToSI : llvm::Instruction::SIToFP,
+                               base, base->getType(), "", currentBlock);
+    return inst->getOperand(0);
 }
 
 llvm::Value *IRGenerator::visitVariableName(Node *node) {

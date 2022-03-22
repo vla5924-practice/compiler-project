@@ -39,6 +39,7 @@ class IRGenerator {
     llvm::Value *visitFunctionCall(ast::Node *node);
     llvm::Value *visitIntegerLiteralValue(ast::Node *node);
     llvm::Value *visitStringLiteralValue(ast::Node *node);
+    llvm::Value *visitTypeConversion(ast::Node *node);
     llvm::Value *visitVariableName(ast::Node *node);
 
     void processNode(ast::Node::Ptr node);
