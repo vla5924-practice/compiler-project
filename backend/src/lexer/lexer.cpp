@@ -27,6 +27,12 @@ std::map<std::string_view, Operator> Lexer::operators = {
     {"(", Operator::LeftBrace},      {")", Operator::RightBrace}, {"[", Operator::RectLeftBrace}};
 // clang-format on
 
+namespace {
+inline std::string_view makeStringView(std::string::const_iterator begin_token, std::string::const_iterator end_token) {
+    return std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token)));
+}
+} // namespace
+
 TokenList Lexer::process(const StringVec &source) {
     TokenList tokens;
     size_t line_number = 1;
@@ -42,6 +48,8 @@ TokenList Lexer::process(const StringVec &source) {
 }
 
 TokenList Lexer::processString(const std::string &str, size_t line_number, ErrorBuffer &errors) {
+    constexpr const char *ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+                                            "\".,+-*/><=%()[]!: ";
     constexpr const char *ID_ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
     TokenList tokens;
 
@@ -61,28 +69,44 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
     }
 
     auto begin_token = str.begin() + space_count;
-    auto end_token = str.begin() + space_count;
+    auto end_token = begin_token;
 
-    for (auto i = str.begin() + space_count; i != str.end(); i++) {
+    for (auto i = begin_token; i != str.end(); i++) {
+        const char *j = ALLOWED_SYMBOLS;
+        for (; *j != '\0'; j++) {
+            if (*i == *j)
+                break;
+        }
+        if (*j == '\0') {
+            errors.push<LexerError>(line_number, std::distance(str.begin(), i), std::string("Unexpected symbol ") + *i);
+            break;
+        }
 
-        if (isalpha(*i)) {
+        if (isalpha(*i) || *i == '_') {
             end_token++;
             continue;
         }
 
         // pushing Keyword.
         if (end_token != begin_token) {
-            auto tok_id = keywords.find(
-                std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
+            auto tok_id = keywords.find(makeStringView(begin_token, end_token));
             if (tok_id != keywords.cend())
                 tokens.emplace_back(tok_id->second);
             else {
-                while ((i != str.end()) && isalnum(*i)) { // adding identifier with numbers
-                    end_token++;
-                    i++;
+                while (i != str.end()) { // adding identifier with numbers
+                    const char *j = ID_ALLOWED_SYMBOLS;
+                    for (; *j != '\0'; j++) {
+                        if (*i == *j) {
+                            end_token++;
+                            i++;
+                            break;
+                        }
+                    }
+                    if (*j == '\0') {
+                        break;
+                    }
                 }
-                auto pos = std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token)))
-                               .find_first_not_of(ID_ALLOWED_SYMBOLS);
+                auto pos = makeStringView(begin_token, end_token).find_first_not_of(ID_ALLOWED_SYMBOLS);
                 if (pos != std::string::npos) {
                     errors.push<LexerError>(line_number, std::distance(str.begin(), begin_token),
                                             "Identifier cannot contain special characters");
@@ -109,16 +133,19 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
 
             if (i != str.end() && isalpha(*i)) {
                 errors.push<LexerError>(line_number, std::distance(i, str.begin()),
-                                        "Identifier cannot start with numbers");
+                                        "Unexpected characters in numeric literal");
             }
 
             if (i != str.end() && *i == '.') { // pushing Float number
                 end_token++;
                 i++;
-                while (i != str.end() && isalnum(*i)) {
+                while (i != str.end() && isdigit(*i)) {
                     end_token++;
                     i++;
                 }
+                if (i != str.end() && isalpha(*i))
+                    errors.push<LexerError>(line_number, std::distance(i, str.begin()),
+                                            "Unexpected characters in numeric literal");
                 tokens.emplace_back(TokenType::FloatingPointLiteral, std::string(begin_token, end_token));
                 begin_token = i;
                 end_token = i;
@@ -168,40 +195,33 @@ TokenList Lexer::processString(const std::string &str, size_t line_number, Error
         if (i + 1 != str.cend() && (*i == '-') && *(i + 1) == '>') {
             tokens.emplace_back(Special::Arrow);
             i++;
-            begin_token = i;
-            end_token = i;
+            begin_token = end_token;
             continue;
         }
 
         if (*i == ':') {
             tokens.emplace_back(Special::Colon);
-            begin_token = i;
-            end_token = i;
+            begin_token = end_token;
             continue;
         }
 
-        auto tok_id =
-            operators.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
+        auto tok_id = operators.find(makeStringView(begin_token, end_token));
         if (tok_id != operators.end())
             tokens.emplace_back(tok_id->second);
 
-        begin_token = i;
-        end_token = i;
+        begin_token = end_token;
     }
 
     // adding a word or symbol at the end of a line
     if (begin_token != end_token) {
-        auto tok_id =
-            keywords.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
-        auto tok_src =
-            operators.find(std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token))));
+        auto tok_id = keywords.find(makeStringView(begin_token, end_token));
+        auto tok_src = operators.find(makeStringView(begin_token, end_token));
         if (tok_id != keywords.end())
             tokens.emplace_back(tok_id->second);
         else if (tok_src != operators.end())
             tokens.emplace_back(tok_id->second);
         else {
-            auto pos = std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token)))
-                           .find_first_not_of(ID_ALLOWED_SYMBOLS);
+            auto pos = makeStringView(begin_token, end_token).find_first_not_of(ID_ALLOWED_SYMBOLS);
             if (pos != std::string::npos) {
                 errors.push<LexerError>(line_number, std::distance(str.begin(), begin_token),
                                         "Identifier cannot contain special characters");
