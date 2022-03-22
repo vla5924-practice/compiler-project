@@ -36,6 +36,7 @@ class IRGenerator {
     llvm::Value *visitBinaryOperation(ast::Node *node);
     llvm::Value *visitExpression(ast::Node *node);
     llvm::Value *visitFloatingPointLiteralValue(ast::Node *node);
+    llvm::Value *visitFunctionCall(ast::Node *node);
     llvm::Value *visitIntegerLiteralValue(ast::Node *node);
     llvm::Value *visitStringLiteralValue(ast::Node *node);
     llvm::Value *visitVariableName(ast::Node *node);
@@ -44,7 +45,7 @@ class IRGenerator {
     void processExpression(ast::Node *node);
     void processFunctionDefinition(ast::Node *node);
     void processIfStatement(ast::Node *node);
-    void processPrintFunctionCall(ast::Node* node);
+    void processPrintFunctionCall(ast::Node *node);
     void processProgramRoot(ast::Node *node);
     void processReturnStatement(ast::Node *node);
     void processVariableDeclaration(ast::Node *node);

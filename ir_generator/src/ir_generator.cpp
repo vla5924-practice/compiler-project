@@ -30,6 +30,9 @@ bool lhsRequiresPtr(BinaryOperation op) {
 constexpr const char *const PLACEHOLDER_INT_NAME = "__placeholder_int";
 constexpr const char *const PLACEHOLDER_FLOAT_NAME = "__placeholder_float";
 constexpr const char *const PLACEHOLDER_STR_NAME = "__placeholder_str";
+constexpr const char *const PLACEHOLDER_TRUE_NAME = "__placeholder_true";
+constexpr const char *const PLACEHOLDER_FALSE_NAME = "__placeholder_false";
+constexpr const char *const PLACEHOLDER_NONE_NAME = "__placeholder_none";
 constexpr const char *const PLACEHOLDER_POINTER_NAME = "__placeholder_pointer";
 
 const char *const placeholderNameByTypeId(TypeId id) {
@@ -62,9 +65,8 @@ TypeId findVariableType(Node::Ptr node) {
 } // namespace
 
 static const std::unordered_map<std::string, std::string> placeholders = {
-    {PLACEHOLDER_INT_NAME, "%d"},
-    {PLACEHOLDER_FLOAT_NAME, "%f"},
-    {PLACEHOLDER_STR_NAME, "%s"},
+    {PLACEHOLDER_INT_NAME, "%d"},     {PLACEHOLDER_FLOAT_NAME, "%f"},    {PLACEHOLDER_STR_NAME, "%s"},
+    {PLACEHOLDER_TRUE_NAME, "True"},  {PLACEHOLDER_FALSE_NAME, "False"}, {PLACEHOLDER_NONE_NAME, "None"},
     {PLACEHOLDER_POINTER_NAME, "%x"},
 };
 
@@ -246,6 +248,22 @@ llvm::Value *IRGenerator::visitFloatingPointLiteralValue(Node *node) {
     return llvm::ConstantFP::get(context, llvm::APFloat(value));
 }
 
+llvm::Value *IRGenerator::visitFunctionCall(Node *node) {
+    assert(node && node->type == NodeType::FunctionCall);
+
+    const std::string &name = firstChild(node)->str();
+    if (name == "print") {
+        processPrintFunctionCall(node);
+        return nullptr;
+    }
+
+    auto argsNode = lastChild(node);
+    std::vector<llvm::Value *> arguments;
+    for (const auto &currentNode : argsNode->children)
+        arguments.push_back(visitExpression(currentNode.get()));
+    return builder->CreateCall(functions[name], arguments);
+}
+
 llvm::Value *IRGenerator::visitIntegerLiteralValue(Node *node) {
     assert(node && node->type == NodeType::IntegerLiteralValue);
 
@@ -377,6 +395,9 @@ void IRGenerator::processPrintFunctionCall(Node *node) {
     auto valueNode = firstChild(argsNode);
     TypeId typeId = BuiltInTypes::NoneType;
     switch (valueNode->type) {
+    case NodeType::Expression:
+        typeId = valueNode->typeId();
+        break;
     case NodeType::IntegerLiteralValue:
         typeId = BuiltInTypes::IntType;
         break;
@@ -391,7 +412,9 @@ void IRGenerator::processPrintFunctionCall(Node *node) {
         break;
     }
     auto placeholderName = placeholderNameByTypeId(typeId);
-    std::vector<llvm::Value *> arguments = {module->getNamedGlobal(placeholderName), visitNode(valueNode)};
+    std::vector<llvm::Value *> arguments = {module->getNamedGlobal(placeholderName)};
+    if (placeholders.find(placeholderName)->second[0] != '%')
+        arguments.push_back(visitNode(valueNode));
     builder->CreateCall(internalFunctions["printf"], arguments);
 }
 
