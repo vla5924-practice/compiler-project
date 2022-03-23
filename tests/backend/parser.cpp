@@ -8,335 +8,248 @@ using namespace lexer;
 using namespace parser;
 
 TEST(Parser, can_parse_if_statement) {
-    StringVec source = {"def main() -> None:", "    x: int = 1 ", "    if x == 2:", "        x = 3"};
+    StringVec source = {
+        "def main() -> None:", "    x: int = 1 ", "    if x == 2:", "        x = 3", "    else:", "        x = 1",
+    };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    SyntaxTree tree1;
-    tree1.root = std::make_shared<Node>(NodeType::ProgramRoot);
-    Node::Ptr child = std::make_shared<Node>(NodeType::FunctionDefinition, tree1.root);
-    tree1.root->children.push_back(child);
-    Node::Ptr chil1 = std::make_shared<Node>(NodeType::FunctionName, "main", child);
-    Node::Ptr chil2 = std::make_shared<Node>(NodeType::FunctionArguments, child);
-    Node::Ptr chil3 = std::make_shared<Node>(NodeType::FunctionReturnType, child);
-    chil3->value = NoneType;
-    Node::Ptr chil4 = std::make_shared<Node>(NodeType::BranchRoot, child);
-    child->children.push_back(chil1);
-    child->children.push_back(chil2);
-    child->children.push_back(chil3);
-    child->children.push_back(chil4);
-    Node::Ptr chi1 = std::make_shared<Node>(NodeType::VariableDeclaration, chil4);
-    Node::Ptr chi2 = std::make_shared<Node>(NodeType::IfStatement, chil4);
-    chil4->children.push_back(chi1);
-    chil4->children.push_back(chi2);
-    Node::Ptr ch1 = std::make_shared<Node>(IntType, chi1);
-    Node::Ptr ch2 = std::make_shared<Node>(NodeType::VariableName, "x", chi1);
-    Node::Ptr ch3 = std::make_shared<Node>(NodeType::Expression, chi1);
-    chi1->children.push_back(ch1);
-    chi1->children.push_back(ch2);
-    chi1->children.push_back(ch3);
-    Node::Ptr c1 = std::make_shared<Node>(1l, ch3);
-    ch3->children.push_back(c1);
-    Node::Ptr ch4 = std::make_shared<Node>(NodeType::Expression, chi2);
-    Node::Ptr ch5 = std::make_shared<Node>(NodeType::BranchRoot, chi2);
-    chi2->children.push_back(ch4);
-    chi2->children.push_back(ch5);
-    Node::Ptr c2 = std::make_shared<Node>(NodeType::BinaryOperation, ch4);
-    c2->value = BinaryOperation::Equal;
-    ch4->children.push_back(c2);
-    Node::Ptr _child1 = std::make_shared<Node>(NodeType::VariableName, "x", c2);
-    Node::Ptr _child2 = std::make_shared<Node>(2l, c2);
-    c2->children.push_back(_child1);
-    c2->children.push_back(_child2);
-    Node::Ptr c3 = std::make_shared<Node>(NodeType::Expression, ch5);
-    ch5->children.push_back(c3);
-    Node::Ptr _child3 = std::make_shared<Node>(NodeType::BinaryOperation, c3);
-    _child3->value = BinaryOperation::Assign;
-    c3->children.push_back(_child3);
-    Node::Ptr _chil1 = std::make_shared<Node>(NodeType::VariableName, "x", _child3);
-    Node::Ptr _chil2 = std::make_shared<Node>(3l, _child3);
-    _child3->children.push_back(_chil1);
-    _child3->children.push_back(_chil2);
-    ASSERT_EQ(tree1, tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          BinaryOperation: Equal\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 2\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 3\n"
+                           "        ElseStatement\n"
+                           "          BranchRoot\n"
+                           "            Expression\n"
+                           "              BinaryOperation: Assign\n"
+                           "                VariableName: x\n"
+                           "                IntegerLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Parser, can_parse_if_elif_statement) {
-    StringVec source = {"def main() -> None:", "    x: int = 1 ",  "    if x == 2:",
-                        "        x = 3",       "    elif x == 3:", "        x = 2"};
+    StringVec source = {
+        "def main() -> None:", "    x: int = 1 ",  "    if x == 2:",
+        "        x = 3",       "    elif x == 3:", "        x = 2",
+    };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    SyntaxTree tree1;
-    tree1.root = std::make_shared<Node>(NodeType::ProgramRoot);
-    Node::Ptr child = std::make_shared<Node>(NodeType::FunctionDefinition, tree1.root);
-    tree1.root->children.push_back(child);
-    Node::Ptr chil1 = std::make_shared<Node>(NodeType::FunctionName, "main", child);
-    Node::Ptr chil2 = std::make_shared<Node>(NodeType::FunctionArguments, child);
-    Node::Ptr chil3 = std::make_shared<Node>(NodeType::FunctionReturnType, child);
-    chil3->value = NoneType;
-    Node::Ptr chil4 = std::make_shared<Node>(NodeType::BranchRoot, child);
-    child->children.push_back(chil1);
-    child->children.push_back(chil2);
-    child->children.push_back(chil3);
-    child->children.push_back(chil4);
-    Node::Ptr chi1 = std::make_shared<Node>(NodeType::VariableDeclaration, chil4);
-    Node::Ptr chi2 = std::make_shared<Node>(NodeType::IfStatement, chil4);
-    chil4->children.push_back(chi1);
-    chil4->children.push_back(chi2);
-    Node::Ptr ch1 = std::make_shared<Node>(IntType, chi1);
-    Node::Ptr ch2 = std::make_shared<Node>(NodeType::VariableName, "x", chi1);
-    Node::Ptr ch3 = std::make_shared<Node>(NodeType::Expression, chi1);
-    chi1->children.push_back(ch1);
-    chi1->children.push_back(ch2);
-    chi1->children.push_back(ch3);
-    Node::Ptr c1 = std::make_shared<Node>(1l, ch3);
-    ch3->children.push_back(c1);
-    Node::Ptr ch4 = std::make_shared<Node>(NodeType::Expression, chi2);
-    Node::Ptr ch5 = std::make_shared<Node>(NodeType::BranchRoot, chi2);
-    Node::Ptr ch6 = std::make_shared<Node>(NodeType::ElifStatement, chi2);
-    chi2->children.push_back(ch4);
-    chi2->children.push_back(ch5);
-    chi2->children.push_back(ch6);
-    Node::Ptr c2 = std::make_shared<Node>(BinaryOperation::Equal, ch4);
-    ch4->children.push_back(c2);
-    Node::Ptr _child1 = std::make_shared<Node>(NodeType::VariableName, "x", c2);
-    Node::Ptr _child2 = std::make_shared<Node>(2l, c2);
-    c2->children.push_back(_child1);
-    c2->children.push_back(_child2);
-    Node::Ptr c3 = std::make_shared<Node>(NodeType::Expression, ch5);
-    ch5->children.push_back(c3);
-    Node::Ptr c4 = std::make_shared<Node>(NodeType::Expression, ch6);
-    Node::Ptr c5 = std::make_shared<Node>(NodeType::BranchRoot, ch6);
-    ch6->children.push_back(c4);
-    ch6->children.push_back(c5);
-    Node::Ptr _child3 = std::make_shared<Node>(BinaryOperation::Assign, c3);
-    c3->children.push_back(_child3);
-    Node::Ptr _child4 = std::make_shared<Node>(BinaryOperation::Equal, c4);
-    c4->children.push_back(_child4);
-    Node::Ptr _child5 = std::make_shared<Node>(NodeType::Expression, c5);
-    _child5->children.push_back(c5);
-    Node::Ptr _chil1 = std::make_shared<Node>(NodeType::VariableName, "x", _child3);
-    Node::Ptr _chil2 = std::make_shared<Node>(3l, _child3);
-    _child3->children.push_back(_chil1);
-    _child3->children.push_back(_chil2);
-    Node::Ptr _chil3 = std::make_shared<Node>(NodeType::VariableName, "x", _child4);
-    Node::Ptr _chil4 = std::make_shared<Node>(3l, _child4);
-    c2->children.push_back(_child1);
-    c2->children.push_back(_child2);
-    Node::Ptr _chil5 = std::make_shared<Node>(BinaryOperation::Assign, _child5);
-    _child5->children.push_back(_chil5);
-    Node::Ptr _chi1 = std::make_shared<Node>(NodeType::VariableName, "x", _chil5);
-    Node::Ptr _chi2 = std::make_shared<Node>(2l, _chil5);
-    _chil5->children.push_back(_chi1);
-    _chil5->children.push_back(_chi2);
-    ASSERT_EQ(tree1, tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          BinaryOperation: Equal\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 2\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 3\n"
+                           "        ElifStatement\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Equal\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 3\n"
+                           "          BranchRoot\n"
+                           "            Expression\n"
+                           "              BinaryOperation: Assign\n"
+                           "                VariableName: x\n"
+                           "                IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Parser, can_parse_while_statement) {
-    StringVec source = {"def main() -> None:", "    x: int = 1 ", "    while x == 2:", "        x = 3"};
+    StringVec source = {
+        "def main() -> None:",
+        "    x: int = 1 ",
+        "    while x == 2:",
+        "        x = 3",
+    };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    SyntaxTree tree1;
-    tree1.root = std::make_shared<Node>(NodeType::ProgramRoot);
-    Node::Ptr child = std::make_shared<Node>(NodeType::FunctionDefinition, tree1.root);
-    tree1.root->children.push_back(child);
-    Node::Ptr chil1 = std::make_shared<Node>(NodeType::FunctionName, "main", child);
-    Node::Ptr chil2 = std::make_shared<Node>(NodeType::FunctionArguments, child);
-    Node::Ptr chil3 = std::make_shared<Node>(NodeType::FunctionReturnType, child);
-    chil3->value = NoneType;
-    Node::Ptr chil4 = std::make_shared<Node>(NodeType::BranchRoot, child);
-    child->children.push_back(chil1);
-    child->children.push_back(chil2);
-    child->children.push_back(chil3);
-    child->children.push_back(chil4);
-    Node::Ptr chi1 = std::make_shared<Node>(NodeType::VariableDeclaration, chil4);
-    Node::Ptr chi2 = std::make_shared<Node>(NodeType::WhileStatement, chil4);
-    chil4->children.push_back(chi1);
-    chil4->children.push_back(chi2);
-    Node::Ptr ch1 = std::make_shared<Node>(IntType, chi1);
-    Node::Ptr ch2 = std::make_shared<Node>(NodeType::VariableName, "x", chi1);
-    Node::Ptr ch3 = std::make_shared<Node>(NodeType::Expression, chi1);
-    chi1->children.push_back(ch1);
-    chi1->children.push_back(ch2);
-    chi1->children.push_back(ch3);
-    Node::Ptr c1 = std::make_shared<Node>(1l, ch3);
-    ch3->children.push_back(c1);
-    Node::Ptr ch4 = std::make_shared<Node>(NodeType::Expression, chi2);
-    Node::Ptr ch5 = std::make_shared<Node>(NodeType::BranchRoot, chi2);
-    chi2->children.push_back(ch4);
-    chi2->children.push_back(ch5);
-    Node::Ptr c2 = std::make_shared<Node>(NodeType::BinaryOperation, ch4);
-    c2->value = BinaryOperation::Equal;
-    ch4->children.push_back(c2);
-    Node::Ptr _child1 = std::make_shared<Node>(NodeType::VariableName, "x", c2);
-    Node::Ptr _child2 = std::make_shared<Node>(2l, c2);
-    c2->children.push_back(_child1);
-    c2->children.push_back(_child2);
-    Node::Ptr c3 = std::make_shared<Node>(NodeType::Expression, ch5);
-    ch5->children.push_back(c3);
-    Node::Ptr _child3 = std::make_shared<Node>(NodeType::BinaryOperation, c3);
-    _child3->value = BinaryOperation::Assign;
-    c3->children.push_back(_child3);
-    Node::Ptr _chil1 = std::make_shared<Node>(NodeType::VariableName, "x", _child3);
-    Node::Ptr _chil2 = std::make_shared<Node>(3l, _child3);
-    _child3->children.push_back(_chil1);
-    _child3->children.push_back(_chil2);
-    ASSERT_EQ(tree1, tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      WhileStatement\n"
+                           "        Expression\n"
+                           "          BinaryOperation: Equal\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 2\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 3\n";
+
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Parser, can_parse_long_expression) {
-    StringVec source = {"def main() -> None:", "    x = (y + z + 5 * 2) / 2"};
+    StringVec source = {
+        "def main() -> None:",
+        "    x = (y + z + 5 * 2) / 2",
+    };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    SyntaxTree tree1;
-    tree1.root = std::make_shared<Node>(NodeType::ProgramRoot);
-    Node::Ptr child = std::make_shared<Node>(NodeType::FunctionDefinition, tree1.root);
-    tree1.root->children.push_back(child);
-    Node::Ptr chil1 = std::make_shared<Node>(NodeType::FunctionName, "main", child);
-    Node::Ptr chil2 = std::make_shared<Node>(NodeType::FunctionArguments, child);
-    Node::Ptr chil3 = std::make_shared<Node>(NodeType::FunctionReturnType, child);
-    chil3->value = NoneType;
-    Node::Ptr chil4 = std::make_shared<Node>(NodeType::BranchRoot, child);
-    child->children.push_back(chil1);
-    child->children.push_back(chil2);
-    child->children.push_back(chil3);
-    child->children.push_back(chil4);
-    Node::Ptr chi1 = std::make_shared<Node>(NodeType::Expression, chil4);
-    chil4->children.push_back(chi1);
-    Node::Ptr chi = std::make_shared<Node>(NodeType::BinaryOperation, chi1);
-    chi->value = BinaryOperation::Assign;
-    chi1->children.push_back(chi);
-    Node::Ptr chic = std::make_shared<Node>(NodeType::VariableName, "x", chi);
-    Node::Ptr chic1 = std::make_shared<Node>(NodeType::BinaryOperation, chi);
-    chic1->value = BinaryOperation::Div;
-    chi->children.push_back(chic);
-    chi->children.push_back(chic1);
-    Node::Ptr c1 = std::make_shared<Node>(NodeType::BinaryOperation, chic1);
-    c1->value = BinaryOperation::Add;
-    Node::Ptr c2 = std::make_shared<Node>(2l, chic1);
-    chic1->children.push_back(c1);
-    chic1->children.push_back(c2);
-    Node::Ptr _chil1 = std::make_shared<Node>(NodeType::BinaryOperation, c1);
-    _chil1->value = BinaryOperation::Add;
-    Node::Ptr _chil2 = std::make_shared<Node>(NodeType::BinaryOperation, c1);
-    _chil2->value = BinaryOperation::Mult;
-    c1->children.push_back(_chil1);
-    c1->children.push_back(_chil2);
-    Node::Ptr _ch1 = std::make_shared<Node>(NodeType::VariableName, "y", _chil1);
-    Node::Ptr _ch2 = std::make_shared<Node>(NodeType::VariableName, "z", _chil1);
-    _chil1->children.push_back(_ch1);
-    _chil1->children.push_back(_ch2);
-    Node::Ptr _chica1 = std::make_shared<Node>(5l, _chil2);
-    Node::Ptr _chica2 = std::make_shared<Node>(2l, _chil2);
-    _chil2->children.push_back(_chica1);
-    _chil2->children.push_back(_chica2);
-    ASSERT_EQ(tree1, tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Div\n"
+                           "            BinaryOperation: Add\n"
+                           "              BinaryOperation: Add\n"
+                           "                VariableName: y\n"
+                           "                VariableName: z\n"
+                           "              BinaryOperation: Mult\n"
+                           "                IntegerLiteralValue: 5\n"
+                           "                IntegerLiteralValue: 2\n"
+                           "            IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Parser, can_parse_nested_if_statement) {
-    StringVec source = {"def main() -> None:", "    if x == 2:", "        if x > 1:", "            x = 3"};
+    StringVec source = {
+        "def main() -> None:",
+        "    if x == 2:",
+        "        if x > 1:",
+        "            x = 3",
+    };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    SyntaxTree tree1;
-    tree1.root = std::make_shared<Node>(NodeType::ProgramRoot);
-    Node::Ptr child = std::make_shared<Node>(NodeType::FunctionDefinition, tree1.root);
-    tree1.root->children.push_back(child);
-    Node::Ptr chil1 = std::make_shared<Node>(NodeType::FunctionName, "main", child);
-    Node::Ptr chil2 = std::make_shared<Node>(NodeType::FunctionArguments, child);
-    Node::Ptr chil3 = std::make_shared<Node>(NodeType::FunctionReturnType, child);
-    chil3->value = NoneType;
-    Node::Ptr chil4 = std::make_shared<Node>(NodeType::BranchRoot, child);
-    child->children.push_back(chil1);
-    child->children.push_back(chil2);
-    child->children.push_back(chil3);
-    child->children.push_back(chil4);
-    Node::Ptr chi2 = std::make_shared<Node>(NodeType::IfStatement, chil4);
-    chil4->children.push_back(chi2);
-    Node::Ptr ch4 = std::make_shared<Node>(NodeType::Expression, chi2);
-    Node::Ptr ch5 = std::make_shared<Node>(NodeType::BranchRoot, chi2);
-    chi2->children.push_back(ch4);
-    chi2->children.push_back(ch5);
-    Node::Ptr c2 = std::make_shared<Node>(NodeType::BinaryOperation, ch4);
-    c2->value = BinaryOperation::Equal;
-    ch4->children.push_back(c2);
-    Node::Ptr _child1 = std::make_shared<Node>(NodeType::VariableName, "x", c2);
-    Node::Ptr _child2 = std::make_shared<Node>(2l, c2);
-    c2->children.push_back(_child1);
-    c2->children.push_back(_child2);
-    Node::Ptr c3 = std::make_shared<Node>(NodeType::IfStatement, ch5);
-    ch5->children.push_back(c3);
-    Node::Ptr ch6 = std::make_shared<Node>(NodeType::Expression, c3);
-    Node::Ptr ch7 = std::make_shared<Node>(NodeType::BranchRoot, c3);
-    c3->children.push_back(ch6);
-    c3->children.push_back(ch7);
-    Node::Ptr _child3 = std::make_shared<Node>(NodeType::BinaryOperation, ch6);
-    _child3->value = BinaryOperation::Greater;
-    ch6->children.push_back(_child3);
-    Node::Ptr _chil1 = std::make_shared<Node>(NodeType::VariableName, "x", _child3);
-    Node::Ptr _chil2 = std::make_shared<Node>(1l, _child3);
-    _child3->children.push_back(_chil1);
-    _child3->children.push_back(_chil2);
-    Node::Ptr c4 = std::make_shared<Node>(NodeType::Expression, ch7);
-    ch7->children.push_back(c4);
-    Node::Ptr _child4 = std::make_shared<Node>(NodeType::BinaryOperation, c4);
-    _child4->value = BinaryOperation::Assign;
-    c4->children.push_back(_child4);
-    Node::Ptr _chil3 = std::make_shared<Node>(NodeType::VariableName, "x", _child4);
-    Node::Ptr _chil4 = std::make_shared<Node>(3l, _child4);
-    _child4->children.push_back(_chil3);
-    _child4->children.push_back(_chil4);
-    ASSERT_EQ(tree1, tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          BinaryOperation: Equal\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 2\n"
+                           "        BranchRoot\n"
+                           "          IfStatement\n"
+                           "            Expression\n"
+                           "              BinaryOperation: Greater\n"
+                           "                VariableName: x\n"
+                           "                IntegerLiteralValue: 1\n"
+                           "            BranchRoot\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Assign\n"
+                           "                  VariableName: x\n"
+                           "                  IntegerLiteralValue: 3\n";
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Parser, can_parse_function_call) {
-    StringVec source = {"def main() -> None:", "    function(x, y, z)"};
+    StringVec source = {
+        "def main() -> None:",
+        "    function(x, y, z)",
+    };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    SyntaxTree tree1;
-    tree1.root = std::make_shared<Node>(NodeType::ProgramRoot);
-    Node::Ptr child = std::make_shared<Node>(NodeType::FunctionDefinition, tree1.root);
-    tree1.root->children.push_back(child);
-    Node::Ptr chil1 = std::make_shared<Node>(NodeType::FunctionName, "main", child);
-    Node::Ptr chil2 = std::make_shared<Node>(NodeType::FunctionArguments, child);
-    Node::Ptr chil3 = std::make_shared<Node>(NodeType::FunctionReturnType, child);
-    chil3->value = NoneType;
-    Node::Ptr chil4 = std::make_shared<Node>(NodeType::BranchRoot, child);
-    child->children.push_back(chil1);
-    child->children.push_back(chil2);
-    child->children.push_back(chil3);
-    child->children.push_back(chil4);
-    Node::Ptr chi2 = std::make_shared<Node>(NodeType::IfStatement, chil4);
-    chil4->children.push_back(chi2);
-    Node::Ptr ch4 = std::make_shared<Node>(NodeType::Expression, chi2);
-    Node::Ptr ch5 = std::make_shared<Node>(NodeType::BranchRoot, chi2);
-    chi2->children.push_back(ch4);
-    chi2->children.push_back(ch5);
-    Node::Ptr c2 = std::make_shared<Node>(NodeType::BinaryOperation, ch4);
-    c2->value = BinaryOperation::Equal;
-    ch4->children.push_back(c2);
-    Node::Ptr _child1 = std::make_shared<Node>(NodeType::VariableName, "x", c2);
-    Node::Ptr _child2 = std::make_shared<Node>(2l, c2);
-    c2->children.push_back(_child1);
-    c2->children.push_back(_child2);
-    Node::Ptr c3 = std::make_shared<Node>(NodeType::IfStatement, ch5);
-    ch5->children.push_back(c3);
-    Node::Ptr ch6 = std::make_shared<Node>(NodeType::Expression, c3);
-    Node::Ptr ch7 = std::make_shared<Node>(NodeType::BranchRoot, c3);
-    c3->children.push_back(ch6);
-    c3->children.push_back(ch7);
-    Node::Ptr _child3 = std::make_shared<Node>(NodeType::BinaryOperation, ch6);
-    _child3->value = BinaryOperation::Greater;
-    ch6->children.push_back(_child3);
-    Node::Ptr _chil1 = std::make_shared<Node>(NodeType::VariableName, "x", _child3);
-    Node::Ptr _chil2 = std::make_shared<Node>(1l, _child3);
-    _child3->children.push_back(_chil1);
-    _child3->children.push_back(_chil2);
-    Node::Ptr c4 = std::make_shared<Node>(NodeType::Expression, ch7);
-    ch7->children.push_back(c4);
-    Node::Ptr _child4 = std::make_shared<Node>(NodeType::BinaryOperation, c4);
-    _child4->value = BinaryOperation::Assign;
-    c4->children.push_back(_child4);
-    Node::Ptr _chil3 = std::make_shared<Node>(NodeType::VariableName, "x", _child4);
-    Node::Ptr _chil4 = std::make_shared<Node>(3l, _child4);
-    _child4->children.push_back(_chil3);
-    _child4->children.push_back(_chil4);
-    ASSERT_EQ(tree1, tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        FunctionCall\n"
+                           "          FunctionName: function\n"
+                           "          FunctionArguments\n"
+                           "            Expression\n"
+                           "              VariableName: x\n"
+                           "            Expression\n"
+                           "              VariableName: y\n"
+                           "            Expression\n"
+                           "              VariableName: z\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Parser, can_parse_function_with_return) {
+    StringVec source = {
+        "def main() -> int:",
+        "    return 1",
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: IntType\n"
+                           "    BranchRoot\n"
+                           "      ReturnStatement\n"
+                           "        Expression\n"
+                           "          IntegerLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Parser, can_parse_multiple_functions) {
+    StringVec source = {
+        "def foo() -> None:",
+        "    y: int",
+        "def bar() -> None:",
+        "    x: int",
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: foo\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: bar\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n";
+    ASSERT_EQ(tree_str, tree.dump());
 }
