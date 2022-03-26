@@ -483,6 +483,7 @@ static void parseProgramRoot(ParserContext &ctx) {
             ctx.propagate();
         } else {
             ctx.pushError("Function definition was expected");
+            return;
         }
     }
 }
