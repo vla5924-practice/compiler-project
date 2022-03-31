@@ -9,7 +9,7 @@ using namespace lexer;
 using namespace parser;
 using namespace semantizer;
 
-TEST(Semantizer, test) {
+TEST(Semantizer, test1) {
     StringVec source = {"def main() -> None:", "    x: int",     "    y: float ",    "    x = 1.0 + y",
                         "    if x > y:",       "        z: int", "        z = y + 1"};
     TokenList token_list = Lexer::process(source);
