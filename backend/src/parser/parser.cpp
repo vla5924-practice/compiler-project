@@ -329,6 +329,8 @@ static void parseBranchRoot(ParserContext &ctx) {
         } else if (currNestingLevel < ctx.nestingLevel) {
             ctx.goParentNode();
             while (ctx.node->type != ast::NodeType::BranchRoot) {
+                if (!ctx.node->parent)
+                    break;
                 ctx.goParentNode();
             }
             ctx.nestingLevel--;
@@ -475,12 +477,14 @@ static void parseIfStatement(ParserContext &ctx) {
 }
 
 static void parseProgramRoot(ParserContext &ctx) {
-    const Token &currToken = ctx.token();
-    if (currToken.is(Keyword::Definition)) {
-        ctx.node = ctx.pushChildNode(ast::NodeType::FunctionDefinition);
-        ctx.propagate();
-    } else {
-        ctx.pushError("Function definition was expected");
+    while (ctx.tokenIter != ctx.tokenEnd) {
+        if (ctx.token().is(Keyword::Definition)) {
+            ctx.node = ctx.pushChildNode(ast::NodeType::FunctionDefinition);
+            ctx.propagate();
+        } else {
+            ctx.pushError("Function definition was expected");
+            return;
+        }
     }
 }
 
