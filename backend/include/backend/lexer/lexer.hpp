@@ -9,7 +9,6 @@
 #include "lexer/token.hpp"
 #include "stringvec.hpp"
 
-
 namespace lexer {
 
 class Lexer {
