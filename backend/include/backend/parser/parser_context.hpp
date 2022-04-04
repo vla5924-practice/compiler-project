@@ -8,8 +8,8 @@
 #include <ast/types.hpp>
 
 #include "error_buffer.hpp"
-#include "lexer/token_types.hpp"
 #include "lexer/token.hpp"
+#include "lexer/token_types.hpp"
 #include "parser/parser_error.hpp"
 
 namespace parser {
