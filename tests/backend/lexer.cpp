@@ -2,7 +2,7 @@
 
 #include "lexer/lexer.hpp"
 #include "lexer/lexer_error.hpp"
-#include "lexer/tokenlist.hpp"
+#include "lexer/token.hpp"
 #include "stringvec.hpp"
 
 #define SINGLE_TOKEN_TEST_IMPL(TOKEN_STR, TOKEN_VALUE)                                                                 \

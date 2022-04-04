@@ -7,7 +7,7 @@
 
 #include "error_buffer.hpp"
 #include "lexer/token.hpp"
-#include "lexer/tokenlist.hpp"
+#include "lexer/token.hpp"
 #include "stringvec.hpp"
 
 namespace lexer {
