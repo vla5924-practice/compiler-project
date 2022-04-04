@@ -2,7 +2,7 @@
 
 #include <ast/syntax_tree.hpp>
 
-#include "lexer/tokenlist.hpp"
+#include "lexer/token.hpp"
 
 namespace parser {
 
