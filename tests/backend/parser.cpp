@@ -183,7 +183,7 @@ TEST(Parser, can_parse_nested_if_statement) {
 TEST(Parser, can_parse_function_call) {
     StringVec source = {
         "def main() -> None:",
-        "    function(x, y, z)",
+        "    function(x, y + 1, z + x)",
     };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -200,16 +200,46 @@ TEST(Parser, can_parse_function_call) {
                            "            Expression\n"
                            "              VariableName: x\n"
                            "            Expression\n"
-                           "              VariableName: y\n"
+                           "              BinaryOperation: Add\n"
+                           "                VariableName: y\n"
+                           "                IntegerLiteralValue: 1\n"
                            "            Expression\n"
-                           "              VariableName: z\n";
+                           "              BinaryOperation: Add\n"
+                           "                VariableName: z\n"
+                           "                VariableName: x\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Parser, can_parse_function_definition_with_parameters) {
+    StringVec source = {
+        "def foo(x: int, y: float, z: bool) -> None:",
+        "    return",
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: foo\n"
+                           "    FunctionArguments\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: BoolType\n"
+                           "        VariableName: z\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      ReturnStatement\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Parser, can_parse_function_with_return) {
     StringVec source = {
-        "def main() -> int:",
-        "    return 1",
+        "def main() -> float:",
+        "    return 1 / x",
     };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -217,11 +247,13 @@ TEST(Parser, can_parse_function_with_return) {
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
                            "    FunctionArguments\n"
-                           "    FunctionReturnType: IntType\n"
+                           "    FunctionReturnType: FloatType\n"
                            "    BranchRoot\n"
                            "      ReturnStatement\n"
                            "        Expression\n"
-                           "          IntegerLiteralValue: 1\n";
+                           "          BinaryOperation: Div\n"
+                           "            IntegerLiteralValue: 1\n"
+                           "            VariableName: x\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
 
