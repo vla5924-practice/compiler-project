@@ -94,7 +94,11 @@ void Node::dump(std::ostream &stream, int depth) const {
         stream << "ElseStatement\n";
         break;
     case NodeType::Expression:
-        stream << "Expression\n"; //<< typeIdToString(typeId()) << "\n";
+        if (std::holds_alternative<TypeId>(value)) {
+            stream << "Expression" << typeIdToString(typeId()) << "\n";
+        } else {
+            stream << "Expression\n";
+        }
         break;
     case NodeType::FloatingPointLiteralValue:
         stream << "FloatingPointLiteralValue: " << fpNum() << "\n";

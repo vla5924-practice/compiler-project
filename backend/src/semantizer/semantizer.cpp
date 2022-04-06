@@ -2,7 +2,7 @@
 
 using namespace semantizer;
 using namespace ast;
-namespace {
+
 static std::vector<TypeId> getFunctionArguments(std::list<Node::Ptr> &functionArguments) {
     std::vector<TypeId> result;
 
@@ -13,11 +13,10 @@ static std::vector<TypeId> getFunctionArguments(std::list<Node::Ptr> &functionAr
     return result;
 }
 
-static ast::TypeId searchVariable(const Node::Ptr &node, const std::list<VariablesTable *> &tables,
-                                  ErrorBuffer &errors) {
+static TypeId searchVariable(const Node::Ptr &node, const std::list<VariablesTable *> &tables, ErrorBuffer &errors) {
     TypeId type = BuiltInTypes::BuiltInTypesCount;
     for (const auto &table : tables) {
-        ast::VariablesTable::const_iterator table_name = table->find(node->str());
+        VariablesTable::const_iterator table_name = table->find(node->str());
         if (table_name != table->cend()) {
             type = table_name->second;
             break;
@@ -201,7 +200,7 @@ static void processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::l
             list_child++;
             auto name = (*list_child)->str();
 
-            ast::VariablesTable::const_iterator table_name = tables.front()->find(name);
+            VariablesTable::const_iterator table_name = tables.front()->find(name);
             if (table_name != tables.front()->cend()) {
                 errors.push<SemantizerError>(*child, "Redeclaration of " + name);
             }
@@ -239,7 +238,7 @@ static void processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::l
     tables.pop_front();
 }
 
-static void parseFunctions(std::list<Node::Ptr> &children, FunctionsTable &functions, ErrorBuffer &errors) {
+static void parseFunctions(const std::list<Node::Ptr> &children, FunctionsTable &functions, ErrorBuffer &errors) {
     for (auto &node : children) {
         if (node->type == NodeType::FunctionDefinition) {
             auto child = node->children.begin();
@@ -261,8 +260,6 @@ static void parseFunctions(std::list<Node::Ptr> &children, FunctionsTable &funct
         }
     }
 }
-
-} // namespace
 
 void Semantizer::process(SyntaxTree &tree) {
     ErrorBuffer errors;
