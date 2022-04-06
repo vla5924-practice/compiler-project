@@ -3,7 +3,7 @@
 using namespace semantizer;
 using namespace ast;
 
-static std::vector<TypeId> getFunctionArguments(std::list<Node::Ptr> &functionArguments) {
+static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments) {
     std::vector<TypeId> result;
 
     for (const auto &node : functionArguments) {
