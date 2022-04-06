@@ -1,9 +1,10 @@
 #pragma once
 
-#include "error_buffer.hpp"
-#include "semantizer_error.hpp"
 #include <ast/syntax_tree.hpp>
 #include <ast/types.hpp>
+
+#include "error_buffer.hpp"
+#include "semantizer_error.hpp"
 
 namespace semantizer {
 
