@@ -14,10 +14,9 @@ using namespace parser;
 
 namespace {
 
-using TokenIterator = TokenList::const_iterator;
 using SubExpression = std::variant<TokenIterator, ast::Node::Ptr>;
 
-bool isVariableDeclaration(const TokenList::const_iterator &tokenIter, const TokenList::const_iterator &tokenEnd) {
+bool isVariableDeclaration(const TokenIterator &tokenIter, const TokenIterator &tokenEnd) {
     if (tokenIter == tokenEnd || std::next(tokenIter) == tokenEnd || std::next(tokenIter, 2) == tokenEnd)
         return false;
 

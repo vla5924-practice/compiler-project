@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include <backend/lexer/tokenlist.hpp>
+#include <backend/lexer/token.hpp>
 #include <backend/stringvec.hpp>
 
 namespace dumping {

@@ -64,6 +64,8 @@ const char *const typeIdToString(TypeId typeId) {
         return "IntType";
     case FloatType:
         return "FloatType";
+    case BoolType:
+        return "BoolType";
     case StrType:
         return "StrType";
     case NoneType:

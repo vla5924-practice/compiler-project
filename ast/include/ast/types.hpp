@@ -10,6 +10,7 @@ enum BuiltInTypes : TypeId {
     FloatType = 2,
     StrType = 3,
     NoneType = 4,
+    BoolType = 5,
     BuiltInTypesCount,
 };
 

@@ -2,6 +2,7 @@
 
 #include "token_types.hpp"
 
+#include <list>
 #include <ostream>
 #include <string>
 #include <variant>
@@ -59,5 +60,8 @@ struct Token {
     std::string dump() const;
     void dump(std::ostream &stream) const;
 };
+
+using TokenList = std::list<Token>;
+using TokenIterator = TokenList::const_iterator;
 
 } // namespace lexer
