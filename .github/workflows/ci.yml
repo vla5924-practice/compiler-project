@@ -72,6 +72,7 @@ jobs:
         md llvm_build && cd llvm_build
         curl -o llvm.zip https://codeload.github.com/llvm/llvm-project/zip/refs/tags/llvmorg-13.0.0
         7z x llvm.zip *.*
+        del /q llvm.zip
         md build && cd build
         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%GITHUB_WORKSPACE%\llvm -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_CXX_STANDARD=17 -DLLVM_OPTIMIZED_TABLEGEN=ON -Thost=x64 ..\llvm-project-llvmorg-13.0.0\llvm
         cmake --build .
