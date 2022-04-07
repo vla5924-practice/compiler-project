@@ -215,7 +215,7 @@ llvm::Value *IRGenerator::visitBinaryOperation(Node *node) {
         return builder->CreateFAdd(lhs, rhs);
     case BinaryOperation::FSub:
         return builder->CreateFSub(lhs, rhs);
-    case BinaryOperation::FMul:
+    case BinaryOperation::FMult:
         return builder->CreateFMul(lhs, rhs);
     case BinaryOperation::FDiv:
         return builder->CreateFDiv(lhs, rhs);
