@@ -42,13 +42,11 @@ jobs:
         version: "13.0.0"
         cached: ${{ steps.cache-llvm.outputs.cache-hit }}
     - name: Build
-      shell: bash
       run: |
         mkdir build && cd build
         cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
         make
     - name: Run tests
-      shell: bash
       run: |
         cd build
         ctest
@@ -61,14 +59,32 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
+    - name: Cache LLVM
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: ./llvm
+        key: llvm-13.0.0-windows
+    - name: Install LLVM
+      if: ${{ ! steps.cache-llvm.outputs.cache-hit }}
+      run: |
+        md llvm
+        md llvm_build && cd llvm_build
+        curl -o llvm.zip https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-13.0.0.zip
+        7z x llvm.zip *.*
+        md build && cd build
+        cmake -DCMAKE_INSTALL_PREFIX=%GITHUB_WORKSPACE%\llvm -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_CXX_STANDARD=17 -Thost=x64 ..\llvm-project-llvmorg-13.0.0\llvm
+        cmake --build .
+        cmake --build . --target install
+        cd %GITHUB_WORKSPACE%
+        del /q llvm_build
+        del /q llvm\bin
     - name: Build
-      shell: cmd
       run: |
         md build && cd build
-        cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DENABLE_IR_GENERATOR=OFF ..
+        cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DLLVM_DIR=%GITHUB_WORKSPACE%\llvm\lib\cmake\llvm ..
         cmake --build .
     - name: Run tests
-      shell: bash
       run: |
         cd build
         ctest
