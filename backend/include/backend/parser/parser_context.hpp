@@ -8,8 +8,8 @@
 #include <ast/types.hpp>
 
 #include "error_buffer.hpp"
+#include "lexer/token.hpp"
 #include "lexer/token_types.hpp"
-#include "lexer/tokenlist.hpp"
 #include "parser/parser_error.hpp"
 
 namespace parser {
@@ -17,8 +17,8 @@ namespace parser {
 struct ParserContext {
     std::unordered_map<ast::NodeType, std::function<void(ParserContext &)>> &subparsers;
     ast::Node::Ptr node;
-    lexer::TokenList::const_iterator tokenIter;
-    lexer::TokenList::const_iterator tokenEnd;
+    lexer::TokenIterator tokenIter;
+    lexer::TokenIterator tokenEnd;
     int nestingLevel;
     ErrorBuffer errors;
 

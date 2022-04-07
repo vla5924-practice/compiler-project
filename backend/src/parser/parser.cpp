@@ -14,10 +14,9 @@ using namespace parser;
 
 namespace {
 
-using TokenIterator = TokenList::const_iterator;
 using SubExpression = std::variant<TokenIterator, ast::Node::Ptr>;
 
-bool isVariableDeclaration(const TokenList::const_iterator &tokenIter, const TokenList::const_iterator &tokenEnd) {
+bool isVariableDeclaration(const TokenIterator &tokenIter, const TokenIterator &tokenEnd) {
     if (tokenIter == tokenEnd || std::next(tokenIter) == tokenEnd || std::next(tokenIter, 2) == tokenEnd)
         return false;
 
@@ -329,6 +328,8 @@ static void parseBranchRoot(ParserContext &ctx) {
         } else if (currNestingLevel < ctx.nestingLevel) {
             ctx.goParentNode();
             while (ctx.node->type != ast::NodeType::BranchRoot) {
+                if (!ctx.node->parent)
+                    break;
                 ctx.goParentNode();
             }
             ctx.nestingLevel--;
@@ -475,12 +476,14 @@ static void parseIfStatement(ParserContext &ctx) {
 }
 
 static void parseProgramRoot(ParserContext &ctx) {
-    const Token &currToken = ctx.token();
-    if (currToken.is(Keyword::Definition)) {
-        ctx.node = ctx.pushChildNode(ast::NodeType::FunctionDefinition);
-        ctx.propagate();
-    } else {
-        ctx.pushError("Function definition was expected");
+    while (ctx.tokenIter != ctx.tokenEnd) {
+        if (ctx.token().is(Keyword::Definition)) {
+            ctx.node = ctx.pushChildNode(ast::NodeType::FunctionDefinition);
+            ctx.propagate();
+        } else {
+            ctx.pushError("Function definition was expected");
+            return;
+        }
     }
 }
 
