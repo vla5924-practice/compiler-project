@@ -42,13 +42,11 @@ jobs:
         version: "13.0.0"
         cached: ${{ steps.cache-llvm.outputs.cache-hit }}
     - name: Build
-      shell: bash
       run: |
         mkdir build && cd build
         cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
         make
     - name: Run tests
-      shell: bash
       run: |
         cd build
         ctest
@@ -62,13 +60,11 @@ jobs:
       with:
         submodules: true
     - name: Build
-      shell: cmd
       run: |
         md build && cd build
         cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DENABLE_IR_GENERATOR=OFF ..
         cmake --build .
     - name: Run tests
-      shell: bash
       run: |
         cd build
         ctest
