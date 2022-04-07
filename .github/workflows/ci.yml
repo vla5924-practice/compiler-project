@@ -35,7 +35,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ./llvm
-        key: llvm-13.0.0
+        key: llvm-13.0.0-ubuntu
     - name: Install LLVM and Clang
       uses: KyleMayes/install-llvm-action@v1
       with:
@@ -63,9 +63,9 @@ jobs:
       id: cache-llvm
       uses: actions/cache@v2
       with:
-        path: ./llvm
-        key: llvm-13.0.0-windows
-    - name: Install LLVM
+        path: .\llvm
+        key: llvm-13.0.0-windows-temp
+    - name: Build and install LLVM
       if: ${{ ! steps.cache-llvm.outputs.cache-hit }}
       run: |
         md llvm
@@ -73,12 +73,12 @@ jobs:
         curl -o llvm.zip https://codeload.github.com/llvm/llvm-project/zip/refs/tags/llvmorg-13.0.0
         7z x llvm.zip *.*
         md build && cd build
-        cmake -DCMAKE_INSTALL_PREFIX=%GITHUB_WORKSPACE%\llvm -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_CXX_STANDARD=17 -Thost=x64 ..\llvm-project-llvmorg-13.0.0\llvm
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%GITHUB_WORKSPACE%\llvm -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_TARGETS_TO_BUILD=X86 -DCMAKE_CXX_STANDARD=17 -DLLVM_OPTIMIZED_TABLEGEN=ON -Thost=x64 ..\llvm-project-llvmorg-13.0.0\llvm
         cmake --build .
         cmake --build . --target install
         cd %GITHUB_WORKSPACE%
-        del /q llvm_build
-        del /q llvm\bin
+        rd /s /q llvm_build
+        rd /s /q llvm\bin
     - name: Build
       run: |
         md build && cd build
