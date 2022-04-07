@@ -4,7 +4,7 @@
 
 using namespace ast;
 
-TEST(SyntaxTree, can_compare_same_syntax_tree) {
+TEST(SyntaxTree, can_compare_same_syntax_trees) {
     SyntaxTree tree, tree1;
     tree.root = std::make_shared<Node>(NodeType::ProgramRoot);
     tree1.root = std::make_shared<Node>(NodeType::ProgramRoot);
@@ -12,10 +12,11 @@ TEST(SyntaxTree, can_compare_same_syntax_tree) {
     tree.root->children.push_back(child);
     Node::Ptr child1 = std::make_shared<Node>(NodeType::FunctionDefinition, tree1.root);
     tree1.root->children.push_back(child1);
-    ASSERT_EQ(tree, tree1);
+    ASSERT_TRUE(tree == tree1);
+    ASSERT_FALSE(tree != tree1);
 }
 
-TEST(SyntaxTree, can_compare_different_syntax_tree) {
+TEST(SyntaxTree, can_compare_different_syntax_trees) {
     SyntaxTree tree, tree1;
     tree.root = std::make_shared<Node>(NodeType::ProgramRoot);
     tree1.root = std::make_shared<Node>(NodeType::ProgramRoot);
@@ -23,5 +24,6 @@ TEST(SyntaxTree, can_compare_different_syntax_tree) {
     tree.root->children.push_back(child);
     Node::Ptr child1 = std::make_shared<Node>(NodeType::FunctionReturnType, tree1.root);
     tree1.root->children.push_back(child1);
-    ASSERT_NE(tree, tree1);
+    ASSERT_TRUE(tree != tree1);
+    ASSERT_FALSE(tree == tree1);
 }
