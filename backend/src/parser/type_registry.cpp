@@ -7,7 +7,8 @@ using namespace parser;
 std::map<std::string, TypeId> TypeRegistry::userDefinedTypes = {};
 
 bool TypeRegistry::isTypename(const Token &token) {
-    return token.is(Keyword::Int) || token.is(Keyword::Float) || token.is(Keyword::Str) || token.is(Keyword::None) ||
+    return token.is(Keyword::Int) || token.is(Keyword::Float) || token.is(Keyword::Bool) || token.is(Keyword::Str) ||
+           token.is(Keyword::None) ||
            (token.type == TokenType::Identifier && userDefinedTypes.find(token.id()) != userDefinedTypes.end());
 }
 
@@ -21,6 +22,8 @@ ast::TypeId TypeRegistry::typeId(const Token &token) {
         return ast::IntType;
     if (token.is(Keyword::Float))
         return ast::FloatType;
+    if (token.is(Keyword::Bool))
+        return ast::BoolType;
     if (token.is(Keyword::Str))
         return ast::StrType;
     if (token.is(Keyword::None))
