@@ -1,5 +1,6 @@
 #include "node.hpp"
 
+#include <iostream>
 #include <sstream>
 
 using namespace ast;
@@ -74,6 +75,12 @@ const char *const typeIdToString(TypeId typeId) {
     return "";
 }
 
+void variablesTableToString(std::ostream &stream, const VariablesTable &table) {
+    for (const auto &[name, typeId] : table) {
+        stream << " " << name << ":" << typeIdToString(typeId);
+    }
+}
+
 } // namespace
 
 void Node::dump(std::ostream &stream, int depth) const {
@@ -85,7 +92,13 @@ void Node::dump(std::ostream &stream, int depth) const {
         stream << "BinaryOperation: " << binaryOperationToString(binOp()) << "\n";
         break;
     case NodeType::BranchRoot:
-        stream << "BranchRoot\n";
+        if (std::holds_alternative<VariablesTable>(value)) {
+            stream << "BranchRoot:";
+            variablesTableToString(stream, variables());
+            stream << "\n";
+        } else {
+            stream << "BranchRoot\n";
+        }
         break;
     case NodeType::ElifStatement:
         stream << "ElifStatement\n";
@@ -95,7 +108,7 @@ void Node::dump(std::ostream &stream, int depth) const {
         break;
     case NodeType::Expression:
         if (std::holds_alternative<TypeId>(value)) {
-            stream << "Expression" << typeIdToString(typeId()) << "\n";
+            stream << "Expression: " << typeIdToString(typeId()) << "\n";
         } else {
             stream << "Expression\n";
         }
