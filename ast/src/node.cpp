@@ -22,8 +22,8 @@ const char *const binaryOperationToString(BinaryOperation binOp) {
         return "FAdd";
     case BinaryOperation::FDiv:
         return "FDiv";
-    case BinaryOperation::FMul:
-        return "FMul";
+    case BinaryOperation::FMult:
+        return "FMult";
     case BinaryOperation::FSub:
         return "FSub";
     case BinaryOperation::Greater:
@@ -64,6 +64,8 @@ const char *const typeIdToString(TypeId typeId) {
         return "IntType";
     case FloatType:
         return "FloatType";
+    case BoolType:
+        return "BoolType";
     case StrType:
         return "StrType";
     case NoneType:
@@ -88,8 +90,15 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::ElifStatement:
         stream << "ElifStatement\n";
         break;
+    case NodeType::ElseStatement:
+        stream << "ElseStatement\n";
+        break;
     case NodeType::Expression:
-        stream << "Expression\n";
+        if (std::holds_alternative<TypeId>(value)) {
+            stream << "Expression" << typeIdToString(typeId()) << "\n";
+        } else {
+            stream << "Expression\n";
+        }
         break;
     case NodeType::FloatingPointLiteralValue:
         stream << "FloatingPointLiteralValue: " << fpNum() << "\n";

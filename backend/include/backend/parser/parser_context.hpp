@@ -1,18 +1,25 @@
 #pragma once
 
+#include <functional>
+#include <stack>
+#include <unordered_map>
+
 #include <ast/node.hpp>
 #include <ast/types.hpp>
 
 #include "error_buffer.hpp"
-#include "lexer/tokenlist.hpp"
-#include "parser/type_registry.hpp"
+#include "lexer/token.hpp"
+#include "lexer/token_types.hpp"
+#include "parser/parser_error.hpp"
 
 namespace parser {
 
-struct ParserState {
+struct ParserContext {
+    std::unordered_map<ast::NodeType, std::function<void(ParserContext &)>> &subparsers;
     ast::Node::Ptr node;
-    lexer::TokenList::const_iterator tokenIter;
-    lexer::TokenList::const_iterator tokenEnd;
+    lexer::TokenIterator tokenIter;
+    lexer::TokenIterator tokenEnd;
+    int nestingLevel;
     ErrorBuffer errors;
 
     const lexer::Token &token() const {
@@ -35,6 +42,27 @@ struct ParserState {
 
     void goNextToken() {
         tokenIter++;
+    }
+
+    void propagate() {
+        subparsers[node->type](*this);
+    }
+
+    void pushError(const std::string &message) {
+        errors.push<ParserError>(token(), message);
+    }
+
+    void goNextExpression() {
+        while (!token().is(lexer::Special::EndOfExpression)) {
+            goNextToken();
+            if (tokenIter == tokenEnd)
+                return;
+        }
+        goNextToken();
+    }
+
+    void goParentNode() {
+        node = node->parent;
     }
 };
 

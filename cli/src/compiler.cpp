@@ -6,6 +6,7 @@
 #include <backend/lexer/lexer.hpp>
 #include <backend/parser/parser.hpp>
 #include <backend/preprocessor/preprocessor.hpp>
+#include <backend/semantizer/semantizer.hpp>
 #include <utils/source_file.hpp>
 
 #include "dumping.hpp"
@@ -13,6 +14,7 @@
 using lexer::Lexer;
 using parser::Parser;
 using preprocessor::Preprocessor;
+using semantizer::Semantizer;
 
 argparse::ArgumentParser Compiler::createArgumentParser() {
     argparse::ArgumentParser parser("cli", "1.0");
@@ -84,6 +86,12 @@ int Compiler::exec(int argc, char *argv[]) {
         if (verbose)
             std::cout << "PARSER:" << std::endl;
         auto tree = Parser::process(tokens);
+        if (verbose)
+            tree.dump(std::cout);
+
+        if (verbose)
+            std::cout << "SEMANTIZER:" << std::endl;
+        Semantizer::process(tree);
         if (verbose)
             tree.dump(std::cout);
     } catch (ErrorBuffer &errors) {
