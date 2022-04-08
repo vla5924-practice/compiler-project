@@ -8,10 +8,6 @@ file(GLOB_RECURSE TARGET_SRC
 
 add_executable(${TARGET_NAME} ${TARGET_SRC})
 
-target_include_directories(${TARGET_NAME} PUBLIC
-    ${CMAKE_SOURCE_DIR}/backend/include
-)
-
 target_link_libraries(${TARGET_NAME} PUBLIC
     ir_generator
     gtest

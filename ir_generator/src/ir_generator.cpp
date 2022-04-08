@@ -27,13 +27,13 @@ bool lhsRequiresPtr(BinaryOperation op) {
     return false;
 }
 
-constexpr const char *const PLACEHOLDER_INT_NAME = "__placeholder_int";
-constexpr const char *const PLACEHOLDER_FLOAT_NAME = "__placeholder_float";
-constexpr const char *const PLACEHOLDER_STR_NAME = "__placeholder_str";
-constexpr const char *const PLACEHOLDER_TRUE_NAME = "__placeholder_true";
-constexpr const char *const PLACEHOLDER_FALSE_NAME = "__placeholder_false";
-constexpr const char *const PLACEHOLDER_NONE_NAME = "__placeholder_none";
-constexpr const char *const PLACEHOLDER_POINTER_NAME = "__placeholder_pointer";
+constexpr const char *const PLACEHOLDER_INT_NAME = ".placeholder.int";
+constexpr const char *const PLACEHOLDER_FLOAT_NAME = ".placeholder.float";
+constexpr const char *const PLACEHOLDER_STR_NAME = ".placeholder.str";
+constexpr const char *const PLACEHOLDER_TRUE_NAME = ".placeholder.true";
+constexpr const char *const PLACEHOLDER_FALSE_NAME = ".placeholder.false";
+constexpr const char *const PLACEHOLDER_NONE_NAME = ".placeholder.none";
+constexpr const char *const PLACEHOLDER_POINTER_NAME = ".placeholder.pointer";
 
 const char *const placeholderNameByTypeId(TypeId id) {
     switch (id) {
@@ -58,6 +58,22 @@ TypeId findVariableType(Node::Ptr node) {
                 return it->second;
         }
         currentNode = currentNode->parent;
+    }
+    return BuiltInTypes::NoneType;
+}
+
+TypeId detectExpressionType(Node::Ptr node) {
+    switch (node->type) {
+    case NodeType::Expression:
+        return node->typeId();
+    case NodeType::IntegerLiteralValue:
+        return BuiltInTypes::IntType;
+    case NodeType::FloatingPointLiteralValue:
+        return BuiltInTypes::FloatType;
+    case NodeType::StringLiteralValue:
+        return BuiltInTypes::StrType;
+    case NodeType::VariableName:
+        return findVariableType(node);
     }
     return BuiltInTypes::NoneType;
 }
@@ -144,7 +160,7 @@ llvm::BasicBlock *IRGenerator::processBranchRoot(Node::Ptr node, bool createBloc
 llvm::Value *IRGenerator::declareString(const std::string &str, std::string name) {
     if (name.empty()) {
         static size_t counter = 0;
-        name = ".str" + std::to_string(counter++);
+        name = ".str." + std::to_string(counter++);
     }
     auto charType = llvm::IntegerType::get(context, 8);
     std::vector<llvm::Constant *> chars(str.length());
@@ -220,22 +236,37 @@ llvm::Value *IRGenerator::visitBinaryOperation(Node *node) {
     case BinaryOperation::FDiv:
         return builder->CreateFDiv(lhs, rhs);
     case BinaryOperation::Assign:
+    case BinaryOperation::FAssign:
         return builder->CreateStore(rhs, lhs);
     case BinaryOperation::Equal:
         return builder->CreateICmp(llvm::ICmpInst::ICMP_EQ, lhs, rhs);
+    case BinaryOperation::FEqual:
+        return builder->CreateFCmp(llvm::FCmpInst::FCMP_OEQ, lhs, rhs);
     case BinaryOperation::NotEqual:
         return builder->CreateICmp(llvm::ICmpInst::ICMP_NE, lhs, rhs);
+    case BinaryOperation::FNotEqual:
+        return builder->CreateFCmp(llvm::FCmpInst::FCMP_ONE, lhs, rhs);
     case BinaryOperation::Greater:
         return builder->CreateICmp(llvm::ICmpInst::ICMP_SGT, lhs, rhs);
+    case BinaryOperation::FGreater:
+        return builder->CreateFCmp(llvm::ICmpInst::FCMP_OGT, lhs, rhs);
     case BinaryOperation::GreaterEqual:
         return builder->CreateICmp(llvm::ICmpInst::ICMP_SGE, lhs, rhs);
+    case BinaryOperation::FGreaterEqual:
+        return builder->CreateFCmp(llvm::ICmpInst::FCMP_OGE, lhs, rhs);
     case BinaryOperation::Less:
         return builder->CreateICmp(llvm::ICmpInst::ICMP_SLT, lhs, rhs);
+    case BinaryOperation::FLess:
+        return builder->CreateFCmp(llvm::ICmpInst::FCMP_OLT, lhs, rhs);
     case BinaryOperation::LessEqual:
         return builder->CreateICmp(llvm::ICmpInst::ICMP_SLE, lhs, rhs);
+    case BinaryOperation::FLessEqual:
+        return builder->CreateFCmp(llvm::ICmpInst::FCMP_OLE, lhs, rhs);
     case BinaryOperation::And:
+    case BinaryOperation::FAnd:
         return builder->CreateAnd(lhs, rhs);
     case BinaryOperation::Or:
+    case BinaryOperation::FOr:
         return builder->CreateOr(lhs, rhs);
     }
     return nullptr;
@@ -287,10 +318,19 @@ llvm::Value *IRGenerator::visitTypeConversion(ast::Node *node) {
     assert(node && node->type == NodeType::TypeConversion);
 
     llvm::Value *base = visitNode(firstChild(node)); // fix
-    TypeId typeId = lastChild(node)->typeId();
-    llvm::Instruction *inst =
-        llvm::CastInst::Create(typeId == BuiltInTypes::IntType ? llvm::Instruction::FPToSI : llvm::Instruction::SIToFP,
-                               base, base->getType(), "", currentBlock);
+    TypeId srcType = detectExpressionType(firstChild(node));
+    TypeId dstType = lastChild(node)->typeId();
+
+    if (srcType == dstType)
+        return base;
+
+    llvm::Instruction::CastOps castOp = llvm::Instruction::FPToSI;
+    if (srcType == BuiltInTypes::IntType && dstType == BuiltInTypes::FloatType)
+        castOp = llvm::Instruction::SIToFP;
+    else if (srcType == BuiltInTypes::FloatType && dstType == BuiltInTypes::IntType)
+        castOp = llvm::Instruction::FPToSI;
+
+    llvm::Instruction *inst = llvm::CastInst::Create(castOp, base, base->getType(), "typeconv", currentBlock);
     return inst->getOperand(0);
 }
 
@@ -409,25 +449,7 @@ void IRGenerator::processPrintFunctionCall(Node *node) {
     assert(argsNode->children.size() == 1); // print requires only one argument
 
     auto valueNode = firstChild(argsNode);
-    TypeId typeId = BuiltInTypes::NoneType;
-    switch (valueNode->type) {
-    case NodeType::Expression:
-        typeId = valueNode->typeId();
-        break;
-    case NodeType::IntegerLiteralValue:
-        typeId = BuiltInTypes::IntType;
-        break;
-    case NodeType::FloatingPointLiteralValue:
-        typeId = BuiltInTypes::FloatType;
-        break;
-    case NodeType::StringLiteralValue:
-        typeId = BuiltInTypes::StrType;
-        break;
-    case NodeType::VariableName:
-        typeId = findVariableType(valueNode);
-        break;
-    }
-    auto placeholderName = placeholderNameByTypeId(typeId);
+    auto placeholderName = placeholderNameByTypeId(detectExpressionType(valueNode));
     std::vector<llvm::Value *> arguments = {module->getNamedGlobal(placeholderName)};
     if (placeholders.find(placeholderName)->second[0] != '%')
         arguments.push_back(visitNode(valueNode));
