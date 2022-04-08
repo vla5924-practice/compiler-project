@@ -27,6 +27,7 @@ TEST(Semantizer, can_fill_variables_table) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
+    tree.dump(std::cout);
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: foo\n"
@@ -42,7 +43,7 @@ TEST(Semantizer, can_fill_variables_table) {
                            "      VariableDeclaration\n"
                            "        TypeName: FloatType\n"
                            "        VariableName: y\n";
-    ASSERT_EQ(tree_str, tree.dump());
+    FAIL();
 }
 
 TEST(Semantizer, can_insert_type_conversion_int_to_float) {
@@ -50,8 +51,27 @@ TEST(Semantizer, can_insert_type_conversion_int_to_float) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    tree.dump(std::cout);
-    FAIL();
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "      Expression: FloatType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: y\n"
+                           "          BinaryOperation: FAdd\n"
+                           "            TypeConversion\n"
+                           "              TypeName: FloatType\n"
+                           "              VariableName: x\n"
+                           "            VariableName: y\n";
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Semantizer, can_insert_type_conversion_in_function_float_to_int) {
@@ -59,8 +79,27 @@ TEST(Semantizer, can_insert_type_conversion_in_function_float_to_int) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    tree.dump(std::cout);
-    FAIL();
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: FAdd\n"
+                           "            VariableName: x\n"
+                           "            TypeConversion\n"
+                           "              TypeName: IntType\n"
+                           "              VariableName: y\n";
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Semantizer, can_insert_type_conversion_in_function_int_to_float) {
@@ -78,5 +117,135 @@ TEST(Semantizer, can_insert_type_conversion_float_to_int) {
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     tree.dump(std::cout);
-    FAIL(); //minor
+    FAIL();
+}
+
+TEST(Semantizer, can_insert_type_conversion_float_constant_to_int) {
+    StringVec source = {"def main() -> None:", "    x: int", "    x = x + 1.0"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Add\n"
+                           "            VariableName: x\n"
+                           "            TypeConversion\n"
+                           "              TypeName: IntType\n"
+                           "              FloatingPointLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Semantizer, can_insert_type_conversion_int_constant_to_float) {
+    StringVec source = {"def main() -> None:", "    y: float", "    y = y + 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "      Expression: FloatType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: y\n"
+                           "          BinaryOperation: FAdd\n"
+                           "            VariableName: y\n"
+                           "            TypeConversion\n"
+                           "              TypeName: FloatType\n"
+                           "              IntegerLiteralValue: 1\n" tree.dump(std::cout);
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Semantizer, dont_insert_type_conversion_int_int) {
+    StringVec source = {"def main() -> None:", "    y: int", "    y = y + 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: y:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: y\n"
+                           "          BinaryOperation: Add\n"
+                           "            VariableName: y\n"
+                           "            IntegerLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Semantizer, dont_insert_type_conversion_float_float) {
+    StringVec source = {"def main() -> None:", "    y: float", "    y = y + 1.0"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "      Expression: FloatType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: y\n"
+                           "          BinaryOperation: Unknown\n"
+                           "            VariableName: y\n"
+                           "            FloatingPointLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Semantizer, can_insert_type_conversion_in_function_expression_float) {
+    StringVec source = {"def foo(t: float) -> None:", "    t = 1", "def main() -> None:", "    x: float",
+                        "    foo(x + 1)"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    tree.dump(std::cout);
+    FAIL();
+}
+
+TEST(Semantizer, can_insert_type_conversion_in_function_expression_int) {
+    StringVec source = {"def foo(t: int) -> None:", "    t = 1", "def main() -> None:", "    x: int",
+                        "    foo(x + 1.0)"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    tree.dump(std::cout);
+    FAIL();
+}
+
+TEST(Semantizer, can_insert_type_conversion_in_function_with_multiple_params_expression_int) {
+    StringVec source = {"def foo(t: int, n: float) -> None:",
+                        "    t = 1",
+                        "def main() -> None:",
+                        "    x: int",
+                        "    y: float",
+                        "    foo(y + 1, x + 1.0)"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    tree.dump(std::cout);
+    FAIL();
 }
