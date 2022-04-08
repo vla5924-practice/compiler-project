@@ -166,7 +166,7 @@ TEST(Semantizer, can_insert_type_conversion_int_constant_to_float) {
                            "            VariableName: y\n"
                            "            TypeConversion\n"
                            "              TypeName: FloatType\n"
-                           "              IntegerLiteralValue: 1\n" tree.dump(std::cout);
+                           "              IntegerLiteralValue: 1\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
 
