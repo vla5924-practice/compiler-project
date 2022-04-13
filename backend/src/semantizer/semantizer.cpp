@@ -3,11 +3,16 @@
 using namespace semantizer;
 using namespace ast;
 
-static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments) {
+static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments, VariablesTable &table) {
     std::vector<TypeId> result;
 
     for (const auto &node : functionArguments) {
-        result.push_back((*node->children.cbegin())->typeId());
+        auto children = node->children.begin();
+        auto type = (*children)->typeId();
+        children++;
+        auto name = (*children)->str();
+        result.push_back(type);
+        table.emplace(name, type);
     }
 
     return result;
@@ -251,10 +256,14 @@ static void parseFunctions(const std::list<Node::Ptr> &children, FunctionsTable 
             auto child = node->children.begin();
             auto name = (*child)->str();
             child++;
-            auto args = getFunctionArguments((*child)->children);
+            VariablesTable tmp;
+            auto args = getFunctionArguments((*child)->children, tmp);
             child++;
             auto ret_type = (*child)->typeId();
             functions.emplace(name, Function(ret_type, args));
+            child++;
+            if (!std::holds_alternative<VariablesTable>((*child)->value))
+                (*child)->value.emplace<VariablesTable>(tmp);
         }
     }
 
