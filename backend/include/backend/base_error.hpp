@@ -8,6 +8,7 @@ class BaseError : public std::exception {
 
   public:
     BaseError(size_t line_number, size_t column_number, const std::string &message);
+    BaseError(const std::string &message);
     ~BaseError() = default;
 
     virtual const char *what() const noexcept;
