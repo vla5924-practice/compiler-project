@@ -174,7 +174,7 @@ TEST(Semantizer, can_insert_type_conversion_float_to_int) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_insert_type_conversion_float_constant_to_int) {
+TEST(Semantizer, can_insert_type_conversion_float_literal_to_int) {
     StringVec source = {"def main() -> None:", "    x: int", "    x = x + 1.0"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -199,7 +199,7 @@ TEST(Semantizer, can_insert_type_conversion_float_constant_to_int) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_insert_type_conversion_int_constant_to_float) {
+TEST(Semantizer, can_insert_type_conversion_int_literal_to_float) {
     StringVec source = {"def main() -> None:", "    y: float", "    y = y + 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -224,7 +224,7 @@ TEST(Semantizer, can_insert_type_conversion_int_constant_to_float) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, dont_insert_type_conversion_int_int) {
+TEST(Semantizer, does_not_insert_type_conversion_for_ints) {
     StringVec source = {"def main() -> None:", "    y: int", "    y = y + 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -247,7 +247,7 @@ TEST(Semantizer, dont_insert_type_conversion_int_int) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, dont_insert_type_conversion_float_float) {
+TEST(Semantizer, does_not_insert_type_conversion_for_floats) {
     StringVec source = {"def main() -> None:", "    y: float", "    y = y + 1.0"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -406,7 +406,7 @@ TEST(Semantizer, can_insert_type_conversion_in_function_with_multiple_params_exp
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, dont_raise_error_on_redeclaration_of_variable_in_different_scopes) {
+TEST(Semantizer, can_declare_variables_with_same_names_in_different_scopes) {
     StringVec source = {"def main() -> None:", "    x: int", "    if(true):", "        x: float"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
