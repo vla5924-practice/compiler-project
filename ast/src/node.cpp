@@ -93,10 +93,10 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::BranchRoot:
         stream << "BranchRoot";
         if (std::holds_alternative<VariablesTable>(value)) {
-            stream << ":";
+            stream << ':';
             dumpVariablesTable(stream, variables());
         }
-        stream << "\n";
+        stream << '\n';
         break;
     case NodeType::ElifStatement:
         stream << "ElifStatement\n";
@@ -109,7 +109,7 @@ void Node::dump(std::ostream &stream, int depth) const {
         if (std::holds_alternative<TypeId>(value)) {
             stream << ": " << typeIdToString(typeId());
         }
-        stream << "\n";
+        stream << '\n';
         break;
     case NodeType::FloatingPointLiteralValue:
         stream << "FloatingPointLiteralValue: " << fpNum() << "\n";
