@@ -3,11 +3,16 @@
 using namespace semantizer;
 using namespace ast;
 
-static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments) {
+static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments, VariablesTable &table) {
     std::vector<TypeId> result;
 
     for (const auto &node : functionArguments) {
-        result.push_back((*node->children.cbegin())->typeId());
+        auto children = node->children.begin();
+        auto type = (*children)->typeId();
+        children++;
+        auto name = (*children)->str();
+        result.push_back(type);
+        table.emplace(name, type);
     }
 
     return result;
@@ -118,25 +123,31 @@ static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTabl
     return func->second.returnType;
 }
 
+TypeId literalNodeTypeToTypeId(NodeType type) {
+    switch (type) {
+    case NodeType::IntegerLiteralValue:
+        return BuiltInTypes::IntType;
+    case NodeType::FloatingPointLiteralValue:
+        return BuiltInTypes::FloatType;
+    case NodeType::StringLiteralValue:
+        return BuiltInTypes::StrType;
+    }
+    return BuiltInTypes::UnknownType;
+}
+
 static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<VariablesTable *> &tables,
                               FunctionsTable &functions, ErrorBuffer &errors) {
-    NodeType type;
+    TypeId type;
 
     switch (var_type) {
     case BuiltInTypes::IntType:
-        type = NodeType::IntegerLiteralValue;
-        break;
-
     case BuiltInTypes::FloatType:
-        type = NodeType::FloatingPointLiteralValue;
-        break;
-
     case BuiltInTypes::StrType:
-        type = NodeType::StringLiteralValue;
+        type = var_type;
         break;
 
     default:
-        errors.push<SemantizerError>(*node, "Invalid conversion from " + var_type);
+        errors.push<SemantizerError>(*node, "Invalid conversion from " + std::to_string(var_type));
         break;
     }
 
@@ -161,17 +172,18 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
             auto find_type = searchVariable(child, tables, errors);
             if (find_type != var_type) {
                 if (find_type == BuiltInTypes::StrType && child->str().size() != 1) {
-                    errors.push<SemantizerError>(*node, "Invalid conversion from string to " + var_type);
+                    errors.push<SemantizerError>(*node,
+                                                 "Invalid conversion from string to " + std::to_string(var_type));
                 }
                 pushTypeConversion(child, type);
             }
-            if (find_type == BuiltInTypes::FloatType) {
+            if (find_type == BuiltInTypes::FloatType && node->type != NodeType::Expression) {
                 node->value = convertToFloatOperation(node->binOp());
             }
             continue;
         }
 
-        if (child->type != type) {
+        if (literalNodeTypeToTypeId(child->type) != type) {
             pushTypeConversion(child, type);
         }
 
@@ -225,9 +237,9 @@ static void processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::l
                     child->value.emplace<TypeId>(type);
             }
             if (expr_root->type == NodeType::FunctionCall) {
-                processFunctionCall(expr_root, tables, functions, errors);
+                auto type = processFunctionCall(expr_root, tables, functions, errors);
                 if (!std::holds_alternative<TypeId>(node->value))
-                    child->value.emplace<TypeId>(expr_root->children.front()->typeId());
+                    child->value.emplace<TypeId>(type);
                 continue;
             }
             continue;
@@ -244,10 +256,14 @@ static void parseFunctions(const std::list<Node::Ptr> &children, FunctionsTable 
             auto child = node->children.begin();
             auto name = (*child)->str();
             child++;
-            auto args = getFunctionArguments((*child)->children);
+            VariablesTable tmp;
+            auto args = getFunctionArguments((*child)->children, tmp);
             child++;
             auto ret_type = (*child)->typeId();
             functions.emplace(name, Function(ret_type, args));
+            child++;
+            if (!std::holds_alternative<VariablesTable>((*child)->value))
+                (*child)->value.emplace<VariablesTable>(tmp);
         }
     }
 
@@ -259,6 +275,9 @@ static void parseFunctions(const std::list<Node::Ptr> &children, FunctionsTable 
             processBranchRoot(*child, functions, variables_table, errors);
         }
     }
+
+    if (functions.find("main") == functions.end())
+        errors.push<SemantizerError>("Function 'main' is not declared, although it has to be");
 }
 
 void Semantizer::process(SyntaxTree &tree) {
