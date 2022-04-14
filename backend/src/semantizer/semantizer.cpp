@@ -275,6 +275,15 @@ static void parseFunctions(const std::list<Node::Ptr> &children, FunctionsTable 
             processBranchRoot(*child, functions, variables_table, errors);
         }
     }
+
+    bool hasMain = false;
+    for (auto &function : functions) {
+        if (function.first == "main")  {
+            hasMain = true;
+        }
+    }
+
+    if (!hasMain) errors.push<SemantizerError>(Node(), "Undefined reference to main");
 }
 
 void Semantizer::process(SyntaxTree &tree) {
