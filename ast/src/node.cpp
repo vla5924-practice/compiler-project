@@ -75,10 +75,9 @@ const char *const typeIdToString(TypeId typeId) {
     return "";
 }
 
-void variablesTableToString(std::ostream &stream, const VariablesTable &table) {
-    for (const auto &[name, typeId] : table) {
+void dumpVariablesTable(std::ostream &stream, const VariablesTable &table) {
+    for (const auto &[name, typeId] : table)
         stream << " " << name << ":" << typeIdToString(typeId);
-    }
 }
 
 } // namespace
@@ -92,13 +91,12 @@ void Node::dump(std::ostream &stream, int depth) const {
         stream << "BinaryOperation: " << binaryOperationToString(binOp()) << "\n";
         break;
     case NodeType::BranchRoot:
+        stream << "BranchRoot";
         if (std::holds_alternative<VariablesTable>(value)) {
-            stream << "BranchRoot:";
-            variablesTableToString(stream, variables());
-            stream << "\n";
-        } else {
-            stream << "BranchRoot\n";
+            stream << ":";
+            dumpVariablesTable(stream, variables());
         }
+        stream << "\n";
         break;
     case NodeType::ElifStatement:
         stream << "ElifStatement\n";
@@ -107,11 +105,11 @@ void Node::dump(std::ostream &stream, int depth) const {
         stream << "ElseStatement\n";
         break;
     case NodeType::Expression:
+        stream << "Expression";
         if (std::holds_alternative<TypeId>(value)) {
-            stream << "Expression: " << typeIdToString(typeId()) << "\n";
-        } else {
-            stream << "Expression\n";
+            stream << ": " << typeIdToString(typeId());
         }
+        stream << "\n";
         break;
     case NodeType::FloatingPointLiteralValue:
         stream << "FloatingPointLiteralValue: " << fpNum() << "\n";

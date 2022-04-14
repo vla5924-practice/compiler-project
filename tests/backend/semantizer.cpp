@@ -417,19 +417,19 @@ TEST(Semantizer, raise_error_on_undeclared_variable) {
     StringVec source = {"def main() -> None:", "    x = 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    ASSERT_ANY_THROW(Semantizer::process(tree));
+    ASSERT_THROW(Semantizer::process(tree), ErrorBuffer);
 }
 
 TEST(Semantizer, raise_error_on_redeclaration_of_variable_in_single_scope) {
     StringVec source = {"def main() -> None:", "    x: int", "    x: int"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    ASSERT_ANY_THROW(Semantizer::process(tree));
+    ASSERT_THROW(Semantizer::process(tree), ErrorBuffer);
 }
 
 TEST(Semantizer, raise_error_on_undefined_reference_to_main) {
     StringVec source = {"def foo() -> None:", "    x = 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
-    ASSERT_ANY_THROW(Semantizer::process(tree));
+    ASSERT_THROW(Semantizer::process(tree), ErrorBuffer);
 }

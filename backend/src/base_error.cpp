@@ -5,6 +5,10 @@ BaseError::BaseError(size_t line_number, size_t column_number, const std::string
                message;
 }
 
+BaseError::BaseError(const std::string &message) {
+    what_str = "Error:\n" + message;
+}
+
 const char *BaseError::what() const noexcept {
     return what_str.c_str();
 }

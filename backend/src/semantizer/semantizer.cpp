@@ -276,15 +276,8 @@ static void parseFunctions(const std::list<Node::Ptr> &children, FunctionsTable 
         }
     }
 
-    bool hasMain = false;
-    for (auto &function : functions) {
-        if (function.first == "main") {
-            hasMain = true;
-        }
-    }
-
-    if (!hasMain)
-        errors.push<SemantizerError>(Node(), "Undefined reference to main");
+    if (functions.find("main") == functions.end())
+        errors.push<SemantizerError>("Function 'main' is not declared, although it has to be");
 }
 
 void Semantizer::process(SyntaxTree &tree) {
