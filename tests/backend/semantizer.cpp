@@ -427,7 +427,7 @@ TEST(Semantizer, raise_error_on_redeclaration_of_variable_in_single_scope) {
     ASSERT_THROW(Semantizer::process(tree), ErrorBuffer);
 }
 
-TEST(Semantizer, raise_error_on_undefined_reference_to_main) {
+TEST(Semantizer, raise_error_on_undefined_main_function) {
     StringVec source = {"def foo() -> None:", "    x = 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
