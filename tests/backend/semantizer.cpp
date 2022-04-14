@@ -405,3 +405,31 @@ TEST(Semantizer, can_insert_type_conversion_in_function_with_multiple_params_exp
                            "                FloatingPointLiteralValue: 1\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
+
+TEST(Semantizer, dont_raise_error_on_redeclaration_of_variable_in_different_scopes) {
+    StringVec source = {"def main() -> None:", "    x: int", "    if(true):", "        x: float"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    ASSERT_NO_THROW(Semantizer::process(tree));
+}
+
+TEST(Semantizer, raise_error_on_undeclared_variable) {
+    StringVec source = {"def main() -> None:", "    x = 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    ASSERT_ANY_THROW(Semantizer::process(tree));
+}
+
+TEST(Semantizer, raise_error_on_redeclaration_of_variable_in_single_scope) {
+    StringVec source = {"def main() -> None:", "    x: int", "    x: int"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    ASSERT_ANY_THROW(Semantizer::process(tree));
+}
+
+TEST(Semantizer, raise_error_on_undefined_reference_to_main) {
+    StringVec source = {"def foo() -> None:", "    x = 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    ASSERT_ANY_THROW(Semantizer::process(tree));
+}
