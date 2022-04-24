@@ -12,7 +12,7 @@ static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &func
         children++;
         auto name = (*children)->str();
         result.push_back(type);
-        table.emplace(name, type);
+        table[name] = {type};
     }
 
     return result;
@@ -21,9 +21,9 @@ static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &func
 static TypeId searchVariable(const Node::Ptr &node, const std::list<VariablesTable *> &tables, ErrorBuffer &errors) {
     TypeId type = BuiltInTypes::BuiltInTypesCount;
     for (const auto &table : tables) {
-        VariablesTable::const_iterator table_name = table->find(node->str());
-        if (table_name != table->cend()) {
-            type = table_name->second;
+        VariablesTable::const_iterator tableEntry = table->find(node->str());
+        if (tableEntry != table->cend()) {
+            type = tableEntry->second.type;
             break;
         }
     }
@@ -200,6 +200,16 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
     }
 }
 
+static void changeVariableAttribute(const Node::Ptr &node, const std::list<VariablesTable *> &tables) {
+    for (const auto &table : tables) {
+        VariablesTable::iterator tableEntry = table->find(node->str());
+        if (tableEntry != table->cend()) {
+            tableEntry->second.attributes.modified = true;
+            break;
+        }
+    }
+}
+
 static void processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::list<VariablesTable *> &tables,
                               ErrorBuffer &errors) {
     if (!std::holds_alternative<VariablesTable>(node->value))
@@ -217,7 +227,7 @@ static void processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::l
                 errors.push<SemantizerError>(*child, "Redeclaration of " + name);
             }
 
-            node->variables().emplace(name, type);
+            node->variables()[name] = {type};
             list_child++;
 
             if (list_child != child->children.end() && (*list_child)->type == NodeType::Expression) {
@@ -232,6 +242,7 @@ static void processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::l
             if (expr_root->type == NodeType::BinaryOperation && expr_root->binOp() == BinaryOperation::Assign) {
                 auto name = expr_root->children.front()->str();
                 auto type = searchVariable(expr_root->children.front(), tables, errors);
+                changeVariableAttribute(expr_root->children.front(), tables);
                 processExpression(expr_root->children.back(), type, tables, functions, errors);
                 if (!std::holds_alternative<TypeId>(node->value))
                     child->value.emplace<TypeId>(type);

@@ -48,6 +48,7 @@ void constantFolding(Node::Ptr &first, Node::Ptr &second) {
         }       
         parent->type = NodeType::IntegerLiteralValue;
         parent->value = result;
+        parent->children.clear();
     }
 
     if (first->type == NodeType::FloatingPointLiteralValue && second->type == NodeType::FloatingPointLiteralValue) {
@@ -71,17 +72,11 @@ void constantFolding(Node::Ptr &first, Node::Ptr &second) {
         }
         parent->type = NodeType::FloatingPointLiteralValue;
         parent->value = result;
+        parent->children.clear();
     }
-    parent->children.clear();
 }
 
 void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table) {
-    for (auto &child : node->children) {
-        if (child->type == NodeType::TypeConversion) {
-            processTypeConversion(child);
-        }
-    }
-
     for (auto &child : node->children) {
         if (child->type == NodeType::BinaryOperation) {
             auto first = firstChild(child);
@@ -91,7 +86,6 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table) {
             if (second->type == NodeType::TypeConversion)
                 processTypeConversion(second);
             constantFolding(first, second);
-            return;
         }
 
         processExpression(child, table);
@@ -102,11 +96,11 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table) {
     table.push_front(&node->variables());
     for (auto &child : node->children) {
         if (child->type == NodeType::Expression) {
-            processExpression(node, table);
+            processExpression(child, table);
         }
 
         if (child->type == NodeType::VariableDeclaration) {
-            processExpression(node, table);
+            processExpression(child, table);
         }
     }
 }

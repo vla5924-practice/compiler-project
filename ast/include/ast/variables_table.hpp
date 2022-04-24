@@ -7,6 +7,17 @@
 
 namespace ast {
 
-using VariablesTable = std::map<std::string, TypeId>;
+struct Variable {
+    TypeId type;
+    struct {
+        bool modified = false;
+    } attributes;
+
+    bool operator==(const Variable &other) const {
+        return type == other.type;
+    };
+};
+
+using VariablesTable = std::map<std::string, Variable>;
 
 } // namespace ast
