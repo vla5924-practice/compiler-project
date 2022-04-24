@@ -5,7 +5,6 @@
 #include "parser/parser.hpp"
 #include "semantizer/semantizer.hpp"
 
-
 using namespace ast;
 using namespace lexer;
 using namespace parser;
