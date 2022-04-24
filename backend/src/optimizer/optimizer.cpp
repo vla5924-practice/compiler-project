@@ -26,9 +26,10 @@ void processTypeConversion(Node::Ptr &node) {
 }
 
 void constantFolding(Node::Ptr &first, Node::Ptr &second) {
+    auto parent = first->parent;
     if (first->type == NodeType::IntegerLiteralValue && second->type == NodeType::IntegerLiteralValue) {
         long int result = 0;
-        switch (first->parent->binOp()) {
+        switch (parent->binOp()) {
         case BinaryOperation::Add:
             result = first->intNum() + second->intNum();
             break;
@@ -44,12 +45,34 @@ void constantFolding(Node::Ptr &first, Node::Ptr &second) {
         default:
             return;
             break;
-        }
-        auto parent = first->parent;
+        }       
         parent->type = NodeType::IntegerLiteralValue;
         parent->value = result;
-        parent->children.clear();
     }
+
+    if (first->type == NodeType::FloatingPointLiteralValue && second->type == NodeType::FloatingPointLiteralValue) {
+        double result = 0.0;
+        switch (parent->binOp()) {
+        case BinaryOperation::FAdd:
+            result = first->fpNum() + second->fpNum();
+            break;
+        case BinaryOperation::FSub:
+            result = first->fpNum() - second->fpNum();
+            break;
+        case BinaryOperation::FMult:
+            result = first->fpNum() * second->fpNum();
+            break;
+        case BinaryOperation::FDiv:
+            result = first->fpNum() / second->fpNum();
+            break;
+        default:
+            return;
+            break;
+        }
+        parent->type = NodeType::FloatingPointLiteralValue;
+        parent->value = result;
+    }
+    parent->children.clear();
 }
 
 void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table) {
