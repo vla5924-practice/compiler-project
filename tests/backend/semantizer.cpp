@@ -264,7 +264,7 @@ TEST(Semantizer, does_not_insert_type_conversion_for_floats) {
                            "      Expression: FloatType\n"
                            "        BinaryOperation: Assign\n"
                            "          VariableName: y\n"
-                           "          BinaryOperation: Unknown\n"
+                           "          BinaryOperation: FAdd\n"
                            "            VariableName: y\n"
                            "            FloatingPointLiteralValue: 1\n";
     ASSERT_EQ(tree_str, tree.dump());

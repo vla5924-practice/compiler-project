@@ -92,8 +92,10 @@ static BinaryOperation convertToFloatOperation(BinaryOperation operation) {
     case BinaryOperation::Assign:
         return BinaryOperation::FAssign;
         break;
+    default:
+        return operation;
+        break;
     }
-    return BinaryOperation::Unknown;
 }
 
 static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<VariablesTable *> &tables,
@@ -200,16 +202,6 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
     }
 }
 
-static void changeVariableAttribute(const Node::Ptr &node, const std::list<VariablesTable *> &tables) {
-    for (const auto &table : tables) {
-        VariablesTable::iterator tableEntry = table->find(node->str());
-        if (tableEntry != table->cend()) {
-            tableEntry->second.attributes.modified = true;
-            break;
-        }
-    }
-}
-
 static void processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::list<VariablesTable *> &tables,
                               ErrorBuffer &errors) {
     if (!std::holds_alternative<VariablesTable>(node->value))
@@ -242,7 +234,6 @@ static void processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::l
             if (expr_root->type == NodeType::BinaryOperation && expr_root->binOp() == BinaryOperation::Assign) {
                 auto name = expr_root->children.front()->str();
                 auto type = searchVariable(expr_root->children.front(), tables, errors);
-                changeVariableAttribute(expr_root->children.front(), tables);
                 processExpression(expr_root->children.back(), type, tables, functions, errors);
                 if (!std::holds_alternative<TypeId>(node->value))
                     child->value.emplace<TypeId>(type);
