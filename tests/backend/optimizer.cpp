@@ -28,7 +28,7 @@ TEST(Optimizer, can_convert_float_literal_to_int) {
                            "        VariableName: x\n"
                            "        Expression: FloatType\n"
                            "          FloatingPointLiteralValue: 2\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Optimizer, can_convert_int_literal_to_float) {
@@ -48,7 +48,7 @@ TEST(Optimizer, can_convert_int_literal_to_float) {
                            "        VariableName: x\n"
                            "        Expression: IntType\n"
                            "          IntegerLiteralValue: 2\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration) {
@@ -73,7 +73,7 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration) {
                            "        VariableName: y\n"
                            "        Expression: IntType\n"
                            "          IntegerLiteralValue: 1\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration) {
@@ -98,7 +98,7 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration) {
                            "        VariableName: y\n"
                            "        Expression: FloatType\n"
                            "          FloatingPointLiteralValue: 1\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Optimizer, can_substitute_int_constant_in_float_variable_declaration) {
@@ -123,7 +123,7 @@ TEST(Optimizer, can_substitute_int_constant_in_float_variable_declaration) {
                            "        VariableName: y\n"
                            "        Expression: FloatType\n"
                            "          FloatingPointLiteralValue: 1\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Optimizer, can_substitute_float_constant_in_int_variable_declaration) {
@@ -148,7 +148,7 @@ TEST(Optimizer, can_substitute_float_constant_in_int_variable_declaration) {
                            "        VariableName: y\n"
                            "        Expression: IntType\n"
                            "          IntegerLiteralValue: 1\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_int_literal) {
@@ -173,7 +173,7 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_int
                            "        VariableName: y\n"
                            "        Expression: IntType\n"
                            "          IntegerLiteralValue: 2\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with_float_literal) {
@@ -198,7 +198,7 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with
                            "        VariableName: y\n"
                            "        Expression: FloatType\n"
                            "          FloatingPointLiteralValue: 2\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_expression) {
@@ -223,7 +223,7 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_exp
                            "        VariableName: y\n"
                            "        Expression: IntType\n"
                            "          IntegerLiteralValue: 2\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
 
 TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with_expression) {
@@ -248,5 +248,5 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with
                            "        VariableName: y\n"
                            "        Expression: FloatType\n"
                            "          FloatingPointLiteralValue: 2\n";
-    ASSERT_EQ(tree_str, tree);
+    ASSERT_EQ(tree_str, tree.dump());
 }
