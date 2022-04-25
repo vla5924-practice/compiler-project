@@ -4,7 +4,7 @@
 using namespace ast;
 using namespace optimizer;
 
-using VariablesValue = std::map<std::string, std::variant<long int, double>>;
+using VariablesValue = std::map<std::string, std::variant<long int, double>>; // TODO std::map -> std::list<std::map>
 
 Node::Ptr &firstChild(Node::Ptr &node) {
     return node->children.front();
@@ -14,7 +14,7 @@ Node::Ptr &lastChild(Node::Ptr &node) {
     return node->children.back();
 }
 
-bool &checkVariableAttribute(const Node::Ptr &node, const std::list<VariablesTable *> &tables) {
+bool &getVariableAttribute(const Node::Ptr &node, const std::list<VariablesTable *> &tables) {
     VariablesTable::iterator tableEntry;
     for (const auto &table : tables) {
         tableEntry = table->find(node->str());
@@ -25,64 +25,74 @@ bool &checkVariableAttribute(const Node::Ptr &node, const std::list<VariablesTab
     return tableEntry->second.attributes.modified;
 }
 
+long int calcIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, VariablesValue *variablesValue = nullptr) {
+    long int firstValue =
+        first->type == NodeType::VariableName ? std::get<0>((*variablesValue)[first->str()]) : first->intNum();
+    long int secondValue =
+        second->type == NodeType::VariableName ? std::get<0>((*variablesValue)[second->str()]) : second->intNum();
+    switch (operation) {
+    case BinaryOperation::Add:
+        return firstValue + secondValue;
+        break;
+    case BinaryOperation::Sub:
+        return firstValue - secondValue;
+        break;
+    case BinaryOperation::Mult:
+        return firstValue * secondValue;
+        break;
+    case BinaryOperation::Div:
+        return firstValue / secondValue;
+        break;
+    default:
+        return 0;
+        break;
+    }
+}
+
+double calcFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, VariablesValue *variablesValue = nullptr) {
+    double firstValue =
+        first->type == NodeType::VariableName ? std::get<1>((*variablesValue)[first->str()]) : first->fpNum();
+    double secondValue =
+        second->type == NodeType::VariableName ? std::get<1>((*variablesValue)[second->str()]) : second->fpNum();
+    switch (operation) {
+    case BinaryOperation::FAdd:
+        return firstValue + secondValue;
+        break;
+    case BinaryOperation::FSub:
+        return firstValue - secondValue;
+        break;
+    case BinaryOperation::FMult:
+        return firstValue * secondValue;
+        break;
+    case BinaryOperation::FDiv:
+        return firstValue / secondValue;
+        break;
+    default:
+        return 0.0;
+        break;
+    }
+}
+
 bool constantPropagation(Node::Ptr &first, Node::Ptr &second, std::list<VariablesTable *> tables,
                          VariablesValue &variablesValue) {
-    if (first->type == NodeType::VariableName && checkVariableAttribute(first, tables) == true)
-        return false;
-    if (second->type == NodeType::VariableName && checkVariableAttribute(second, tables) == true)
-        return false;
     auto parent = first->parent;
+    if (parent->type == NodeType::BinaryOperation && parent->binOp() == BinaryOperation::Assign)
+        return false;
+    if (first->type == NodeType::VariableName && getVariableAttribute(first, tables) == true)
+        return false;
+    if (second->type == NodeType::VariableName && getVariableAttribute(second, tables) == true)
+        return false;
     if ((first->type == NodeType::IntegerLiteralValue || first->type == NodeType::VariableName) &&
         (second->type == NodeType::IntegerLiteralValue || second->type == NodeType::VariableName)) {
-        long int result = 0;
-        switch (parent->binOp()) {
-        case BinaryOperation::Add:
-            result = first->intNum() + second->intNum();
-            break;
-        case BinaryOperation::Sub:
-            result = first->intNum() - second->intNum();
-            break;
-        case BinaryOperation::Mult:
-            result = first->intNum() * second->intNum();
-            break;
-        case BinaryOperation::Div:
-            result = first->intNum() / second->intNum();
-            break;
-        default:
-            return false;
-            break;
-        }
         parent->type = NodeType::IntegerLiteralValue;
-        parent->value = result;
+        parent->value = calcIntOperation(first, second, parent->binOp(), &variablesValue);
         parent->children.clear();
         return true;
     }
     if ((first->type == NodeType::FloatingPointLiteralValue || first->type == NodeType::VariableName) &&
         (second->type == NodeType::FloatingPointLiteralValue || second->type == NodeType::VariableName)) {
-        double result = 0.0;
-        double firstValue =
-            first->type == NodeType::VariableName ? std::get<1>(variablesValue[first->str()]) : first->fpNum();
-        double secondValue =
-            second->type == NodeType::VariableName ? std::get<1>(variablesValue[second->str()]) : second->fpNum();
-        switch (parent->binOp()) {
-        case BinaryOperation::FAdd:
-            result = firstValue + secondValue;
-            break;
-        case BinaryOperation::FSub:
-            result = firstValue - secondValue;
-            break;
-        case BinaryOperation::FMult:
-            result = firstValue * secondValue;
-            break;
-        case BinaryOperation::FDiv:
-            result = firstValue / secondValue;
-            break;
-        default:
-            return false;
-            break;
-        }
         parent->type = NodeType::FloatingPointLiteralValue;
-        parent->value = result;
+        parent->value = calcFloatOperation(first, second, parent->binOp(), &variablesValue);;
         parent->children.clear();
         return true;
     }
@@ -106,58 +116,21 @@ void processTypeConversion(Node::Ptr &node) {
 bool constantFolding(Node::Ptr &first, Node::Ptr &second) {
     auto parent = first->parent;
     if (first->type == NodeType::IntegerLiteralValue && second->type == NodeType::IntegerLiteralValue) {
-        long int result = 0;
-        switch (parent->binOp()) {
-        case BinaryOperation::Add:
-            result = first->intNum() + second->intNum();
-            break;
-        case BinaryOperation::Sub:
-            result = first->intNum() - second->intNum();
-            break;
-        case BinaryOperation::Mult:
-            result = first->intNum() * second->intNum();
-            break;
-        case BinaryOperation::Div:
-            result = first->intNum() / second->intNum();
-            break;
-        default:
-            return false;
-            break;
-        }
         parent->type = NodeType::IntegerLiteralValue;
-        parent->value = result;
+        parent->value = calcIntOperation(first, second, parent->binOp());
         parent->children.clear();
         return true;
     }
-
     if (first->type == NodeType::FloatingPointLiteralValue && second->type == NodeType::FloatingPointLiteralValue) {
-        double result = 0.0;
-        switch (parent->binOp()) {
-        case BinaryOperation::FAdd:
-            result = first->fpNum() + second->fpNum();
-            break;
-        case BinaryOperation::FSub:
-            result = first->fpNum() - second->fpNum();
-            break;
-        case BinaryOperation::FMult:
-            result = first->fpNum() * second->fpNum();
-            break;
-        case BinaryOperation::FDiv:
-            result = first->fpNum() / second->fpNum();
-            break;
-        default:
-            return false;
-            break;
-        }
         parent->type = NodeType::FloatingPointLiteralValue;
-        parent->value = result;
+        parent->value = calcFloatOperation(first, second, parent->binOp());
         parent->children.clear();
         return true;
     }
     return false;
 }
 
-void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child, VariablesValue &variablesValue) {
+void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child, VariablesValue &variablesValue) { // TODO upgrade VariablesValue
     TypeId type;
     auto parent = node->parent;
     for (auto &iter : parent->children) {
@@ -206,8 +179,7 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
             if (isConsExpr || isNotModifiedExpr) {
                 pushVariableAttribute(node, child, variablesValue);
             }
-            // if (!isConsExpr && child->binOp() == BinaryOperation::Assign)
-            // checkVariableAttribute(first, table);
+            // TODO need some checks for modified variables
             continue;
         }
 
@@ -230,7 +202,6 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
 
         if (child->type == NodeType::VariableDeclaration) {
             processExpression(child, table, variablesValue);
-            // pushVariableAttribute(child, table, variablesValue);
         }
     }
 }
