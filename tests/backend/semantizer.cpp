@@ -410,6 +410,48 @@ TEST(Semantizer, can_insert_type_conversion_in_function_with_multiple_params_exp
     ASSERT_EQ(tree_str, tree.dump());
 }
 
+TEST(Semantizer, can_insert_type_conversion_on_int_variable_declaration) {
+    StringVec source = {"def main() -> None:", "    y: int = 1.0"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: y:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "        Expression: IntType\n"
+                           "          TypeConversion\n"
+                           "            TypeName: IntType\n"
+                           "            FloatingPointLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Semantizer, can_insert_type_conversion_on_float_variable_declaration) {
+    StringVec source = {"def main() -> None:", "    y: float = 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "        Expression: FloatType\n"
+                           "          TypeConversion\n"
+                           "            TypeName: FloatType\n"
+                           "            IntegerLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
 TEST(Semantizer, can_declare_variables_with_same_names_in_different_scopes) {
     StringVec source = {"def main() -> None:", "    x: int", "    if(true):", "        x: float"};
     TokenList token_list = Lexer::process(source);
