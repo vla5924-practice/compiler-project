@@ -11,107 +11,242 @@ using namespace parser;
 using namespace semantizer;
 using namespace optimizer;
 
-TEST(Optimizer, DEBUG_TEST) {
-    StringVec source = {
-        "def main() -> None:", "    x: float = 1.0", "    y: float = 1.0", "    y = x - x",
-        //"    x = 1.0 * y",
-        //"    z: int = x * y"
-    };
-    TokenList token_list = Lexer::process(source);
-    SyntaxTree tree = Parser::process(token_list);
-    Semantizer::process(tree);
-    tree.dump(std::cout);
-    Optimizer::process(tree);
-    tree.dump(std::cout);
-    ASSERT_EQ(2, 1 + 1);
-}
-
-TEST(Optimizer, can_int_to_float_type_conversion_for_literals) {
+TEST(Optimizer, can_convert_float_literal_to_int) {
     StringVec source = {"def main() -> None:", "    x: float = 1 + 1.0"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: x\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree);
 }
 
-TEST(Optimizer, can_float_to_int_type_conversion_for_literals) {
+TEST(Optimizer, can_convert_int_literal_to_float) {
     StringVec source = {"def main() -> None:", "    x: int = 1 + 1.0"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree);
 }
 
-TEST(Optimizer, can_int_for_variables) {
+TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    y: int = x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree);
 }
 
-TEST(Optimizer, can_float_for_variables) {
+TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration) {
     StringVec source = {"def main() -> None:", "    x: float = 1.0", "    y: float = x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:FloatType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: x\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree);
 }
 
-TEST(Optimizer, can_int_to_float_type_conversion_for_variables) {
+TEST(Optimizer, can_substitute_int_constant_in_float_variable_declaration) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    y: float = x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree);
 }
 
-TEST(Optimizer, can_float_to_int_type_conversion_for_variables) {
+TEST(Optimizer, can_substitute_float_constant_in_int_variable_declaration) {
     StringVec source = {"def main() -> None:", "    x: float = 1.0", "    y: int = x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:FloatType y:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: x\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree);
 }
 
-TEST(Optimizer, can_calc_int_variable_and_int_literal) {
+TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_int_literal) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    y: int = x + 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree);
 }
 
-TEST(Optimizer, can_calc_float_variable_and_float_literal) {
+TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with_float_literal) {
     StringVec source = {"def main() -> None:", "    x: float = 1.0", "    y: float = x + 1.0"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:FloatType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: x\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree);
 }
 
-TEST(Optimizer, can_calc_int_variable_and_int_variable) {
+TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_expression) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    y: int = x + x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree);
 }
 
-TEST(Optimizer, can_calc_float_variable_and_float_variable) {
+TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with_expression) {
     StringVec source = {"def main() -> None:", "    x: float = 1.0", "    y: float = x + x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    ASSERT_EQ(2, 1 + 1);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:FloatType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: x\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree);
 }
