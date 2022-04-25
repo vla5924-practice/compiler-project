@@ -14,7 +14,8 @@ Node::Ptr &lastChild(Node::Ptr &node) {
     return node->children.back();
 }
 
-Variable &getVariable(const Node::Ptr &node, const std::list<VariablesTable *> &tables) { // TODO merge this function with getVariableAttribute
+Variable &getVariable(const Node::Ptr &node,
+                      const std::list<VariablesTable *> &tables) { // TODO merge this function with getVariableAttribute
     VariablesTable::iterator tableEntry;
     for (const auto &table : tables) {
         tableEntry = table->find(node->str());
@@ -95,15 +96,19 @@ bool constantPropagation(Node::Ptr &first, Node::Ptr &second, std::list<Variable
         return false;
     if (second->type == NodeType::VariableName && getVariableAttribute(second, tables))
         return false;
-    if ((first->type == NodeType::IntegerLiteralValue || (first->type == NodeType::VariableName && getVariable(first, tables).type == BuiltInTypes::IntType)) &&
-        (second->type == NodeType::IntegerLiteralValue || (second->type == NodeType::VariableName && getVariable(second, tables).type == BuiltInTypes::IntType))) {
+    if ((first->type == NodeType::IntegerLiteralValue ||
+         (first->type == NodeType::VariableName && getVariable(first, tables).type == BuiltInTypes::IntType)) &&
+        (second->type == NodeType::IntegerLiteralValue ||
+         (second->type == NodeType::VariableName && getVariable(second, tables).type == BuiltInTypes::IntType))) {
         parent->type = NodeType::IntegerLiteralValue;
         parent->value = calcIntOperation(first, second, parent->binOp(), &variablesValue);
         parent->children.clear();
         return true;
     }
-    if ((first->type == NodeType::FloatingPointLiteralValue || (first->type == NodeType::VariableName && getVariable(first, tables).type == BuiltInTypes::FloatType)) &&
-        (second->type == NodeType::FloatingPointLiteralValue || (second->type == NodeType::VariableName && getVariable(second, tables).type == BuiltInTypes::FloatType))) {
+    if ((first->type == NodeType::FloatingPointLiteralValue ||
+         (first->type == NodeType::VariableName && getVariable(first, tables).type == BuiltInTypes::FloatType)) &&
+        (second->type == NodeType::FloatingPointLiteralValue ||
+         (second->type == NodeType::VariableName && getVariable(second, tables).type == BuiltInTypes::FloatType))) {
         parent->type = NodeType::FloatingPointLiteralValue;
         parent->value = calcFloatOperation(first, second, parent->binOp(), &variablesValue);
         parent->children.clear();

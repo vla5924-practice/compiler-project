@@ -12,12 +12,10 @@ using namespace semantizer;
 using namespace optimizer;
 
 TEST(Optimaizer, DEBUG_TEST) {
-    StringVec source = {"def main() -> None:", 
-    "    x: float = 1.0", 
-    "    y: float = 1.0", 
-    "    y = x - x", 
-    //"    x = 1.0 * y", 
-    //"    z: int = x * y"
+    StringVec source = {
+        "def main() -> None:", "    x: float = 1.0", "    y: float = 1.0", "    y = x - x",
+        //"    x = 1.0 * y",
+        //"    z: int = x * y"
     };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
