@@ -11,7 +11,7 @@ using namespace parser;
 using namespace semantizer;
 using namespace optimizer;
 
-TEST(Optimaizer, DEBUG_TEST) {
+TEST(Optimizer, DEBUG_TEST) {
     StringVec source = {
         "def main() -> None:", "    x: float = 1.0", "    y: float = 1.0", "    y = x - x",
         //"    x = 1.0 * y",
@@ -26,7 +26,7 @@ TEST(Optimaizer, DEBUG_TEST) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_int_to_float_type_conversion_for_literals) {
+TEST(Optimizer, can_int_to_float_type_conversion_for_literals) {
     StringVec source = {"def main() -> None:", "    x: float = 1 + 1.0"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -35,7 +35,7 @@ TEST(Optimaizer, can_int_to_float_type_conversion_for_literals) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_float_to_int_type_conversion_for_literals) {
+TEST(Optimizer, can_float_to_int_type_conversion_for_literals) {
     StringVec source = {"def main() -> None:", "    x: int = 1 + 1.0"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -44,7 +44,7 @@ TEST(Optimaizer, can_float_to_int_type_conversion_for_literals) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_int_for_variables) {
+TEST(Optimizer, can_int_for_variables) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    y: int = x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -53,7 +53,7 @@ TEST(Optimaizer, can_int_for_variables) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_float_for_variables) {
+TEST(Optimizer, can_float_for_variables) {
     StringVec source = {"def main() -> None:", "    x: float = 1.0", "    y: float = x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -62,7 +62,7 @@ TEST(Optimaizer, can_float_for_variables) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_int_to_float_type_conversion_for_variables) {
+TEST(Optimizer, can_int_to_float_type_conversion_for_variables) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    y: float = x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -71,7 +71,7 @@ TEST(Optimaizer, can_int_to_float_type_conversion_for_variables) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_float_to_int_type_conversion_for_variables) {
+TEST(Optimizer, can_float_to_int_type_conversion_for_variables) {
     StringVec source = {"def main() -> None:", "    x: float = 1.0", "    y: int = x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -80,7 +80,7 @@ TEST(Optimaizer, can_float_to_int_type_conversion_for_variables) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_calc_int_variable_and_int_literal) {
+TEST(Optimizer, can_calc_int_variable_and_int_literal) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    y: int = x + 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -89,7 +89,7 @@ TEST(Optimaizer, can_calc_int_variable_and_int_literal) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_calc_float_variable_and_float_literal) {
+TEST(Optimizer, can_calc_float_variable_and_float_literal) {
     StringVec source = {"def main() -> None:", "    x: float = 1.0", "    y: float = x + 1.0"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -98,7 +98,7 @@ TEST(Optimaizer, can_calc_float_variable_and_float_literal) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_calc_int_variable_and_int_variable) {
+TEST(Optimizer, can_calc_int_variable_and_int_variable) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    y: int = x + x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -107,7 +107,7 @@ TEST(Optimaizer, can_calc_int_variable_and_int_variable) {
     ASSERT_EQ(2, 1 + 1);
 }
 
-TEST(Optimaizer, can_calc_float_variable_and_float_variable) {
+TEST(Optimizer, can_calc_float_variable_and_float_variable) {
     StringVec source = {"def main() -> None:", "    x: float = 1.0", "    y: float = x + x"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
