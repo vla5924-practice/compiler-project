@@ -227,6 +227,13 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
             continue;
         }
 
+        if (child->type == NodeType::FunctionCall) {
+            auto end_child = child->children.back();
+            if (end_child->type == NodeType::FunctionName)
+                continue;
+            processExpression(end_child, table, variablesValue);
+        }
+
         if (child->type == NodeType::TypeConversion) {
             processTypeConversion(child, table, variablesValue);
             pushVariableAttribute(node, child, variablesValue);
