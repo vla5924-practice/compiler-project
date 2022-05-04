@@ -144,6 +144,9 @@ static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTabl
 
     auto args = func->second.argumentsTypes;
 
+    if (children_it == node->children.end())
+        return func->second.returnType;
+
     size_t index = 0;
     for (auto &it : (*children_it)->children) {
         processExpression(it, args[index++], tables, functions, errors);
