@@ -22,6 +22,7 @@ Node::Ptr &lastChild(Node *node) {
 bool lhsRequiresPtr(BinaryOperation op) {
     switch (op) {
     case BinaryOperation::Assign:
+    case BinaryOperation::FAssign:
         return true;
     }
     return false;
@@ -322,21 +323,22 @@ llvm::Value *IRGenerator::visitStringLiteralValue(ast::Node *node) {
 llvm::Value *IRGenerator::visitTypeConversion(ast::Node *node) {
     assert(node && node->type == NodeType::TypeConversion);
 
-    llvm::Value *base = visitNode(firstChild(node)); // fix
-    TypeId srcType = detectExpressionType(firstChild(node));
-    TypeId dstType = lastChild(node)->typeId();
+    Node::Ptr &base = lastChild(node);
+    llvm::Value *operand = nullptr;
+    if (base->type == NodeType::VariableName)
+        operand = builder->CreateLoad(visitVariableName(base.get()));
+    else
+        operand = visitNode(base);
+    TypeId srcType = detectExpressionType(base);
+    TypeId dstType = firstChild(node)->typeId();
 
     if (srcType == dstType)
-        return base;
-
-    llvm::Instruction::CastOps castOp = llvm::Instruction::FPToSI;
+        return operand;
     if (srcType == BuiltInTypes::IntType && dstType == BuiltInTypes::FloatType)
-        castOp = llvm::Instruction::SIToFP;
-    else if (srcType == BuiltInTypes::FloatType && dstType == BuiltInTypes::IntType)
-        castOp = llvm::Instruction::FPToSI;
-
-    llvm::Instruction *inst = llvm::CastInst::Create(castOp, base, base->getType(), "typeconv", currentBlock);
-    return inst->getOperand(0);
+        return new llvm::SIToFPInst(operand, createLLVMType(dstType), "typeconv", currentBlock);
+    if (srcType == BuiltInTypes::FloatType && dstType == BuiltInTypes::IntType)
+        return new llvm::FPToSIInst(operand, createLLVMType(dstType), "typeconv", currentBlock);
+    return nullptr;
 }
 
 llvm::Value *IRGenerator::visitVariableName(Node *node) {
