@@ -505,6 +505,7 @@ static void parseReturnStatement(ParserContext &ctx) {
     }
     ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
     ctx.propagate();
+    ctx.goParentNode();
 }
 
 static void parseVariableDeclaration(ParserContext &ctx) {
