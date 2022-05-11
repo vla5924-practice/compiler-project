@@ -50,6 +50,7 @@ class IRGenerator {
     void processProgramRoot(ast::Node *node);
     void processReturnStatement(ast::Node *node);
     void processVariableDeclaration(ast::Node *node);
+    void processWhileStatement(ast::Node *node);
 
   public:
     explicit IRGenerator(const std::string &moduleName, bool emitDebugInfo = false);

@@ -349,23 +349,27 @@ llvm::Value *IRGenerator::visitVariableName(Node *node) {
 void IRGenerator::processNode(Node::Ptr node) {
     assert(node && (node->type == NodeType::Expression || node->type == NodeType::FunctionDefinition ||
                     node->type == NodeType::IfStatement || node->type == NodeType::ProgramRoot ||
-                    node->type == NodeType::VariableDeclaration));
+                    node->type == NodeType::VariableDeclaration || node->type == NodeType::WhileStatement));
 
+    Node *rawNode = node.get();
     switch (node->type) {
     case NodeType::Expression:
-        visitExpression(node.get());
+        visitExpression(rawNode);
         return;
     case NodeType::FunctionDefinition:
-        processFunctionDefinition(node.get());
+        processFunctionDefinition(rawNode);
         return;
     case NodeType::IfStatement:
-        processIfStatement(node.get());
+        processIfStatement(rawNode);
         return;
     case NodeType::ProgramRoot:
-        processProgramRoot(node.get());
+        processProgramRoot(rawNode);
         return;
     case NodeType::VariableDeclaration:
-        processVariableDeclaration(node.get());
+        processVariableDeclaration(rawNode);
+        return;
+    case NodeType::WhileStatement:
+        processWhileStatement(rawNode);
         return;
     }
 }
@@ -482,4 +486,22 @@ void IRGenerator::processVariableDeclaration(Node *node) {
     nodeIter++;
     if (nodeIter != node->children.end())
         builder->CreateStore(visitNode(*nodeIter), inst);
+}
+
+void IRGenerator::processWhileStatement(Node *node) {
+    assert(node && node->type == NodeType::WhileStatement);
+
+    llvm::BasicBlock *condBlock = llvm::BasicBlock::Create(context, "whilecond", currentFunction);
+    llvm::BasicBlock *beginBlock = llvm::BasicBlock::Create(context, "whilebody");
+    llvm::BasicBlock *endBlock = llvm::BasicBlock::Create(context, "endwhile");
+
+    builder->SetInsertPoint(condBlock);
+    llvm::Value *condition = visitNode(firstChild(node));
+    builder->CreateCondBr(condition, beginBlock, endBlock);
+    currentBlock = beginBlock;
+    beginBlock->insertInto(currentFunction);
+    processBranchRoot(lastChild(node), false);
+    builder->CreateBr(condBlock);
+    endBlock->insertInto(currentFunction);
+    builder->SetInsertPoint(endBlock);
 }
