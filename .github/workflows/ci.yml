@@ -39,7 +39,7 @@ jobs:
       shell: bash
       run: |
         cd build
-        ctest
+        ctest --output-on-failure
 
   windows-msvc:
     name: Windows MSVC build & test
@@ -59,4 +59,4 @@ jobs:
       shell: bash
       run: |
         cd build
-        ctest
+        ctest --output-on-failure
