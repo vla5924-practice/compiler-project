@@ -259,29 +259,54 @@ TEST(Parser, can_parse_function_with_return) {
 
 TEST(Parser, can_parse_multiple_functions) {
     StringVec source = {
-        "def foo() -> None:",
-        "    y: int",
-        "def bar() -> None:",
-        "    x: int",
+        "def func1() -> None:",  "    x: int",     "    return",
+        "def func2() -> int:",   "    y: int = 1", "    return y",
+        "def func3() -> float:", "    return 2.3", "    z: int",
+        "def func4() -> None:",  "    x: float",
     };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
-                           "    FunctionName: foo\n"
+                           "    FunctionName: func1\n"
                            "    FunctionArguments\n"
                            "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      ReturnStatement\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: func2\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: IntType\n"
                            "    BranchRoot\n"
                            "      VariableDeclaration\n"
                            "        TypeName: IntType\n"
                            "        VariableName: y\n"
+                           "        Expression\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      ReturnStatement\n"
+                           "        Expression\n"
+                           "          VariableName: y\n"
                            "  FunctionDefinition\n"
-                           "    FunctionName: bar\n"
+                           "    FunctionName: func3\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: FloatType\n"
+                           "    BranchRoot\n"
+                           "      ReturnStatement\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 2.3\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: z\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: func4\n"
                            "    FunctionArguments\n"
                            "    FunctionReturnType: NoneType\n"
                            "    BranchRoot\n"
                            "      VariableDeclaration\n"
-                           "        TypeName: IntType\n"
+                           "        TypeName: FloatType\n"
                            "        VariableName: x\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
