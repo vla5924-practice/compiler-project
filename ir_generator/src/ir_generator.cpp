@@ -27,6 +27,11 @@ bool lhsRequiresPtr(BinaryOperation op) {
     return false;
 }
 
+constexpr const char *const PRINT_FUNCTION_NAME = "print";
+constexpr const char *const INPUT_FUNCTION_NAME = "input";
+constexpr const char *const PRINTF_FUNCTION_NAME = "printf";
+constexpr const char *const SCANF_FUNCTION_NAME = "scanf";
+
 constexpr const char *const PLACEHOLDER_INT_NAME = ".placeholder.int";
 constexpr const char *const PLACEHOLDER_FLOAT_NAME = ".placeholder.float";
 constexpr const char *const PLACEHOLDER_STR_NAME = ".placeholder.str";
@@ -94,8 +99,8 @@ IRGenerator::IRGenerator(const std::string &moduleName, bool emitDebugInfo)
         llvm::Function *printFunc =
             llvm::Function::Create(llvm::FunctionType::get(llvm::IntegerType::getInt32Ty(context), arguments,
                                                            true /* this is var arg func type*/),
-                                   llvm::Function::ExternalLinkage, "printf", module.get());
-        internalFunctions.insert_or_assign("printf", printFunc);
+                                   llvm::Function::ExternalLinkage, PRINTF_FUNCTION_NAME, module.get());
+        internalFunctions.insert_or_assign(PRINTF_FUNCTION_NAME, printFunc);
     }
 
     for (const auto &[name, value] : placeholders) {
@@ -288,7 +293,7 @@ llvm::Value *IRGenerator::visitFunctionCall(Node *node) {
     assert(node && node->type == NodeType::FunctionCall);
 
     const std::string &name = firstChild(node)->str();
-    if (name == "print") {
+    if (name == PRINT_FUNCTION_NAME) {
         processPrintFunctionCall(node);
         return nullptr;
     }
@@ -401,7 +406,7 @@ void IRGenerator::processIfStatement(Node *node) {
     Node *lastElse = lastChild(node).get();
 
     if (hasAdditionals && lastElse->type == NodeType::ElseStatement) {
-        elseBlock = llvm::BasicBlock::Create(context, "else");
+        elseBlock = llvm::BasicBlock::Create(context, "elsebody");
     }
 
     auto tempElif = std::make_shared<Node>(NodeType::ElifStatement);
@@ -409,9 +414,18 @@ void IRGenerator::processIfStatement(Node *node) {
     tempElif->children.push_back(secondChild(node));
     node->children.insert(std::next(node->children.begin(), 2), tempElif);
 
+    llvm::BasicBlock *condBlock = nullptr;
+    llvm::BasicBlock *nextBlock = nullptr;
+
     for (auto nodeIter = std::next(node->children.begin(), 2);
          nodeIter != node->children.end() && (*nodeIter)->type == NodeType::ElifStatement; nodeIter++) {
-        llvm::BasicBlock *trueBlock = llvm::BasicBlock::Create(context, "iftrue", currentFunction);
+        if (nextBlock == nullptr)
+            condBlock = llvm::BasicBlock::Create(context, "ifcond", currentFunction);
+        else {
+            condBlock = nextBlock;
+            nextBlock->insertInto(currentFunction);
+        }
+        llvm::BasicBlock *trueBlock = llvm::BasicBlock::Create(context, "ifbody", currentFunction);
         llvm::BasicBlock *falseBlock = nullptr;
         auto nextNode = std::next(nodeIter);
         bool lastNode = nextNode == node->children.end() || (*nextNode)->type == NodeType::ElseStatement;
@@ -422,12 +436,13 @@ void IRGenerator::processIfStatement(Node *node) {
                 falseBlock = endBlock;
             }
         } else {
-            falseBlock = llvm::BasicBlock::Create(context, "elseif");
+            falseBlock = llvm::BasicBlock::Create(context, "ifcond");
+            nextBlock = falseBlock;
         }
+        builder->SetInsertPoint(condBlock);
         Node *currentNode = nodeIter->get();
         llvm::Value *condition = visitNode(firstChild(currentNode));
         builder->CreateCondBr(condition, trueBlock, falseBlock);
-        // builder->SetInsertPoint(trueBlock);
         currentBlock = trueBlock;
         processBranchRoot(lastChild(currentNode), false);
         builder->CreateBr(endBlock);
@@ -435,19 +450,19 @@ void IRGenerator::processIfStatement(Node *node) {
     }
 
     if (elseBlock) {
-        // builder->SetInsertPoint(elseBlock);
+        elseBlock->insertInto(currentFunction);
         currentBlock = elseBlock;
         processBranchRoot(lastChild(lastElse), false);
         builder->CreateBr(endBlock);
     }
     endBlock->insertInto(currentFunction);
-    builder->SetInsertPoint(endBlock);
+    currentBlock = endBlock;
 
     node->children.erase(std::next(node->children.begin(), 2));
 }
 
 void IRGenerator::processPrintFunctionCall(Node *node) {
-    assert(node && node->type == NodeType::FunctionCall && firstChild(node)->str() == "print");
+    assert(node && node->type == NodeType::FunctionCall && firstChild(node)->str() == PRINT_FUNCTION_NAME);
 
     auto argsNode = lastChild(node).get();
     assert(argsNode->children.size() == 1); // print requires only one argument
@@ -457,7 +472,7 @@ void IRGenerator::processPrintFunctionCall(Node *node) {
     std::vector<llvm::Value *> arguments = {module->getNamedGlobal(placeholderName)};
     if (placeholders.find(placeholderName)->second[0] != '%')
         arguments.push_back(visitNode(valueNode));
-    builder->CreateCall(internalFunctions["printf"], arguments);
+    builder->CreateCall(internalFunctions[PRINTF_FUNCTION_NAME], arguments);
 }
 
 void IRGenerator::processProgramRoot(Node *node) {
@@ -503,5 +518,5 @@ void IRGenerator::processWhileStatement(Node *node) {
     processBranchRoot(lastChild(node), false);
     builder->CreateBr(condBlock);
     endBlock->insertInto(currentFunction);
-    builder->SetInsertPoint(endBlock);
+    currentBlock = endBlock;
 }
