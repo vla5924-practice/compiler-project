@@ -28,6 +28,10 @@ bool lhsRequiresPtr(BinaryOperation op) {
     return false;
 }
 
+bool isLLVMPointer(llvm::Value *value) {
+    return value->getType()->isPointerTy();
+}
+
 constexpr const char *const PRINT_FUNCTION_NAME = "print";
 constexpr const char *const INPUT_FUNCTION_NAME = "input";
 constexpr const char *const PRINTF_FUNCTION_NAME = "printf";
@@ -183,6 +187,16 @@ llvm::Value *IRGenerator::declareString(const std::string &str, std::string name
     return llvm::ConstantExpr::getBitCast(globalDeclaration, charType->getPointerTo());
 }
 
+void IRGenerator::declareLocalVariable(ast::TypeId type, std::string &name, llvm::Value *initialValue) {
+    llvm::AllocaInst *inst = new llvm::AllocaInst(createLLVMType(type), 0, name, currentBlock);
+    localVariables.back().insert_or_assign(name, inst);
+    if (initialValue != nullptr) {
+        if (isLLVMPointer(initialValue))
+            initialValue = builder->CreateLoad(initialValue);
+        builder->CreateStore(initialValue, inst);
+    }
+}
+
 llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
     assert(node && (node->type == NodeType::BinaryOperation || node->type == NodeType::Expression ||
                     node->type == NodeType::FloatingPointLiteralValue || node->type == NodeType::FunctionCall ||
@@ -301,8 +315,12 @@ llvm::Value *IRGenerator::visitFunctionCall(Node *node) {
 
     auto argsNode = lastChild(node);
     std::vector<llvm::Value *> arguments;
-    for (const auto &currentNode : argsNode->children)
-        arguments.push_back(visitExpression(currentNode.get()));
+    for (const auto &currentNode : argsNode->children) {
+        llvm::Value *arg = visitExpression(currentNode.get());
+        if (isLLVMPointer(arg))
+            arg = builder->CreateLoad(arg);
+        arguments.push_back(arg);
+    }
     return builder->CreateCall(functions[name], arguments);
 }
 
@@ -356,7 +374,8 @@ llvm::Value *IRGenerator::visitVariableName(Node *node) {
 void IRGenerator::processNode(Node::Ptr node) {
     assert(node && (node->type == NodeType::Expression || node->type == NodeType::FunctionDefinition ||
                     node->type == NodeType::IfStatement || node->type == NodeType::ProgramRoot ||
-                    node->type == NodeType::VariableDeclaration || node->type == NodeType::WhileStatement));
+                    node->type == NodeType::ReturnStatement || node->type == NodeType::VariableDeclaration ||
+                    node->type == NodeType::WhileStatement));
 
     Node *rawNode = node.get();
     switch (node->type) {
@@ -371,6 +390,9 @@ void IRGenerator::processNode(Node::Ptr node) {
         return;
     case NodeType::ProgramRoot:
         processProgramRoot(rawNode);
+        return;
+    case NodeType::ReturnStatement:
+        processReturnStatement(rawNode);
         return;
     case NodeType::VariableDeclaration:
         processVariableDeclaration(rawNode);
@@ -395,7 +417,21 @@ void IRGenerator::processFunctionDefinition(Node *node) {
     currentBlock = body;
     currentFunction = function;
     builder->SetInsertPoint(body);
+
+    Node::Ptr &argsNode = secondChild(node);
+    unsigned argIndex = 0u;
+    localVariables.emplace_back();
+    for (auto &argNode : argsNode->children) {
+        assert(argNode->type == NodeType::FunctionArgument);
+
+        auto nodeIter = argNode->children.begin();
+        TypeId typeId = (*nodeIter)->typeId();
+        nodeIter++;
+        std::string name = (*nodeIter)->str();
+        declareLocalVariable(typeId, name, function->getArg(argIndex++));
+    }
     processBranchRoot(lastChild(node));
+    localVariables.pop_back();
 }
 
 void IRGenerator::processIfStatement(Node *node) {
@@ -472,7 +508,7 @@ void IRGenerator::processPrintFunctionCall(Node *node) {
     auto valueNode = firstChild(argsNode);
     auto placeholderName = placeholderNameByTypeId(detectExpressionType(valueNode));
     std::vector<llvm::Value *> arguments = {module->getNamedGlobal(placeholderName)};
-    if (placeholders.find(placeholderName)->second[0] != '%')
+    if (placeholders.find(placeholderName)->second[0] == '%')
         arguments.push_back(visitNode(valueNode));
     builder->CreateCall(internalFunctions[PRINTF_FUNCTION_NAME], arguments);
 }
@@ -488,6 +524,8 @@ void IRGenerator::processReturnStatement(Node *node) {
     assert(node && node->type == NodeType::ReturnStatement);
 
     llvm::Value *ret = visitNode(firstChild(node));
+    if (isLLVMPointer(ret))
+        ret = builder->CreateLoad(ret);
     builder->CreateRet(ret);
 }
 
@@ -498,11 +536,9 @@ void IRGenerator::processVariableDeclaration(Node *node) {
     TypeId typeId = (*nodeIter)->typeId();
     nodeIter++;
     std::string name = (*nodeIter)->str();
-    llvm::AllocaInst *inst = new llvm::AllocaInst(createLLVMType(typeId), 0, name, currentBlock);
-    localVariables.back().insert_or_assign(name, inst);
     nodeIter++;
-    if (nodeIter != node->children.end())
-        builder->CreateStore(visitNode(*nodeIter), inst);
+    llvm::Value *initialValue = nodeIter != node->children.end() ? visitNode(*nodeIter) : nullptr;
+    declareLocalVariable(typeId, name, initialValue);
 }
 
 void IRGenerator::processWhileStatement(Node *node) {
