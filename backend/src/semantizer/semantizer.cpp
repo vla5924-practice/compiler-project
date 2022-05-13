@@ -3,22 +3,6 @@
 using namespace semantizer;
 using namespace ast;
 
-namespace {
-
-Node::Ptr &firstChild(Node *node) {
-    return node->children.front();
-}
-
-Node::Ptr &secondChild(Node *node) {
-    return *std::next(node->children.begin());
-}
-
-Node::Ptr &lastChild(Node *node) {
-    return node->children.back();
-}
-
-} // namespace
-
 static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments, VariablesTable &table) {
     std::vector<TypeId> result;
 
@@ -130,7 +114,7 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
 
 static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTable *> &tables, FunctionsTable &functions,
                                   ErrorBuffer &errors) {
-    const std::string &funcName = firstChild(node.get())->str();
+    const std::string &funcName = node->firstChild()->str();
     bool isPrintFunction = (funcName == "print");
     auto funcIter = functions.find(funcName);
     if (funcIter == functions.cend()) {
@@ -144,7 +128,7 @@ static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTabl
     if (node->children.size() >= 2u) {
         const std::vector<TypeId> &args = funcIter->second.argumentsTypes;
         size_t index = 0;
-        for (auto &child : secondChild(node.get())->children) {
+        for (auto &child : node->secondChild()->children) {
             TypeId type = isPrintFunction ? BuiltInTypes::IntType : args[index++]; // FIXME: workaround for int only
             processExpression(child, type, tables, functions, errors);
         }
@@ -218,7 +202,7 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
         }
 
         if ((child->type == NodeType::FloatingPointLiteralValue ||
-             child->type == NodeType::TypeConversion && firstChild(child.get())->typeId() == BuiltInTypes::FloatType) &&
+             child->type == NodeType::TypeConversion && child->firstChild()->typeId() == BuiltInTypes::FloatType) &&
             node->type == NodeType::BinaryOperation) {
             node->value = convertToFloatOperation(node->binOp());
         }
