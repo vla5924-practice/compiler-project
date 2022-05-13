@@ -201,7 +201,8 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
         }
 
         if ((child->type == NodeType::FloatingPointLiteralValue && node->type == NodeType::BinaryOperation) ||
-            (child->type == NodeType::TypeConversion && child.get()->firstChild()->typeId() == BuiltInTypes::FloatType)) {
+            (child->type == NodeType::TypeConversion &&
+             child.get()->firstChild()->typeId() == BuiltInTypes::FloatType)) {
             node->value = convertToFloatOperation(node->binOp());
         }
     }
