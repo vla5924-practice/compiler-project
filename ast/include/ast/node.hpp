@@ -90,6 +90,30 @@ struct Node {
 
     std::string dump(int depth = 0) const;
     void dump(std::ostream &stream, int depth = 0) const;
+
+    Node::Ptr &firstChild() {
+        return children.front();
+    }
+
+    const Node::Ptr &firstChild() const {
+        return children.front();
+    }
+
+    Node::Ptr &secondChild() {
+        return *std::next(children.begin());
+    }
+
+    const Node::Ptr &secondChild() const {
+        return *std::next(children.begin());
+    }
+
+    Node::Ptr &lastChild() {
+        return children.back();
+    }
+
+    const Node::Ptr &lastChild() const {
+        return children.back();
+    }
 };
 
 } // namespace ast

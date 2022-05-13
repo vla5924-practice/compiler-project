@@ -3,22 +3,6 @@
 using namespace semantizer;
 using namespace ast;
 
-namespace {
-
-Node::Ptr &firstChild(Node *node) {
-    return node->children.front();
-}
-
-Node::Ptr &secondChild(Node *node) {
-    return *std::next(node->children.begin());
-}
-
-Node::Ptr &lastChild(Node *node) {
-    return node->children.back();
-}
-
-} // namespace
-
 static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments, VariablesTable &table) {
     std::vector<TypeId> result;
 
@@ -222,7 +206,8 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
         }
 
         if ((child->type == NodeType::FloatingPointLiteralValue && node->type == NodeType::BinaryOperation) ||
-            (child->type == NodeType::TypeConversion && firstChild(child.get())->typeId() == BuiltInTypes::FloatType)) {
+            (child->type == NodeType::TypeConversion &&
+             child.get()->firstChild()->typeId() == BuiltInTypes::FloatType)) {
             node->value = convertToFloatOperation(node->binOp());
         }
     }
