@@ -56,6 +56,9 @@ long int calcIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation o
     case BinaryOperation::Div:
         return firstValue / secondValue;
         break;
+    case BinaryOperation::Equal:
+        return firstValue == secondValue;
+        break;
     default:
         return 0;
         break;
@@ -80,6 +83,9 @@ double calcFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation o
         break;
     case BinaryOperation::FDiv:
         return firstValue / secondValue;
+        break;
+    case BinaryOperation::FEqual:
+        return firstValue == secondValue;
         break;
     default:
         return 0.0;
@@ -223,6 +229,7 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
             if (isConsExpr || isNotModifiedExpr) {
                 pushVariableAttribute(node, child, variablesValue);
             }
+            // if ()
             // TODO need some checks for modified variables
             continue;
         }
@@ -257,13 +264,19 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
 void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
     table.push_front(&node->variables());
     for (auto &child : node->children) {
-        if (child->type == NodeType::Expression) {
+        if (child->type == NodeType::Expression || child->type == NodeType::VariableDeclaration) {
             processExpression(child, table, variablesValue);
         }
 
-        if (child->type == NodeType::VariableDeclaration) {
-            processExpression(child, table, variablesValue);
+        if (child->type == NodeType::IfStatement) {
+            processExpression(firstChild(child), table, variablesValue);
+            if (firstChild(firstChild(child))->type != NodeType::BinaryOperation) {
+            } // TODO Atrem удалить ненужную ветку в иф выражении
         }
+        
+        if (child->type == NodeType::WhileStatement) {
+            
+        }// сделать аналогично if
     }
 }
 
