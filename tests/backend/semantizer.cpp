@@ -457,7 +457,6 @@ TEST(Semantizer, can_insert_float_operation_with_type_conversion) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    tree.dump(std::cout);
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
