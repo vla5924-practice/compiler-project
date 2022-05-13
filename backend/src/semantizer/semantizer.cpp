@@ -3,6 +3,22 @@
 using namespace semantizer;
 using namespace ast;
 
+namespace {
+
+Node::Ptr &firstChild(Node *node) {
+    return node->children.front();
+}
+
+Node::Ptr &secondChild(Node *node) {
+    return *std::next(node->children.begin());
+}
+
+Node::Ptr &lastChild(Node *node) {
+    return node->children.back();
+}
+
+} // namespace
+
 static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments, VariablesTable &table) {
     std::vector<TypeId> result;
 
@@ -54,43 +70,56 @@ static void pushTypeConversion(Node::Ptr &node, NodeType type) {
 static BinaryOperation convertToFloatOperation(BinaryOperation operation) {
     switch (operation) {
     case BinaryOperation::Add:
+    case BinaryOperation::FAdd:
         return BinaryOperation::FAdd;
         break;
     case BinaryOperation::Sub:
+    case BinaryOperation::FSub:
         return BinaryOperation::FSub;
         break;
     case BinaryOperation::Mult:
+    case BinaryOperation::FMult:
         return BinaryOperation::FMult;
         break;
     case BinaryOperation::Div:
+    case BinaryOperation::FDiv:
         return BinaryOperation::FDiv;
         break;
     case BinaryOperation::And:
-        return BinaryOperation::FAnd;
+    case BinaryOperation::FAnd:
+        return BinaryOperation::And;
         break;
     case BinaryOperation::Or:
-        return BinaryOperation::FOr;
+    case BinaryOperation::FOr:
+        return BinaryOperation::Or;
         break;
     case BinaryOperation::Equal:
+    case BinaryOperation::FEqual:
         return BinaryOperation::FEqual;
         break;
     case BinaryOperation::NotEqual:
+    case BinaryOperation::FNotEqual:
         return BinaryOperation::FNotEqual;
         break;
     case BinaryOperation::Less:
+    case BinaryOperation::FLess:
         return BinaryOperation::FLess;
         break;
     case BinaryOperation::Greater:
+    case BinaryOperation::FGreater:
         return BinaryOperation::FGreater;
         break;
     case BinaryOperation::LessEqual:
+    case BinaryOperation::FLessEqual:
         return BinaryOperation::FLessEqual;
         break;
     case BinaryOperation::GreaterEqual:
+    case BinaryOperation::FGreaterEqual:
         return BinaryOperation::FGreaterEqual;
         break;
     case BinaryOperation::Assign:
-        return BinaryOperation::FAssign;
+    case BinaryOperation::FAssign:
+        return BinaryOperation::Assign;
         break;
     default:
         return operation;
@@ -192,7 +221,8 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
             pushTypeConversion(child, type);
         }
 
-        if (child->type == NodeType::FloatingPointLiteralValue && node->type == NodeType::BinaryOperation) {
+        if ((child->type == NodeType::FloatingPointLiteralValue && node->type == NodeType::BinaryOperation) ||
+            (child->type == NodeType::TypeConversion && firstChild(child.get())->typeId() == BuiltInTypes::FloatType)) {
             node->value = convertToFloatOperation(node->binOp());
         }
     }
@@ -237,7 +267,7 @@ static void processBranchRoot(Node::Ptr &node, FunctionsTable &functions, std::l
             if (expr_root->type == NodeType::BinaryOperation && expr_root->binOp() == BinaryOperation::Assign) {
                 auto name = expr_root->children.front()->str();
                 auto type = searchVariable(expr_root->children.front(), tables, errors);
-                processExpression(expr_root->children.back(), type, tables, functions, errors);
+                processExpression(expr_root, type, tables, functions, errors);
                 if (!std::holds_alternative<TypeId>(node->value))
                     child->value.emplace<TypeId>(type);
             }
