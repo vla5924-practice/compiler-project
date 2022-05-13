@@ -107,10 +107,6 @@ struct Node {
         return *std::next(children.begin());
     }
 
-    Node::Ptr &secondChild() {
-        return *std::next(children.begin());
-    }
-
     Node::Ptr &lastChild() {
         return children.back();
     }
