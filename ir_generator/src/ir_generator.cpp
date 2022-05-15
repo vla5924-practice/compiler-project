@@ -151,7 +151,12 @@ llvm::Type *IRGenerator::createLLVMType(TypeId id) {
 }
 
 void IRGenerator::initializeFunctions(const SyntaxTree &tree) {
-    for (const auto &[funcName, function] : tree.functions) {
+    FunctionsTable knownFunctions = tree.functions;
+    for (const auto &[funcName, function] : builtInFunctions) {
+        knownFunctions.erase(funcName);
+    }
+
+    for (const auto &[funcName, function] : knownFunctions) {
         std::vector<llvm::Type *> arguments(function.argumentsTypes.size());
         for (size_t i = 0; i < arguments.size(); i++)
             arguments[i] = createLLVMType(function.argumentsTypes[i]);
