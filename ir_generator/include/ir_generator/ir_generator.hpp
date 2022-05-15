@@ -18,7 +18,7 @@ namespace ir_generator {
 
 class IRGenerator {
   public:
-    using FunctionCallVisitor = llvm::Value *(IRGenerator::*)(ast::Node *);
+    using NodeVisitor = llvm::Value *(IRGenerator::*)(ast::Node *);
 
     explicit IRGenerator(const std::string &moduleName, bool emitDebugInfo = false);
 
@@ -37,7 +37,7 @@ class IRGenerator {
     std::unordered_map<std::string, llvm::Function *> functions;
     std::unordered_map<std::string, llvm::Function *> internalFunctions;
 
-    static const std::unordered_map<std::string, FunctionCallVisitor> builtInFunctions;
+    static const std::unordered_map<std::string, NodeVisitor> builtInFunctions;
 
     llvm::Type *createLLVMType(ast::TypeId id);
     void initializeFunctions(const ast::SyntaxTree &tree);

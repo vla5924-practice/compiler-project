@@ -96,7 +96,7 @@ static const std::unordered_map<std::string, std::string> placeholders = {
     {PLACEHOLDER_POINTER_NAME, "%x"},
 };
 
-const std::unordered_map<std::string, IRGenerator::FunctionCallVisitor> IRGenerator::builtInFunctions = {
+const std::unordered_map<std::string, IRGenerator::NodeVisitor> IRGenerator::builtInFunctions = {
     {PRINT_FUNCTION_NAME, &IRGenerator::visitPrintFunctionCall},
     {INPUT_FUNCTION_NAME, &IRGenerator::visitInputFunctionCall},
 };
@@ -315,7 +315,7 @@ llvm::Value *IRGenerator::visitFunctionCall(Node *node) {
     const std::string &name = firstChild(node)->str();
     auto visitorIter = builtInFunctions.find(name);
     if (visitorIter != builtInFunctions.end()) {
-        FunctionCallVisitor visitor = visitorIter->second;
+        NodeVisitor visitor = visitorIter->second;
         return (this->*visitor)(node);
     }
 
