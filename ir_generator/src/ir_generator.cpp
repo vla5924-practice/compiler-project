@@ -136,11 +136,15 @@ void IRGenerator::dump() {
 
 llvm::Type *IRGenerator::createLLVMType(TypeId id) {
     switch (id) {
-    case IntType:
+    case BuiltInTypes::BoolType:
+        return llvm::Type::getInt1Ty(context);
+    case BuiltInTypes::IntType:
         return llvm::Type::getInt64Ty(context);
-    case FloatType:
+    case BuiltInTypes::FloatType:
         return llvm::Type::getDoubleTy(context);
-    case NoneType:
+    case BuiltInTypes::StrType:
+        return llvm::PointerType::get(llvm::Type::getInt8Ty(context), 0);
+    case BuiltInTypes::NoneType:
         return llvm::Type::getVoidTy(context);
     }
     return llvm::Type::getInt64Ty(context);
@@ -177,19 +181,7 @@ llvm::Value *IRGenerator::declareString(const std::string &str, std::string name
         static size_t counter = 0;
         name = ".str." + std::to_string(counter++);
     }
-    auto charType = llvm::IntegerType::get(context, 8);
-    std::vector<llvm::Constant *> chars(str.length());
-    for (size_t i = 0; i < str.size(); i++) {
-        chars[i] = llvm::ConstantInt::get(charType, str[i]);
-    }
-    chars.push_back(llvm::ConstantInt::get(charType, 0));
-    llvm::ArrayType *stringType = llvm::ArrayType::get(charType, chars.size());
-    auto globalDeclaration = reinterpret_cast<llvm::GlobalVariable *>(module->getOrInsertGlobal(name, stringType));
-    globalDeclaration->setInitializer(llvm::ConstantArray::get(stringType, chars));
-    globalDeclaration->setConstant(true);
-    globalDeclaration->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
-    globalDeclaration->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
-    return llvm::ConstantExpr::getBitCast(globalDeclaration, charType->getPointerTo());
+    return builder->CreateGlobalStringPtr(str, name, 0, module.get());
 }
 
 void IRGenerator::declareLocalVariable(ast::TypeId type, std::string &name, llvm::Value *initialValue) {
@@ -381,13 +373,19 @@ llvm::Value *IRGenerator::visitPrintFunctionCall(ast::Node *node) {
     assert(node && node->type == NodeType::FunctionCall && firstChild(node)->str() == PRINT_FUNCTION_NAME);
 
     auto argsNode = lastChild(node).get();
-    assert(argsNode->children.size() == 1); // print requires only one argument
+    assert(argsNode->children.size() == 1u); // print requires only one argument
 
     auto valueNode = firstChild(argsNode);
     auto placeholderName = placeholderNameByTypeId(detectExpressionType(valueNode));
-    std::vector<llvm::Value *> arguments = {module->getNamedGlobal(placeholderName)};
-    if (placeholders.find(placeholderName)->second[0] == '%')
-        arguments.push_back(visitNode(valueNode));
+    llvm::GlobalVariable *placeholder = module->getNamedGlobal(placeholderName);
+    llvm::Constant *constPointer = llvm::ConstantExpr::getBitCast(placeholder, createLLVMType(BuiltInTypes::StrType));
+    std::vector<llvm::Value *> arguments = {constPointer};
+    if (placeholders.find(placeholderName)->second[0] == '%') {
+        llvm::Value *arg = visitNode(valueNode);
+        if (isLLVMPointer(arg))
+            arg = builder->CreateLoad(arg);
+        arguments.push_back(arg);
+    }
     builder->CreateCall(internalFunctions[PRINTF_FUNCTION_NAME], arguments);
 
     return nullptr;
