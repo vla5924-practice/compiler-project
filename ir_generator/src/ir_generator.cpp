@@ -96,6 +96,11 @@ static const std::unordered_map<std::string, std::string> placeholders = {
     {PLACEHOLDER_POINTER_NAME, "%x"},
 };
 
+const std::unordered_map<std::string, IRGenerator::FunctionCallVisitor> IRGenerator::builtInFunctions = {
+    {PRINT_FUNCTION_NAME, &IRGenerator::visitPrintFunctionCall},
+    {INPUT_FUNCTION_NAME, &IRGenerator::visitInputFunctionCall},
+};
+
 IRGenerator::IRGenerator(const std::string &moduleName, bool emitDebugInfo)
     : context(), module(new llvm::Module(llvm::StringRef(moduleName), context)), builder(new llvm::IRBuilder(context)),
       currentBlock(nullptr), currentFunction(nullptr) {
@@ -308,9 +313,10 @@ llvm::Value *IRGenerator::visitFunctionCall(Node *node) {
     assert(node && node->type == NodeType::FunctionCall);
 
     const std::string &name = firstChild(node)->str();
-    if (name == PRINT_FUNCTION_NAME) {
-        processPrintFunctionCall(node);
-        return nullptr;
+    auto visitorIter = builtInFunctions.find(name);
+    if (visitorIter != builtInFunctions.end()) {
+        FunctionCallVisitor visitor = visitorIter->second;
+        return (this->*visitor)(node);
     }
 
     auto argsNode = lastChild(node);
@@ -368,6 +374,27 @@ llvm::Value *IRGenerator::visitVariableName(Node *node) {
             return it->second;
         }
     }
+    return nullptr;
+}
+
+llvm::Value *IRGenerator::visitPrintFunctionCall(ast::Node *node) {
+    assert(node && node->type == NodeType::FunctionCall && firstChild(node)->str() == PRINT_FUNCTION_NAME);
+
+    auto argsNode = lastChild(node).get();
+    assert(argsNode->children.size() == 1); // print requires only one argument
+
+    auto valueNode = firstChild(argsNode);
+    auto placeholderName = placeholderNameByTypeId(detectExpressionType(valueNode));
+    std::vector<llvm::Value *> arguments = {module->getNamedGlobal(placeholderName)};
+    if (placeholders.find(placeholderName)->second[0] == '%')
+        arguments.push_back(visitNode(valueNode));
+    builder->CreateCall(internalFunctions[PRINTF_FUNCTION_NAME], arguments);
+
+    return nullptr;
+}
+
+llvm::Value *IRGenerator::visitInputFunctionCall(ast::Node *node) {
+    assert("Function call visitor for input is not implemented yet.");
     return nullptr;
 }
 
@@ -497,20 +524,6 @@ void IRGenerator::processIfStatement(Node *node) {
     currentBlock = endBlock;
 
     node->children.erase(std::next(node->children.begin(), 2));
-}
-
-void IRGenerator::processPrintFunctionCall(Node *node) {
-    assert(node && node->type == NodeType::FunctionCall && firstChild(node)->str() == PRINT_FUNCTION_NAME);
-
-    auto argsNode = lastChild(node).get();
-    assert(argsNode->children.size() == 1); // print requires only one argument
-
-    auto valueNode = firstChild(argsNode);
-    auto placeholderName = placeholderNameByTypeId(detectExpressionType(valueNode));
-    std::vector<llvm::Value *> arguments = {module->getNamedGlobal(placeholderName)};
-    if (placeholders.find(placeholderName)->second[0] == '%')
-        arguments.push_back(visitNode(valueNode));
-    builder->CreateCall(internalFunctions[PRINTF_FUNCTION_NAME], arguments);
 }
 
 void IRGenerator::processProgramRoot(Node *node) {

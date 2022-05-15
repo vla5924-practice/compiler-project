@@ -17,6 +17,16 @@
 namespace ir_generator {
 
 class IRGenerator {
+  public:
+    using FunctionCallVisitor = llvm::Value *(IRGenerator::*)(ast::Node *);
+
+    explicit IRGenerator(const std::string &moduleName, bool emitDebugInfo = false);
+
+    void process(const ast::SyntaxTree &tree);
+    void writeToFile(const std::string &filename);
+    void dump();
+
+  private:
     llvm::LLVMContext context;
     std::unique_ptr<llvm::Module> module;
     std::unique_ptr<llvm::IRBuilder<>> builder;
@@ -26,6 +36,8 @@ class IRGenerator {
     std::list<std::unordered_map<std::string, llvm::AllocaInst *>> localVariables;
     std::unordered_map<std::string, llvm::Function *> functions;
     std::unordered_map<std::string, llvm::Function *> internalFunctions;
+
+    static const std::unordered_map<std::string, FunctionCallVisitor> builtInFunctions;
 
     llvm::Type *createLLVMType(ast::TypeId id);
     void initializeFunctions(const ast::SyntaxTree &tree);
@@ -43,22 +55,17 @@ class IRGenerator {
     llvm::Value *visitTypeConversion(ast::Node *node);
     llvm::Value *visitVariableName(ast::Node *node);
 
+    llvm::Value *visitPrintFunctionCall(ast::Node *node);
+    llvm::Value *visitInputFunctionCall(ast::Node *node);
+
     void processNode(ast::Node::Ptr node);
     void processExpression(ast::Node *node);
     void processFunctionDefinition(ast::Node *node);
     void processIfStatement(ast::Node *node);
-    void processPrintFunctionCall(ast::Node *node);
     void processProgramRoot(ast::Node *node);
     void processReturnStatement(ast::Node *node);
     void processVariableDeclaration(ast::Node *node);
     void processWhileStatement(ast::Node *node);
-
-  public:
-    explicit IRGenerator(const std::string &moduleName, bool emitDebugInfo = false);
-
-    void process(const ast::SyntaxTree &tree);
-    void writeToFile(const std::string &filename);
-    void dump();
 };
 
 } // namespace ir_generator
