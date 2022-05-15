@@ -171,7 +171,10 @@ llvm::BasicBlock *IRGenerator::processBranchRoot(Node::Ptr node, bool createBloc
     assert(node && node->type == NodeType::BranchRoot);
 
     if (createBlock) {
-        currentBlock = llvm::BasicBlock::Create(context, "block", currentFunction);
+        llvm::BasicBlock *nextBlock = llvm::BasicBlock::Create(context, "block");
+        builder->CreateBr(nextBlock);
+        nextBlock->insertInto(currentFunction);
+        currentBlock = nextBlock;
     }
     localVariables.emplace_back();
     builder->SetInsertPoint(currentBlock);
@@ -462,6 +465,10 @@ void IRGenerator::processFunctionDefinition(Node *node) {
     }
     processBranchRoot(lastChild(node));
     localVariables.pop_back();
+
+    if (function->getReturnType()->isVoidTy()) {
+        builder->CreateRetVoid();
+    }
 }
 
 void IRGenerator::processIfStatement(Node *node) {
@@ -487,9 +494,11 @@ void IRGenerator::processIfStatement(Node *node) {
 
     for (auto nodeIter = std::next(node->children.begin(), 2);
          nodeIter != node->children.end() && (*nodeIter)->type == NodeType::ElifStatement; nodeIter++) {
-        if (nextBlock == nullptr)
-            condBlock = llvm::BasicBlock::Create(context, "ifcond", currentFunction);
-        else {
+        if (nextBlock == nullptr) {
+            condBlock = llvm::BasicBlock::Create(context, "ifcond");
+            builder->CreateBr(condBlock);
+            condBlock->insertInto(currentFunction);
+        } else {
             condBlock = nextBlock;
             nextBlock->insertInto(currentFunction);
         }
@@ -524,6 +533,7 @@ void IRGenerator::processIfStatement(Node *node) {
         builder->CreateBr(endBlock);
     }
     endBlock->insertInto(currentFunction);
+    builder->SetInsertPoint(endBlock);
     currentBlock = endBlock;
 
     node->children.erase(std::next(node->children.begin(), 2));
@@ -572,5 +582,6 @@ void IRGenerator::processWhileStatement(Node *node) {
     processBranchRoot(lastChild(node), false);
     builder->CreateBr(condBlock);
     endBlock->insertInto(currentFunction);
+    builder->SetInsertPoint(endBlock);
     currentBlock = endBlock;
 }
