@@ -120,6 +120,10 @@ static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTabl
     if (funcIter == functions.cend()) {
         if (isPrintFunction || funcName == "input") {
             funcIter = functions.emplace(funcName, Function(BuiltInTypes::NoneType)).first;
+            TypeId type = searchVariable(node->parent->firstChild(), tables, errors);
+            Node::Ptr returnTypeNode = std::make_shared<Node>(NodeType::FunctionReturnType, node);
+            returnTypeNode->value = type;
+            node->children.push_back(returnTypeNode);
         } else {
             errors.push<SemantizerError>(*node, funcName + " was not declared in this scope");
         }
