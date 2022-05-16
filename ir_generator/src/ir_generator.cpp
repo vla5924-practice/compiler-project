@@ -53,7 +53,7 @@ TypeId findVariableType(Node::Ptr node) {
             auto &variables = currentNode->variables();
             auto it = variables.find(name);
             if (it != variables.end())
-                return it->second;
+                return it->second.type;
         }
         currentNode = currentNode->parent;
     }

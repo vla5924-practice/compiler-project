@@ -1,18 +1,11 @@
 #include "optimizer/optimizer.hpp"
+
 #include <variant>
 
 using namespace ast;
 using namespace optimizer;
 
 using VariablesValue = std::map<std::string, std::variant<long int, double>>; // TODO std::map -> std::list<std::map>
-
-Node::Ptr &firstChild(Node::Ptr &node) {
-    return node->children.front();
-}
-
-Node::Ptr &lastChild(Node::Ptr &node) {
-    return node->children.back();
-}
 
 Variable &getVariable(const Node::Ptr &node,
                       const std::list<VariablesTable *> &tables) { // TODO merge this function with getVariableAttribute
@@ -124,9 +117,9 @@ bool constantPropagation(Node::Ptr &first, Node::Ptr &second, std::list<Variable
 }
 
 void processTypeConversion(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
-    Node::Ptr &last = lastChild(node);
+    Node::Ptr &last = node->lastChild();
     if (last->type == NodeType::IntegerLiteralValue || last->type == NodeType::FloatingPointLiteralValue) {
-        if (firstChild(node)->typeId() == BuiltInTypes::FloatType) {
+        if (node->firstChild()->typeId() == BuiltInTypes::FloatType) {
             node->type = NodeType::FloatingPointLiteralValue;
             node->value = static_cast<float>(last->intNum());
         } else {
@@ -139,7 +132,7 @@ void processTypeConversion(Node::Ptr &node, std::list<VariablesTable *> &table, 
 
     if (last->type == NodeType::VariableName &&
         !getVariableAttribute(last, table)) { // procces variable in type conversion
-        if (firstChild(node)->typeId() == BuiltInTypes::FloatType) {
+        if (node->firstChild()->typeId() == BuiltInTypes::FloatType) {
             node->type = NodeType::FloatingPointLiteralValue;
             node->value = static_cast<float>(std::get<0>(variablesValue[last->str()]));
         } else {
@@ -197,8 +190,8 @@ void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child,
 }
 
 void processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
-    auto first = firstChild(node);
-    auto second = lastChild(node);
+    auto first = node->firstChild();
+    auto second = node->lastChild();
     if (second->type == NodeType::BinaryOperation)
         processBinaryOperation(second, table, variablesValue);
     if (first->type == NodeType::TypeConversion)
@@ -214,8 +207,8 @@ void processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table,
 void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
     for (auto &child : node->children) {
         if (child->type == NodeType::BinaryOperation) {
-            auto first = firstChild(child);
-            auto second = lastChild(child);
+            auto first = child->firstChild();
+            auto second = child->lastChild();
             if (second->type == NodeType::BinaryOperation)
                 processBinaryOperation(second, table, variablesValue);
             if (first->type == NodeType::TypeConversion)
@@ -269,14 +262,14 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
         }
 
         if (child->type == NodeType::IfStatement) {
-            processExpression(firstChild(child), table, variablesValue);
-            if (firstChild(firstChild(child))->type != NodeType::BinaryOperation) {
-            } // TODO Atrem удалить ненужную ветку в иф выражении
+            processExpression(child->firstChild(), table, variablesValue);
+            if (child->firstChild()->firstChild()->type != NodeType::BinaryOperation) {
+            } // TODO @arteboss удалить ненужную ветку в иф выражении
         }
-        
+
         if (child->type == NodeType::WhileStatement) {
-            
-        }// сделать аналогично if
+
+        } // сделать аналогично if
     }
 }
 
