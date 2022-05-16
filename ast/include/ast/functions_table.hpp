@@ -19,6 +19,9 @@ struct Function {
     Function(Function &&) = default;
     ~Function() = default;
 
+    Function &operator=(const Function &) = default;
+    Function &operator=(Function &&) = default;
+
     bool operator==(const Function &other) const {
         return (returnType == other.returnType) && (argumentsTypes == other.argumentsTypes);
     }
