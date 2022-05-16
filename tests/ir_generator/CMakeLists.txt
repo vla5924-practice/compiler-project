@@ -9,6 +9,7 @@ file(GLOB_RECURSE TARGET_SRC
 add_executable(${TARGET_NAME} ${TARGET_SRC})
 
 target_link_libraries(${TARGET_NAME} PUBLIC
+    backend
     ir_generator
     gtest
     gtest_main
