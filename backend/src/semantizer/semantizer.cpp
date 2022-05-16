@@ -3,22 +3,6 @@
 using namespace semantizer;
 using namespace ast;
 
-namespace {
-
-Node::Ptr &firstChild(Node *node) {
-    return node->children.front();
-}
-
-Node::Ptr &secondChild(Node *node) {
-    return *std::next(node->children.begin());
-}
-
-Node::Ptr &lastChild(Node *node) {
-    return node->children.back();
-}
-
-} // namespace
-
 static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments, VariablesTable &table) {
     std::vector<TypeId> result;
 
@@ -130,26 +114,27 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
 
 static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTable *> &tables, FunctionsTable &functions,
                                   ErrorBuffer &errors) {
-    auto func = functions.find((*node->children.begin())->str());
-
-    if (func == functions.cend()) {
-        if (node->str() == "print" || node->str() == "input") {
-            functions.emplace(node->str(), Function(BuiltInTypes::NoneType));
+    const std::string &funcName = node->firstChild()->str();
+    bool isPrintFunction = (funcName == "print");
+    auto funcIter = functions.find(funcName);
+    if (funcIter == functions.cend()) {
+        if (isPrintFunction || funcName == "input") {
+            funcIter = functions.emplace(funcName, Function(BuiltInTypes::NoneType)).first;
+        } else {
+            errors.push<SemantizerError>(*node, funcName + " was not declared in this scope");
         }
-        errors.push<SemantizerError>(*node, node->str() + " was not declared in this scope");
     }
 
-    auto children_it = node->children.begin();
-    children_it++;
-
-    auto args = func->second.argumentsTypes;
-
-    size_t index = 0;
-    for (auto &it : (*children_it)->children) {
-        processExpression(it, args[index++], tables, functions, errors);
+    if (node->children.size() >= 2u) {
+        const std::vector<TypeId> &args = funcIter->second.argumentsTypes;
+        size_t index = 0;
+        for (auto &child : node->secondChild()->children) {
+            TypeId type = isPrintFunction ? BuiltInTypes::IntType : args[index++]; // FIXME: workaround for int only
+            processExpression(child, type, tables, functions, errors);
+        }
     }
 
-    return func->second.returnType;
+    return funcIter->second.returnType;
 }
 
 TypeId literalNodeTypeToTypeId(NodeType type) {
@@ -216,8 +201,9 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
             pushTypeConversion(child, type);
         }
 
-        if ((child->type == NodeType::FloatingPointLiteralValue && node->type == NodeType::BinaryOperation) ||
-            (child->type == NodeType::TypeConversion && firstChild(child.get())->typeId() == BuiltInTypes::FloatType)) {
+        if ((child->type == NodeType::FloatingPointLiteralValue ||
+             child->type == NodeType::TypeConversion && child->firstChild()->typeId() == BuiltInTypes::FloatType) &&
+            node->type == NodeType::BinaryOperation) {
             node->value = convertToFloatOperation(node->binOp());
         }
     }
