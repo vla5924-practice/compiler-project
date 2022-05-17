@@ -151,8 +151,7 @@ static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTabl
         auto exprNode = node->lastChild()->lastChild();
         auto child = exprNode->firstChild();
         auto type = child->type;
-        exprNode->value = processPrintFunction(child, type, tables, functions,
-                                               errors); // если захочешь несколько аргументов в принте то трогай это
+        exprNode->value = processPrintFunction(child, type, tables, functions, errors);
         return BuiltInTypes::NoneType;
     }
     auto funcIter = functions.find(funcName);
