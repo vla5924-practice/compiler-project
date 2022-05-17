@@ -223,6 +223,7 @@ void buildExpressionSubtree(std::stack<SubExpression> postfixForm, ast::Node::Pt
         } else {
             ast::Node::Ptr funcCallNode = std::get<ast::Node::Ptr>(subexpr);
             assert(funcCallNode->type == ast::NodeType::FunctionCall);
+            funcCallNode->parent = currNode;
             currNode->children.push_front(funcCallNode);
         }
         while (currNode->children.size() >= getOperandCount(getOperationType(*currNode)))
