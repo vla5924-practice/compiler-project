@@ -424,7 +424,7 @@ TEST(Parser, can_parse_nested_function_call_with_arguments) {
 TEST(Parser, can_parse_complex_nested_function_call) {
     StringVec source = {
         "def main() -> None:",
-        "    x = foo(bar() + 1, baz(y), z)",
+        "    x = foo(bar(fun()) + 1, baz(y), z)",
     };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -444,6 +444,10 @@ TEST(Parser, can_parse_complex_nested_function_call) {
                            "                BinaryOperation: Add\n"
                            "                  FunctionCall\n"
                            "                    FunctionName: bar\n"
+                           "                    FunctionArguments\n"
+                           "                      Expression\n"
+                           "                        FunctionCall\n"
+                           "                          FunctionName: fun\n"
                            "                  IntegerLiteralValue: 1\n"
                            "              Expression\n"
                            "                FunctionCall\n"
