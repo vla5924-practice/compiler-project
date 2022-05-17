@@ -231,11 +231,12 @@ void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child,
     }
 }
 
-void processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
+void processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
+                            FunctionsTable &functions) {
     auto first = node->firstChild();
     auto second = node->lastChild();
     if (second->type == NodeType::BinaryOperation)
-        processBinaryOperation(second, table, variablesValue);
+        processBinaryOperation(second, table, variablesValue, functions);
     if (first->type == NodeType::TypeConversion)
         processTypeConversion(first, table, variablesValue);
     if (second->type == NodeType::TypeConversion)
@@ -244,6 +245,12 @@ void processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table,
     bool isNotModifiedExpr = false;
     if (!isConsExpr)
         isNotModifiedExpr = constantPropagation(first, second, table, variablesValue);
+    if (first->type == NodeType::FunctionCall) {
+        functions.find(first->firstChild()->str())->second.useCount++;
+    }
+    if (second->type == NodeType::FunctionCall) {
+        functions.find(second->firstChild()->str())->second.useCount++;
+    }
 }
 
 void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
@@ -253,7 +260,7 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
             auto first = child->firstChild();
             auto second = child->lastChild();
             if (second->type == NodeType::BinaryOperation)
-                processBinaryOperation(second, table, variablesValue);
+                processBinaryOperation(second, table, variablesValue, functions);
             if (first->type == NodeType::TypeConversion)
                 processTypeConversion(first, table, variablesValue);
             if (second->type == NodeType::TypeConversion)
@@ -278,9 +285,10 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
 
         if (child->type == NodeType::FunctionCall) {
             auto end_child = child->children.back();
+            processExpression(end_child, table, variablesValue, functions);
+            functions.find(child->firstChild()->str())->second.useCount++;
             if (end_child->type == NodeType::FunctionName)
                 continue;
-            processExpression(end_child, table, variablesValue, functions);
         }
 
         if (child->type == NodeType::TypeConversion) {
@@ -368,13 +376,13 @@ void Optimizer::process(SyntaxTree &tree) {
             processBranchRoot(*child, variablesTable, variablesValue, tree.functions);
         }
     }
-    //for (auto &function : tree.functions) {
-    //    if (function.second.useCount == 0) {
-    //        tree.functions.erase(function.first);
-    //    }
-    //}
+    // for (auto &function : tree.functions) {
+    //     if (function.second.useCount == 0) {
+    //         tree.functions.erase(function.first);
+    //     }
+    // }
     tree.root->children.remove_if([&tree](Node::Ptr node) {
-        return tree.functions.find(node->firstChild()->str())->second.useCount == 0 && node->firstChild()->str() != "main";
-    }); 
-    
+        return tree.functions.find(node->firstChild()->str())->second.useCount == 0 &&
+               node->firstChild()->str() != "main";
+    });
 }

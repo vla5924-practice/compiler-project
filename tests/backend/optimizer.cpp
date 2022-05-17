@@ -250,3 +250,24 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with
                            "          FloatingPointLiteralValue: 2\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
+
+TEST(Optimizer, DCE_for_function) {
+    StringVec source = {"def main() -> None:", "    x: float = 1", "def killMe() -> None:", "    y: float = 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    tree.dump(std::cout);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: x\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
