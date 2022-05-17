@@ -13,7 +13,10 @@
 #include <backend/preprocessor/preprocessor.hpp>
 #include <backend/semantizer/semantizer.hpp>
 #include <backend/stringvec.hpp>
+
+#ifdef ENABLE_IR_GENERATOR
 #include <ir_generator/ir_generator.hpp>
+#endif
 
 #include "dumping.hpp"
 
@@ -67,7 +70,9 @@ std::filesystem::path createTemporaryDirectory() {
     std::uniform_int_distribution<uint64_t> dist(0);
     std::filesystem::path path;
     for (int i = 0; i < 1000; i++) {
-        path = tempDir / (std::stringstream() << std::hex << dist(gen)).str();
+        std::stringstream dirName;
+        dirName << std::hex << dist(gen);
+        path = tempDir / dirName.str();
         if (std::filesystem::create_directory(path))
             return path;
     }
