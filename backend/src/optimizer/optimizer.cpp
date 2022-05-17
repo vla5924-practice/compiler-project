@@ -254,6 +254,15 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
     }
 }
 
+bool isLiteral(Node::Ptr &node) {
+    switch (node->type) {
+    case NodeType::IntegerLiteralValue:
+    case NodeType::FloatingPointLiteralValue:
+        return true;
+    }
+    return false;
+}
+
 void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
     table.push_front(&node->variables());
     for (auto &child : node->children) {
@@ -263,13 +272,39 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
 
         if (child->type == NodeType::IfStatement) {
             processExpression(child->firstChild(), table, variablesValue);
-            if (child->firstChild()->firstChild()->type != NodeType::BinaryOperation) {
+            auto &exprResult = child->firstChild()->firstChild();
+            if (isLiteral(exprResult)) {
+                child->children.pop_front();
+                if (exprResult->type == NodeType::IntegerLiteralValue && exprResult->intNum() == 1 ||
+                    exprResult->type == NodeType::FloatingPointLiteralValue && exprResult->fpNum() == 1.0) {
+                    child = child->children.front();
+                } else {
+                    if (child->children.size() > 1u) {
+                        if (child->secondChild()->type == NodeType::ElseStatement) {
+                            child = child->children.back()->firstChild();
+                        } else {
+                            // TODO: Elif Statement
+                        }
+
+                    } else {
+                        child->children.clear();
+                        child->type = NodeType::BranchRoot;
+                    }
+                }
             } // TODO @arteboss удалить ненужную ветку в иф выражении
         }
 
         if (child->type == NodeType::WhileStatement) {
-
-        } // сделать аналогично if
+            processExpression(child->firstChild(), table, variablesValue);
+            auto &exprResult = child->firstChild()->firstChild();
+            if (isLiteral(exprResult)) {
+                if (exprResult->type == NodeType::IntegerLiteralValue && exprResult->intNum() == 0 ||
+                    exprResult->type == NodeType::FloatingPointLiteralValue && exprResult->fpNum() == 0.0) {
+                    child->children.clear();
+                    child->type = NodeType::BranchRoot;
+                }
+            } // TODO @arteboss удалить ненужную ветку в иф выражении
+        }     // сделать аналогично if
     }
 }
 
