@@ -11,6 +11,7 @@ namespace ast {
 struct Function {
     TypeId returnType;
     std::vector<TypeId> argumentsTypes;
+    unsigned useCount = 0;
 
     Function() = default;
     Function(const Function &) = default;
