@@ -1,0 +1,35 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+env:
+  BUILD_COUNTER: ${{ github.event.number }}
+
+jobs:
+  deploy-docker-image:
+    name: Deploy Docker image
+    runs-on: ubuntu-20.04
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Login to Containers registry
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u vla5924-practice --password-stdin
+      - name: Build image
+        run: |
+          docker build -f docker/Dockerfile -t compiler .
+      - name: Push image
+        run: |
+          export IMAGE_NAME=ghcr.io/vla5924-practice/compiler-project
+          export IMAGE_VERSION=1.0.${BUILD_COUNTER}
+          docker tag compiler ${IMAGE_NAME}:${IMAGE_VERSION}
+          docker push ${IMAGE_NAME}:${IMAGE_VERSION}
+          docker tag compiler ${IMAGE_NAME}:latest
+          docker push ${IMAGE_NAME}:latest
