@@ -246,7 +246,7 @@ void processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table,
         isNotModifiedExpr = constantPropagation(first, second, table, variablesValue);
 }
 
-void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
+void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue, FunctionsTable &functions) {
     for (auto &child : node->children) {
         if (child->type == NodeType::BinaryOperation) {
             auto first = child->firstChild();
@@ -264,6 +264,12 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
             if (isConsExpr || isNotModifiedExpr) {
                 pushVariableAttribute(node, child, variablesValue);
             }
+            if (first->type == NodeType::FunctionCall) {
+                functions.find(first->firstChild()->str())->second.useCount++;
+            }
+            if (second->type == NodeType::FunctionCall) {
+                functions.find(second->firstChild()->str())->second.useCount++;
+            }
             // if ()
             // TODO need some checks for modified variables
             continue;
@@ -273,7 +279,7 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
             auto end_child = child->children.back();
             if (end_child->type == NodeType::FunctionName)
                 continue;
-            processExpression(end_child, table, variablesValue);
+            processExpression(end_child, table, variablesValue, functions);
         }
 
         if (child->type == NodeType::TypeConversion) {
@@ -292,7 +298,7 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
             continue;
         }
 
-        processExpression(child, table, variablesValue);
+        processExpression(child, table, variablesValue, functions);
     }
 }
 
@@ -305,15 +311,15 @@ bool isLiteral(Node::Ptr &node) {
     return false;
 }
 
-void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
+void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue, FunctionsTable &functions) {
     table.push_front(&node->variables());
     for (auto &child : node->children) {
         if (child->type == NodeType::Expression || child->type == NodeType::VariableDeclaration) {
-            processExpression(child, table, variablesValue);
+            processExpression(child, table, variablesValue, functions);
         }
 
         if (child->type == NodeType::IfStatement) {
-            processExpression(child->firstChild(), table, variablesValue);
+            processExpression(child->firstChild(), table, variablesValue, functions);
             auto &exprResult = child->firstChild()->firstChild();
             if (isLiteral(exprResult)) {
                 child->children.pop_front();
@@ -337,7 +343,7 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
         }
 
         if (child->type == NodeType::WhileStatement) {
-            processExpression(child->firstChild(), table, variablesValue);
+            processExpression(child->firstChild(), table, variablesValue, functions);
             auto &exprResult = child->firstChild()->firstChild();
             if (isLiteral(exprResult)) {
                 if (exprResult->type == NodeType::IntegerLiteralValue && exprResult->intNum() == 0 ||
@@ -357,7 +363,7 @@ void Optimizer::process(SyntaxTree &tree) {
             std::advance(child, 3);
             std::list<VariablesTable *> variablesTable;
             VariablesValue variablesValue;
-            processBranchRoot(*child, variablesTable, variablesValue);
+            processBranchRoot(*child, variablesTable, variablesValue, tree.functions);
         }
     }
-}
+} 
