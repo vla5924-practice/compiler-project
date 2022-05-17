@@ -131,15 +131,15 @@ static TypeId processPrintFunction(Node::Ptr &node, NodeType type, const std::li
             return BuiltInTypes::FloatType;
         }
         return BuiltInTypes::IntType;
-    } else if (type == NodeType::VariableName) {
-        return searchVariable(node, tables, errors);
-    } else if (type == NodeType::FunctionCall) {
-        return processFunctionCall(node->firstChild(), tables, functions, errors);
-    } else if (type == NodeType::FloatingPointLiteralValue) {
-        return BuiltInTypes::FloatType;
-    } else if (type == NodeType::IntegerLiteralValue) {
-        return BuiltInTypes::IntType;
     }
+    if (type == NodeType::VariableName)
+        return searchVariable(node, tables, errors);
+    if (type == NodeType::FunctionCall)
+        return processFunctionCall(node->firstChild(), tables, functions, errors);
+    if (type == NodeType::FloatingPointLiteralValue)
+        return BuiltInTypes::FloatType;
+    if (type == NodeType::IntegerLiteralValue)
+        return BuiltInTypes::IntType;
     return BuiltInTypes::NoneType;
 }
 

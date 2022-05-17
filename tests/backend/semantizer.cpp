@@ -44,7 +44,7 @@ TEST(Semantizer, can_fill_variables_table) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_work_with_print_function_with_float_args) {
+TEST(Semantizer, can_process_print_function_call_with_float_as_argument) {
     StringVec source = {"def main() -> None:", "    x: int", "    y: float", "    print(1.0 + y + x * 2 / 1)"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -80,7 +80,7 @@ TEST(Semantizer, can_work_with_print_function_with_float_args) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_work_with_print_function_with_int_args) {
+TEST(Semantizer, can_process_print_function_call_with_int_as_argument) {
     StringVec source = {"def main() -> None:", "    x: int", "    y: int", "    print(1 + y + x * 2 / 1)"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
