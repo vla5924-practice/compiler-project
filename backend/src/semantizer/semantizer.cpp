@@ -115,21 +115,18 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
 static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTable *> &tables, FunctionsTable &functions,
                                   ErrorBuffer &errors);
 
-static TypeId processPrintFunction(Node::Ptr &node, NodeType type, Node::Ptr &funcCall,
-                                   const std::list<VariablesTable *> &tables, FunctionsTable &functions,
-                                   ErrorBuffer &errors) {
+static TypeId processPrintFunction(Node::Ptr &node, NodeType type, const std::list<VariablesTable *> &tables,
+                                   FunctionsTable &functions, ErrorBuffer &errors) {
     if (type == NodeType::BinaryOperation) {
         auto &first = node->firstChild();
         auto &second = node->secondChild();
-        auto firstType = processPrintFunction(first, first->type, funcCall, tables, functions, errors);
-        auto secondType = processPrintFunction(second, second->type, funcCall, tables, functions, errors);
+        auto firstType = processPrintFunction(first, first->type, tables, functions, errors);
+        auto secondType = processPrintFunction(second, second->type, tables, functions, errors);
         if (firstType == BuiltInTypes::FloatType || secondType == BuiltInTypes::FloatType) {
-            if (firstType != BuiltInTypes::FloatType) {
+            if (firstType != BuiltInTypes::FloatType)
                 pushTypeConversion(first, BuiltInTypes::FloatType);
-            }
-            if (secondType != BuiltInTypes::FloatType) {
+            if (secondType != BuiltInTypes::FloatType)
                 pushTypeConversion(second, BuiltInTypes::FloatType);
-            }
             node->value = convertToFloatOperation(node->binOp());
             return BuiltInTypes::FloatType;
         }
@@ -154,7 +151,7 @@ static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTabl
         auto exprNode = node->lastChild()->lastChild();
         auto child = exprNode->firstChild();
         auto type = child->type;
-        exprNode->value = processPrintFunction(child, type, node, tables, functions,
+        exprNode->value = processPrintFunction(child, type, tables, functions,
                                                errors); // если захочешь несколько аргументов в принте то трогай это
         return BuiltInTypes::NoneType;
     }
