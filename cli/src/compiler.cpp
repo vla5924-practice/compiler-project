@@ -188,7 +188,6 @@ int Compiler::exec(int argc, char *argv[]) {
         const auto exeFile = tempDir / "out.exe";
         std::string llcCmd = generateLlcCommand(program.get<std::string>("--llc"), llFile, objFile);
         std::string clangCmd = generateClangCommand(program.get<std::string>("--clang"), objFile, exeFile);
-        std::cout << std::endl << llcCmd << std::endl << clangCmd << std::endl;
         bool cmdFailed = (std::system(llcCmd.c_str()) || std::system(clangCmd.c_str()));
         if (!cmdFailed)
             std::filesystem::copy_file(exeFile, output);
