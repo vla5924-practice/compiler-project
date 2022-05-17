@@ -113,12 +113,53 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
                               FunctionsTable &functions, ErrorBuffer &errors);
 
 static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTable *> &tables, FunctionsTable &functions,
+                                  ErrorBuffer &errors);
+
+static TypeId processPrintFunction(Node::Ptr &node, NodeType type, Node::Ptr &funcCall, const std::list<VariablesTable *> &tables,
+                                   FunctionsTable &functions, ErrorBuffer &errors) {
+    if (type == NodeType::BinaryOperation) {
+        auto first = node->firstChild();
+        auto second = node->secondChild();
+        auto firstType = processPrintFunction(first, first->type, funcCall, tables, functions, errors);
+        auto secondType = processPrintFunction(second, second->type, funcCall, tables, functions, errors);
+        if (firstType == BuiltInTypes::FloatType || secondType == BuiltInTypes::FloatType) {
+            if (firstType != BuiltInTypes::FloatType) {
+                pushTypeConversion(*(node->children.begin()), BuiltInTypes::FloatType);
+            }
+            if (secondType != BuiltInTypes::FloatType) {
+                pushTypeConversion(*(node->children.end()), BuiltInTypes::FloatType);
+            }
+            node->value = convertToFloatOperation(node->binOp());
+            return BuiltInTypes::FloatType;
+        }
+        return BuiltInTypes::IntType;
+    } else if (type == NodeType::VariableName) {
+        return searchVariable(node, tables, errors);
+    } else if (type == NodeType::FunctionCall) {
+        return processFunctionCall(node->firstChild(), tables, functions, errors);
+    } else if (type == NodeType::FloatingPointLiteralValue) {
+        return BuiltInTypes::FloatType;
+    } else if (type == NodeType::IntegerLiteralValue) {
+        return BuiltInTypes::IntType;
+    }
+    return BuiltInTypes::NoneType;
+}
+
+static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTable *> &tables, FunctionsTable &functions,
                                   ErrorBuffer &errors) {
     const std::string &funcName = node->firstChild()->str();
     bool isPrintFunction = (funcName == "print");
+    if (isPrintFunction) {
+        auto exprNode = node->lastChild()->lastChild();
+        auto child = exprNode->firstChild();
+        auto type = child->type;
+        exprNode->value = processPrintFunction(child, type, node, tables, functions,
+                             errors); // если захочешь несколько аргументов в принте то трогай это
+        return BuiltInTypes::NoneType;
+    }
     auto funcIter = functions.find(funcName);
     if (funcIter == functions.cend()) {
-        if (isPrintFunction || funcName == "input") {
+        if (funcName == "input") {
             funcIter = functions.emplace(funcName, Function(BuiltInTypes::NoneType)).first;
             TypeId type = searchVariable(node->parent->firstChild(), tables, errors);
             Node::Ptr returnTypeNode = std::make_shared<Node>(NodeType::FunctionReturnType, node);
@@ -189,7 +230,7 @@ static void processExpression(Node::Ptr &node, TypeId var_type, const std::list<
         if (child->type == NodeType::VariableName) {
             auto find_type = searchVariable(child, tables, errors);
             if (find_type != var_type) {
-                if (find_type == BuiltInTypes::StrType && child->str().size() != 1) {
+                if (find_type == BuiltInTypes::StrType && child->str().size() != 1u) {
                     errors.push<SemantizerError>(*node,
                                                  "Invalid conversion from string to " + std::to_string(var_type));
                 }
