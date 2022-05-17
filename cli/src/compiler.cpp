@@ -25,11 +25,14 @@
         EXPR;                                                                                                          \
     }
 
-using ir_generator::IRGenerator;
 using lexer::Lexer;
 using parser::Parser;
 using preprocessor::Preprocessor;
 using semantizer::Semantizer;
+
+#ifdef ENABLE_IR_GENERATOR
+using ir_generator::IRGenerator;
+#endif
 
 namespace {
 
