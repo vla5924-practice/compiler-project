@@ -246,7 +246,8 @@ void processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table,
         isNotModifiedExpr = constantPropagation(first, second, table, variablesValue);
 }
 
-void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue, FunctionsTable &functions) {
+void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
+                       FunctionsTable &functions) {
     for (auto &child : node->children) {
         if (child->type == NodeType::BinaryOperation) {
             auto first = child->firstChild();
@@ -311,7 +312,8 @@ bool isLiteral(Node::Ptr &node) {
     return false;
 }
 
-void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue, FunctionsTable &functions) {
+void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
+                       FunctionsTable &functions) {
     table.push_front(&node->variables());
     for (auto &child : node->children) {
         if (child->type == NodeType::Expression || child->type == NodeType::VariableDeclaration) {
@@ -366,4 +368,13 @@ void Optimizer::process(SyntaxTree &tree) {
             processBranchRoot(*child, variablesTable, variablesValue, tree.functions);
         }
     }
-} 
+    //for (auto &function : tree.functions) {
+    //    if (function.second.useCount == 0) {
+    //        tree.functions.erase(function.first);
+    //    }
+    //}
+    tree.root->children.remove_if([&tree](Node::Ptr node) {
+        return tree.functions.find(node->firstChild()->str())->second.useCount == 0 && node->firstChild()->str() != "main";
+    }); 
+    
+}
