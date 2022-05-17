@@ -118,16 +118,16 @@ static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTabl
 static TypeId processPrintFunction(Node::Ptr &node, NodeType type, Node::Ptr &funcCall, const std::list<VariablesTable *> &tables,
                                    FunctionsTable &functions, ErrorBuffer &errors) {
     if (type == NodeType::BinaryOperation) {
-        auto first = node->firstChild();
-        auto second = node->secondChild();
+        auto& first = node->firstChild();
+        auto& second = node->secondChild();
         auto firstType = processPrintFunction(first, first->type, funcCall, tables, functions, errors);
         auto secondType = processPrintFunction(second, second->type, funcCall, tables, functions, errors);
         if (firstType == BuiltInTypes::FloatType || secondType == BuiltInTypes::FloatType) {
             if (firstType != BuiltInTypes::FloatType) {
-                pushTypeConversion(*(node->children.begin()), BuiltInTypes::FloatType);
+                pushTypeConversion(first, BuiltInTypes::FloatType);
             }
             if (secondType != BuiltInTypes::FloatType) {
-                pushTypeConversion(*(node->children.end()), BuiltInTypes::FloatType);
+                pushTypeConversion(second, BuiltInTypes::FloatType);
             }
             node->value = convertToFloatOperation(node->binOp());
             return BuiltInTypes::FloatType;

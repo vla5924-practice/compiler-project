@@ -44,6 +44,76 @@ TEST(Semantizer, can_fill_variables_table) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
+TEST(Semantizer, can_work_with_print_function_with_float_args) {
+    StringVec source = {"def main() -> None:", "    x: int", "    y: float", "    print(1.0 + y + x * 2 / 1)"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "      Expression: NoneType\n"
+                           "        FunctionCall\n"
+                           "          FunctionName: print\n"
+                           "          FunctionArguments\n"
+                           "            Expression: FloatType\n"
+                           "              BinaryOperation: FAdd\n"
+                           "                BinaryOperation: FAdd\n"
+                           "                  FloatingPointLiteralValue: 1\n"
+                           "                  VariableName: y\n"
+                           "                TypeConversion\n"
+                           "                  TypeName: FloatType\n"
+                           "                  BinaryOperation: Div\n"
+                           "                    BinaryOperation: Mult\n"
+                           "                      VariableName: x\n"
+                           "                      IntegerLiteralValue: 2\n"
+                           "                    IntegerLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Semantizer, can_work_with_print_function_with_int_args) {
+    StringVec source = {"def main() -> None:", "    x: int", "    y: int", "    print(1 + y + x * 2 / 1)"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "      Expression: NoneType\n"
+                           "        FunctionCall\n"
+                           "          FunctionName: print\n"
+                           "          FunctionArguments\n"
+                           "            Expression: IntType\n"
+                           "              BinaryOperation: Add\n"
+                           "                BinaryOperation: Add\n"
+                           "                  IntegerLiteralValue: 1\n"
+                           "                  VariableName: y\n"
+                           "                BinaryOperation: Div\n"
+                           "                  BinaryOperation: Mult\n"
+                           "                    VariableName: x\n"
+                           "                    IntegerLiteralValue: 2\n"
+                           "                  IntegerLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
 TEST(Semantizer, can_insert_type_conversion_int_to_float) {
     StringVec source = {"def main() -> None:", "    x: int", "    y: float", "    y = x + y"};
     TokenList token_list = Lexer::process(source);
