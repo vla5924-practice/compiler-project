@@ -68,7 +68,7 @@ long int calcIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation o
         return firstValue < secondValue;
         break;
     case BinaryOperation::LessEqual:
-        return firstValue < secondValue;
+        return firstValue <= secondValue;
         break;
     case BinaryOperation::NotEqual:
         return firstValue != secondValue;
@@ -117,7 +117,7 @@ double calcFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation o
         return firstValue < secondValue;
         break;
     case BinaryOperation::FLessEqual:
-        return firstValue < secondValue;
+        return firstValue <= secondValue;
         break;
     case BinaryOperation::FNotEqual:
         return firstValue != secondValue;
