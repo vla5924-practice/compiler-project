@@ -38,6 +38,9 @@ namespace {
 
 argparse::ArgumentParser createArgumentParser() {
     argparse::ArgumentParser parser("cli", "1.0");
+    parser.add_argument("-h", "--help").help("show help message and exit").default_value(false).implicit_value(true);
+    parser.add_argument("-v", "--verbose").help("print info messages").default_value(false).implicit_value(true);
+#ifdef ENABLE_IR_GENERATOR
     parser.add_argument("-c", "--compile")
         .help("produce an executable instead of LLVM IR code")
         .default_value(false)
@@ -45,12 +48,11 @@ argparse::ArgumentParser createArgumentParser() {
     parser.add_argument("--clang")
         .help("path to clang executable (required if --compile argument is set)")
         .default_value("clang");
-    parser.add_argument("-h", "--help").help("show help message and exit").default_value(false).implicit_value(true);
     parser.add_argument("--llc")
         .help("path to llc executabe (required if --compile argument is set)")
         .default_value("llc");
     parser.add_argument("-o", "--output").help("output file");
-    parser.add_argument("-v", "--verbose").help("print info messages").default_value(false).implicit_value(true);
+#endif
     parser.add_argument("FILES").required().remaining();
     return parser;
 }
