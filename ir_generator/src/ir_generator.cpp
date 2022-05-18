@@ -32,6 +32,7 @@ constexpr const char *const PLACEHOLDER_TRUE_NAME = ".placeholder.true";
 constexpr const char *const PLACEHOLDER_FALSE_NAME = ".placeholder.false";
 constexpr const char *const PLACEHOLDER_NONE_NAME = ".placeholder.none";
 constexpr const char *const PLACEHOLDER_POINTER_NAME = ".placeholder.pointer";
+constexpr const char *const PLACEHOLDER_NEWLINE_NAME = ".placeholder.newline";
 
 const char *const placeholderNameByTypeId(TypeId id) {
     switch (id) {
@@ -81,7 +82,7 @@ TypeId detectExpressionType(Node::Ptr node) {
 static const std::unordered_map<std::string, std::string> placeholders = {
     {PLACEHOLDER_INT_NAME, "%d"},     {PLACEHOLDER_FLOAT_NAME, "%f"},    {PLACEHOLDER_STR_NAME, "%s"},
     {PLACEHOLDER_TRUE_NAME, "True"},  {PLACEHOLDER_FALSE_NAME, "False"}, {PLACEHOLDER_NONE_NAME, "None"},
-    {PLACEHOLDER_POINTER_NAME, "%x"},
+    {PLACEHOLDER_POINTER_NAME, "%x"}, {PLACEHOLDER_NEWLINE_NAME, "\n"},
 };
 
 const std::unordered_map<std::string, IRGenerator::NodeVisitor> IRGenerator::builtInFunctions = {
@@ -188,6 +189,12 @@ void IRGenerator::declareLocalVariable(TypeId type, std::string &name, llvm::Val
             initialValue = builder->CreateLoad(initialValue);
         builder->CreateStore(initialValue, inst);
     }
+}
+
+llvm::Constant *IRGenerator::getGlobalString(const std::string &name) {
+    static llvm::Type *charPointerType = createLLVMType(BuiltInTypes::StrType);
+    llvm::GlobalVariable *globalVariable = module->getNamedGlobal(name);
+    return llvm::ConstantExpr::getBitCast(globalVariable, charPointerType);
 }
 
 llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
@@ -374,17 +381,16 @@ llvm::Value *IRGenerator::visitPrintFunctionCall(Node *node) {
 
     auto valueNode = argsNode->firstChild();
     auto placeholderName = placeholderNameByTypeId(detectExpressionType(valueNode));
-    llvm::Type *charPointerType = createLLVMType(BuiltInTypes::StrType);
-    llvm::GlobalVariable *placeholder = module->getNamedGlobal(placeholderName);
-    llvm::Constant *constPointer = llvm::ConstantExpr::getBitCast(placeholder, charPointerType);
-    std::vector<llvm::Value *> arguments = {constPointer};
+    std::vector<llvm::Value *> arguments = {getGlobalString(placeholderName)};
     if (placeholders.find(placeholderName)->second[0] == '%') {
         llvm::Value *arg = visitNode(valueNode);
-        if (isLLVMPointer(arg) && arg->getType() != charPointerType)
+        if (isLLVMPointer(arg) && arg->getType() != createLLVMType(BuiltInTypes::StrType))
             arg = builder->CreateLoad(arg);
         arguments.push_back(arg);
     }
-    builder->CreateCall(internalFunctions[PRINTF_FUNCTION_NAME], arguments);
+    llvm::Function *function = internalFunctions[PRINTF_FUNCTION_NAME];
+    builder->CreateCall(function, arguments);
+    builder->CreateCall(function, {getGlobalString(PLACEHOLDER_NEWLINE_NAME)});
 
     return nullptr;
 }
