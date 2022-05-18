@@ -374,12 +374,13 @@ llvm::Value *IRGenerator::visitPrintFunctionCall(Node *node) {
 
     auto valueNode = argsNode->firstChild();
     auto placeholderName = placeholderNameByTypeId(detectExpressionType(valueNode));
+    llvm::Type *charPointerType = createLLVMType(BuiltInTypes::StrType);
     llvm::GlobalVariable *placeholder = module->getNamedGlobal(placeholderName);
-    llvm::Constant *constPointer = llvm::ConstantExpr::getBitCast(placeholder, createLLVMType(BuiltInTypes::StrType));
+    llvm::Constant *constPointer = llvm::ConstantExpr::getBitCast(placeholder, charPointerType);
     std::vector<llvm::Value *> arguments = {constPointer};
     if (placeholders.find(placeholderName)->second[0] == '%') {
         llvm::Value *arg = visitNode(valueNode);
-        if (isLLVMPointer(arg))
+        if (isLLVMPointer(arg) && arg->getType() != charPointerType)
             arg = builder->CreateLoad(arg);
         arguments.push_back(arg);
     }

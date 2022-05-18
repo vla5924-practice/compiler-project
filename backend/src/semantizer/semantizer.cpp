@@ -140,6 +140,8 @@ static TypeId processPrintFunction(Node::Ptr &node, NodeType type, const std::li
         return BuiltInTypes::FloatType;
     if (type == NodeType::IntegerLiteralValue)
         return BuiltInTypes::IntType;
+    if (type == NodeType::StringLiteralValue)
+        return BuiltInTypes::StrType;
     return BuiltInTypes::NoneType;
 }
 
