@@ -244,9 +244,15 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
             node->value = token.id();
             auto argsBegin = std::next(tokenIter);
             auto it = argsBegin;
-            while (!it->is(Operator::RightBrace))
+            unsigned nestingLevel = 0;
+            do {
+                if (it->is(Operator::RightBrace))
+                    nestingLevel--;
+                else if (it->is(Operator::LeftBrace))
+                    nestingLevel++;
                 it++;
-            auto argsEnd = it;
+            } while (nestingLevel > 0);
+            auto argsEnd = std::prev(it);
             if (std::distance(argsBegin, argsEnd) > 1) {
                 auto argsNode = ParserContext::pushChildNode(funcCallNode, ast::NodeType::FunctionArguments);
                 auto argBegin = std::next(argsBegin);
