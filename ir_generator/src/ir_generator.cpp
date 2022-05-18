@@ -1,5 +1,6 @@
 #include "ir_generator.hpp"
 
+#include <array>
 #include <cassert>
 
 using namespace ast;
@@ -93,13 +94,14 @@ const std::unordered_map<std::string, IRGenerator::NodeVisitor> IRGenerator::bui
 IRGenerator::IRGenerator(const std::string &moduleName, bool emitDebugInfo)
     : context(), module(new llvm::Module(llvm::StringRef(moduleName), context)), builder(new llvm::IRBuilder(context)),
       currentBlock(nullptr), currentFunction(nullptr) {
-    {
+    std::array<const char *const, 2> varArgFunctions = {PRINTF_FUNCTION_NAME, SCANF_FUNCTION_NAME};
+    for (auto funcName : varArgFunctions) {
         std::vector<llvm::Type *> arguments = {llvm::PointerType::get(llvm::Type::getInt8Ty(context), 0)};
-        llvm::Function *printFunc =
+        llvm::Function *function =
             llvm::Function::Create(llvm::FunctionType::get(llvm::IntegerType::getInt32Ty(context), arguments,
                                                            /* bool isVarArg = */ true),
-                                   llvm::Function::ExternalLinkage, PRINTF_FUNCTION_NAME, module.get());
-        internalFunctions.insert_or_assign(PRINTF_FUNCTION_NAME, printFunc);
+                                   llvm::Function::ExternalLinkage, funcName, module.get());
+        internalFunctions.insert_or_assign(funcName, function);
     }
 
     for (const auto &[name, value] : placeholders) {
@@ -396,9 +398,13 @@ llvm::Value *IRGenerator::visitPrintFunctionCall(Node *node) {
 }
 
 llvm::Value *IRGenerator::visitInputFunctionCall(Node *node) {
-    // TODO: implement this
-    assert("Function call visitor for input is not implemented yet.");
-    return nullptr;
+    assert(node && node->type == NodeType::FunctionCall && node->firstChild()->str() == INPUT_FUNCTION_NAME);
+
+    TypeId returnType = node->lastChild()->typeId();
+    llvm::AllocaInst *temporary = new llvm::AllocaInst(createLLVMType(returnType), 0, "input", currentBlock);
+    std::vector<llvm::Value *> arguments = {getGlobalString(placeholderNameByTypeId(returnType)), temporary};
+    builder->CreateCall(internalFunctions[SCANF_FUNCTION_NAME], arguments);
+    return builder->CreateLoad(temporary);
 }
 
 void IRGenerator::processNode(Node::Ptr node) {
