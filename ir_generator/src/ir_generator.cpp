@@ -561,10 +561,12 @@ void IRGenerator::processVariableDeclaration(Node *node) {
 void IRGenerator::processWhileStatement(Node *node) {
     assert(node && node->type == NodeType::WhileStatement);
 
-    llvm::BasicBlock *condBlock = llvm::BasicBlock::Create(context, "whilecond", currentFunction);
+    llvm::BasicBlock *condBlock = llvm::BasicBlock::Create(context, "whilecond");
     llvm::BasicBlock *beginBlock = llvm::BasicBlock::Create(context, "whilebody");
     llvm::BasicBlock *endBlock = llvm::BasicBlock::Create(context, "endwhile");
 
+    builder->CreateBr(condBlock);
+    condBlock->insertInto(currentFunction);
     builder->SetInsertPoint(condBlock);
     llvm::Value *condition = visitNode(node->firstChild());
     builder->CreateCondBr(condition, beginBlock, endBlock);
