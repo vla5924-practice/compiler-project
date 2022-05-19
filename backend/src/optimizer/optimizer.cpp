@@ -320,12 +320,13 @@ bool isLiteral(Node::Ptr &node) {
     return false;
 }
 
-// not working
-void processWhileBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
+void changeVariablesAttributes(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
     for (auto &child : node->children) {
-        if (child->type == NodeType::BinaryOperation && child->binOp() == BinaryOperation::Assign) {
-            auto firstChild = child->firstChild();
-            getVariableAttribute(firstChild, table) = true;
+        if (child->type == NodeType::Expression) {
+            auto &exprNode = child->firstChild();
+            if (exprNode->type == NodeType::BinaryOperation && exprNode->binOp() == BinaryOperation::Assign) {
+                getVariableAttribute(exprNode->firstChild(), table) = true;
+            }
         }
     }
 }
@@ -346,6 +347,7 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                 if (exprResult->type == NodeType::IntegerLiteralValue && exprResult->intNum() == 1 ||
                     exprResult->type == NodeType::FloatingPointLiteralValue && exprResult->fpNum() == 1.0) {
                     child = child->children.front();
+                    processBranchRoot(child, table, variablesValue, functions);
                 } else {
                     child->children.pop_front();
                     for (auto &ifChild : child->children) {
@@ -353,6 +355,7 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                             processExpression(ifChild->firstChild(), table, variablesValue, functions);
                         } else {
                             child = ifChild->firstChild();
+                            processBranchRoot(child, table, variablesValue, functions);
                             break;
                         }
                         auto &ifExprResult = ifChild->firstChild()->firstChild();
@@ -362,6 +365,7 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                                 ifExprResult->type == NodeType::FloatingPointLiteralValue &&
                                     ifExprResult->fpNum() == 1.0) {
                                 child = ifChild->children.front();
+                                processBranchRoot(child, table, variablesValue, functions);
                                 break;
                             } else {
                                 ifChild->children.clear();
@@ -376,6 +380,8 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                         child->type = NodeType::BranchRoot;
                     }
                 }
+            } else {
+                processBranchRoot(child->secondChild(), table, variablesValue, functions);
             }
         }
 
@@ -389,7 +395,8 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                     child->type = NodeType::BranchRoot;
                 }
             } else {
-                processWhileBranchRoot(child->secondChild(), table, variablesValue);
+                changeVariablesAttributes(child->secondChild(), table, variablesValue);
+                processBranchRoot(child->secondChild(), table, variablesValue, functions);
             }
         }
     }
@@ -399,8 +406,13 @@ void removeEmptyBranchRoots(Node::Ptr node) {
     for (auto &child : node->children) {
         if (!child->children.empty())
             removeEmptyBranchRoots(child);
-        child->children.remove_if(
-            [](Node::Ptr node) { return node->type == NodeType::BranchRoot && node->children.empty(); });
+        if (child->children.size() == 1u && child->firstChild()->type == NodeType::BranchRoot)
+            child = child->firstChild();
+        child->children.remove_if([](Node::Ptr node) {
+            return node->type == NodeType::BranchRoot && node->children.empty() ||
+                   node->type == NodeType::WhileStatement && node->children.size() == 1u ||
+                   node->type == NodeType::IfStatement && node->children.size() == 1u;
+        });
     }
 }
 

@@ -468,7 +468,6 @@ TEST(Optimizer, DCE_for_if_0_elif_1_elif_1) {
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    tree.dump(std::cout);
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
