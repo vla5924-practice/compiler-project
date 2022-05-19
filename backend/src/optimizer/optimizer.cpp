@@ -348,9 +348,6 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                     child = child->children.front();
                 } else {
                     child->children.pop_front();
-                    if (child->children.empty()) {
-                        child->type = NodeType::BranchRoot;
-                    }
                     for (auto &ifChild : child->children) {
                         if (ifChild->type == NodeType::ElifStatement) {
                             processExpression(ifChild->firstChild(), table, variablesValue, functions);
@@ -366,8 +363,17 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                                     ifExprResult->fpNum() == 1.0) {
                                 child = ifChild->children.front();
                                 break;
+                            } else {
+                                ifChild->children.clear();
                             }
                         }
+                    }
+
+                    child->children.remove_if(
+                        [](Node::Ptr node) { return node->type == NodeType::ElifStatement && node->children.empty(); });
+
+                    if (child->children.empty()) {
+                        child->type = NodeType::BranchRoot;
                     }
                 }
             }

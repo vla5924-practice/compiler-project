@@ -257,7 +257,6 @@ TEST(Optimizer, DCE_for_function) {
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    tree.dump(std::cout);
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -269,5 +268,225 @@ TEST(Optimizer, DCE_for_function) {
                            "        VariableName: x\n"
                            "        Expression: FloatType\n"
                            "          FloatingPointLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_for_while_0) {
+    StringVec source = {"def main() -> None:", "    x: int = 1", "    while 0:", "        x = 2"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      BranchRoot:\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_for_if_1) {
+    StringVec source = {"def main() -> None:", "    x: int = 1", "    if 1:", "        x = 2"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      BranchRoot:\n"
+                           "        Expression: IntType\n"
+                           "          BinaryOperation: Assign\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_for_if_0) {
+    StringVec source = {"def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      BranchRoot:\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_for_if_0_else) {
+    StringVec source = {
+        "def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2", "    else:", "        x = 4"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      BranchRoot:\n"
+                           "        Expression: IntType\n"
+                           "          BinaryOperation: Assign\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 4\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_for_if_0_elif_1) {
+    StringVec source = {
+        "def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2", "    elif 1:", "        x = 3"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      BranchRoot:\n"
+                           "        Expression: IntType\n"
+                           "          BinaryOperation: Assign\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 3\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_for_if_0_elif_0) {
+    StringVec source = {
+        "def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2", "    elif 0:", "        x = 3"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      BranchRoot:\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_for_if_0_elif_0_else) {
+    StringVec source = {"def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2",
+                        "    elif 0:",         "        x = 3",  "    else:", "        x = 4"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      BranchRoot:\n"
+                           "        Expression: IntType\n"
+                           "          BinaryOperation: Assign\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 4\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_for_if_0_elif_1_else) {
+    StringVec source = {"def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2",
+                        "    elif 1:",         "        x = 5",  "    else:", "        x = 4"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      BranchRoot:\n"
+                           "        Expression: IntType\n"
+                           "          BinaryOperation: Assign\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 5\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_for_if_0_elif_1_elif_1) {
+    StringVec source = {"def main() -> None:", "    x: int = 1", "    if 0:",   "        x = 2",
+                        "    elif 1:",         "        x = 3",  "    elif 1:", "        x = 5"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    tree.dump(std::cout);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      BranchRoot:\n"
+                           "        Expression: IntType\n"
+                           "          BinaryOperation: Assign\n"
+                           "            VariableName: x\n"
+                           "            IntegerLiteralValue: 3\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
