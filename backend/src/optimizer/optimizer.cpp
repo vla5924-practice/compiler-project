@@ -320,6 +320,16 @@ bool isLiteral(Node::Ptr &node) {
     return false;
 }
 
+// not working
+void processWhileBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
+    for (auto &child : node->children) {
+        if (child->type == NodeType::BinaryOperation && child->binOp() == BinaryOperation::Assign) {
+            auto firstChild = child->firstChild();
+            getVariableAttribute(firstChild, table) = true;
+        }
+    }
+}
+
 void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
                        FunctionsTable &functions) {
     table.push_front(&node->variables());
@@ -337,19 +347,30 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                     exprResult->type == NodeType::FloatingPointLiteralValue && exprResult->fpNum() == 1.0) {
                     child = child->children.front();
                 } else {
-                    if (child->children.size() > 1u) {
-                        if (child->secondChild()->type == NodeType::ElseStatement) {
-                            child = child->children.back()->firstChild();
-                        } else {
-                            // TODO: Elif Statement
-                        }
-
-                    } else {
-                        child->children.clear();
+                    child->children.pop_front();
+                    if (child->children.empty()) {
                         child->type = NodeType::BranchRoot;
                     }
+                    for (auto &ifChild : child->children) {
+                        if (ifChild->type == NodeType::ElifStatement) {
+                            processExpression(ifChild->firstChild(), table, variablesValue, functions);
+                        } else {
+                            child = ifChild->firstChild();
+                            break;
+                        }
+                        auto &ifExprResult = ifChild->firstChild()->firstChild();
+                        if (isLiteral(ifExprResult)) {
+                            ifChild->children.pop_front();
+                            if (ifExprResult->type == NodeType::IntegerLiteralValue && ifExprResult->intNum() == 1 ||
+                                ifExprResult->type == NodeType::FloatingPointLiteralValue &&
+                                    ifExprResult->fpNum() == 1.0) {
+                                child = ifChild->children.front();
+                                break;
+                            }
+                        }
+                    }
                 }
-            } // TODO @arteboss удалить ненужную ветку в иф выражении
+            }
         }
 
         if (child->type == NodeType::WhileStatement) {
@@ -361,8 +382,10 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                     child->children.clear();
                     child->type = NodeType::BranchRoot;
                 }
-            } // TODO @arteboss удалить ненужную ветку в иф выражении
-        }     // сделать аналогично if
+            } else {
+                processWhileBranchRoot(child->secondChild(), table, variablesValue);
+            }
+        }
     }
 }
 
@@ -376,11 +399,6 @@ void Optimizer::process(SyntaxTree &tree) {
             processBranchRoot(*child, variablesTable, variablesValue, tree.functions);
         }
     }
-    // for (auto &function : tree.functions) {
-    //     if (function.second.useCount == 0) {
-    //         tree.functions.erase(function.first);
-    //     }
-    // }
     tree.root->children.remove_if([&tree](Node::Ptr node) {
         return tree.functions.find(node->firstChild()->str())->second.useCount == 0 &&
                node->firstChild()->str() != "main";
