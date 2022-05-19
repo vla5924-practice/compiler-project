@@ -395,6 +395,15 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
     }
 }
 
+void removeEmptyBranchRoots(Node::Ptr node) {
+    for (auto &child : node->children) {
+        if (!child->children.empty())
+            removeEmptyBranchRoots(child);
+        child->children.remove_if(
+            [](Node::Ptr node) { return node->type == NodeType::BranchRoot && node->children.empty(); });
+    }
+}
+
 void Optimizer::process(SyntaxTree &tree) {
     for (auto &node : tree.root->children) {
         if (node->type == NodeType::FunctionDefinition) {
@@ -409,4 +418,5 @@ void Optimizer::process(SyntaxTree &tree) {
         return tree.functions.find(node->firstChild()->str())->second.useCount == 0 &&
                node->firstChild()->str() != "main";
     });
+    removeEmptyBranchRoots(tree.root);
 }

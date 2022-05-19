@@ -287,8 +287,7 @@ TEST(Optimizer, DCE_for_while_0) {
                            "        TypeName: IntType\n"
                            "        VariableName: x\n"
                            "        Expression: IntType\n"
-                           "          IntegerLiteralValue: 1\n"
-                           "      BranchRoot:\n";
+                           "          IntegerLiteralValue: 1\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
 
@@ -333,8 +332,7 @@ TEST(Optimizer, DCE_for_if_0) {
                            "        TypeName: IntType\n"
                            "        VariableName: x\n"
                            "        Expression: IntType\n"
-                           "          IntegerLiteralValue: 1\n"
-                           "      BranchRoot:\n";
+                           "          IntegerLiteralValue: 1\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
 
@@ -407,8 +405,7 @@ TEST(Optimizer, DCE_for_if_0_elif_0) {
                            "        TypeName: IntType\n"
                            "        VariableName: x\n"
                            "        Expression: IntType\n"
-                           "          IntegerLiteralValue: 1\n"
-                           "      BranchRoot:\n";
+                           "          IntegerLiteralValue: 1\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
 
