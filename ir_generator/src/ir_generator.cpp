@@ -1,5 +1,6 @@
 #include "ir_generator.hpp"
 
+#include <array>
 #include <cassert>
 
 using namespace ast;
@@ -32,6 +33,7 @@ constexpr const char *const PLACEHOLDER_TRUE_NAME = ".placeholder.true";
 constexpr const char *const PLACEHOLDER_FALSE_NAME = ".placeholder.false";
 constexpr const char *const PLACEHOLDER_NONE_NAME = ".placeholder.none";
 constexpr const char *const PLACEHOLDER_POINTER_NAME = ".placeholder.pointer";
+constexpr const char *const PLACEHOLDER_NEWLINE_NAME = ".placeholder.newline";
 
 const char *const placeholderNameByTypeId(TypeId id) {
     switch (id) {
@@ -81,7 +83,7 @@ TypeId detectExpressionType(Node::Ptr node) {
 static const std::unordered_map<std::string, std::string> placeholders = {
     {PLACEHOLDER_INT_NAME, "%d"},     {PLACEHOLDER_FLOAT_NAME, "%f"},    {PLACEHOLDER_STR_NAME, "%s"},
     {PLACEHOLDER_TRUE_NAME, "True"},  {PLACEHOLDER_FALSE_NAME, "False"}, {PLACEHOLDER_NONE_NAME, "None"},
-    {PLACEHOLDER_POINTER_NAME, "%x"},
+    {PLACEHOLDER_POINTER_NAME, "%x"}, {PLACEHOLDER_NEWLINE_NAME, "\n"},
 };
 
 const std::unordered_map<std::string, IRGenerator::NodeVisitor> IRGenerator::builtInFunctions = {
@@ -92,13 +94,14 @@ const std::unordered_map<std::string, IRGenerator::NodeVisitor> IRGenerator::bui
 IRGenerator::IRGenerator(const std::string &moduleName, bool emitDebugInfo)
     : context(), module(new llvm::Module(llvm::StringRef(moduleName), context)), builder(new llvm::IRBuilder(context)),
       currentBlock(nullptr), currentFunction(nullptr) {
-    {
+    std::array<const char *const, 2> varArgFunctions = {PRINTF_FUNCTION_NAME, SCANF_FUNCTION_NAME};
+    for (auto funcName : varArgFunctions) {
         std::vector<llvm::Type *> arguments = {llvm::PointerType::get(llvm::Type::getInt8Ty(context), 0)};
-        llvm::Function *printFunc =
+        llvm::Function *function =
             llvm::Function::Create(llvm::FunctionType::get(llvm::IntegerType::getInt32Ty(context), arguments,
                                                            /* bool isVarArg = */ true),
-                                   llvm::Function::ExternalLinkage, PRINTF_FUNCTION_NAME, module.get());
-        internalFunctions.insert_or_assign(PRINTF_FUNCTION_NAME, printFunc);
+                                   llvm::Function::ExternalLinkage, funcName, module.get());
+        internalFunctions.insert_or_assign(funcName, function);
     }
 
     for (const auto &[name, value] : placeholders) {
@@ -188,6 +191,12 @@ void IRGenerator::declareLocalVariable(TypeId type, std::string &name, llvm::Val
             initialValue = builder->CreateLoad(initialValue);
         builder->CreateStore(initialValue, inst);
     }
+}
+
+llvm::Constant *IRGenerator::getGlobalString(const std::string &name) {
+    static llvm::Type *charPointerType = createLLVMType(BuiltInTypes::StrType);
+    llvm::GlobalVariable *globalVariable = module->getNamedGlobal(name);
+    return llvm::ConstantExpr::getBitCast(globalVariable, charPointerType);
 }
 
 llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
@@ -374,24 +383,28 @@ llvm::Value *IRGenerator::visitPrintFunctionCall(Node *node) {
 
     auto valueNode = argsNode->firstChild();
     auto placeholderName = placeholderNameByTypeId(detectExpressionType(valueNode));
-    llvm::GlobalVariable *placeholder = module->getNamedGlobal(placeholderName);
-    llvm::Constant *constPointer = llvm::ConstantExpr::getBitCast(placeholder, createLLVMType(BuiltInTypes::StrType));
-    std::vector<llvm::Value *> arguments = {constPointer};
+    std::vector<llvm::Value *> arguments = {getGlobalString(placeholderName)};
     if (placeholders.find(placeholderName)->second[0] == '%') {
         llvm::Value *arg = visitNode(valueNode);
-        if (isLLVMPointer(arg))
+        if (isLLVMPointer(arg) && arg->getType() != createLLVMType(BuiltInTypes::StrType))
             arg = builder->CreateLoad(arg);
         arguments.push_back(arg);
     }
-    builder->CreateCall(internalFunctions[PRINTF_FUNCTION_NAME], arguments);
+    llvm::Function *function = internalFunctions[PRINTF_FUNCTION_NAME];
+    builder->CreateCall(function, arguments);
+    builder->CreateCall(function, {getGlobalString(PLACEHOLDER_NEWLINE_NAME)});
 
     return nullptr;
 }
 
 llvm::Value *IRGenerator::visitInputFunctionCall(Node *node) {
-    // TODO: implement this
-    assert("Function call visitor for input is not implemented yet.");
-    return nullptr;
+    assert(node && node->type == NodeType::FunctionCall && node->firstChild()->str() == INPUT_FUNCTION_NAME);
+
+    TypeId returnType = node->lastChild()->typeId();
+    llvm::AllocaInst *temporary = new llvm::AllocaInst(createLLVMType(returnType), 0, "input", currentBlock);
+    std::vector<llvm::Value *> arguments = {getGlobalString(placeholderNameByTypeId(returnType)), temporary};
+    builder->CreateCall(internalFunctions[SCANF_FUNCTION_NAME], arguments);
+    return builder->CreateLoad(temporary);
 }
 
 void IRGenerator::processNode(Node::Ptr node) {
@@ -561,10 +574,12 @@ void IRGenerator::processVariableDeclaration(Node *node) {
 void IRGenerator::processWhileStatement(Node *node) {
     assert(node && node->type == NodeType::WhileStatement);
 
-    llvm::BasicBlock *condBlock = llvm::BasicBlock::Create(context, "whilecond", currentFunction);
+    llvm::BasicBlock *condBlock = llvm::BasicBlock::Create(context, "whilecond");
     llvm::BasicBlock *beginBlock = llvm::BasicBlock::Create(context, "whilebody");
     llvm::BasicBlock *endBlock = llvm::BasicBlock::Create(context, "endwhile");
 
+    builder->CreateBr(condBlock);
+    condBlock->insertInto(currentFunction);
     builder->SetInsertPoint(condBlock);
     llvm::Value *condition = visitNode(node->firstChild());
     builder->CreateCondBr(condition, beginBlock, endBlock);
