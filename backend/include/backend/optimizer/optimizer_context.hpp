@@ -11,12 +11,11 @@
 
 namespace optimizer {
 
-using VariableValue = std::unordered_map<std::string, std::variant<long int, double>>;
-// TODO: std::map -> std::list<std::map>
+using VariableValue = std::variant<long int, double>;
 
 struct OptimizerContext {
     std::list<ast::VariablesTable *> variables;
-    VariableValue values;
+    std::unordered_map<std::string, VariableValue> values; // TODO: std::map -> std::list<std::map>
     ast::FunctionsTable &functions;
 
     OptimizerContext(ast::FunctionsTable &functions_) : variables(), values(), functions(functions_){};
