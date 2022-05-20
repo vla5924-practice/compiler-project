@@ -2,36 +2,13 @@
 
 #include <variant>
 
+#include "optimizer/optimizer_context.hpp"
+
 using namespace ast;
 using namespace optimizer;
 
-using VariablesValue = std::map<std::string, std::variant<long int, double>>; // TODO std::map -> std::list<std::map>
-
-Variable &getVariable(const Node::Ptr &node,
-                      const std::list<VariablesTable *> &tables) { // TODO merge this function with getVariableAttribute
-    VariablesTable::iterator tableEntry;
-    for (const auto &table : tables) {
-        tableEntry = table->find(node->str());
-        if (tableEntry != table->cend()) {
-            break;
-        }
-    }
-    return tableEntry->second;
-}
-
-bool &getVariableAttribute(const Node::Ptr &node, const std::list<VariablesTable *> &tables) {
-    VariablesTable::iterator tableEntry;
-    for (const auto &table : tables) {
-        tableEntry = table->find(node->str());
-        if (tableEntry != table->cend()) {
-            break;
-        }
-    }
-    return tableEntry->second.attributes.modified;
-}
-
 long int calcIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation,
-                          VariablesValue *variablesValue = nullptr) {
+                          VariableValue *variablesValue = nullptr) {
     long int firstValue =
         first->type == NodeType::VariableName ? std::get<0>((*variablesValue)[first->str()]) : first->intNum();
     long int secondValue =
@@ -80,7 +57,7 @@ long int calcIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation o
 }
 
 double calcFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation,
-                          VariablesValue *variablesValue = nullptr) {
+                          VariableValue *variablesValue = nullptr) {
     double firstValue =
         first->type == NodeType::VariableName ? std::get<1>((*variablesValue)[first->str()]) : first->fpNum();
     double secondValue =
@@ -128,37 +105,36 @@ double calcFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation o
     }
 }
 
-bool constantPropagation(Node::Ptr &first, Node::Ptr &second, std::list<VariablesTable *> tables,
-                         VariablesValue &variablesValue) {
+bool constantPropagation(Node::Ptr &first, Node::Ptr &second, OptimizerContext &ctx) {
     auto parent = first->parent;
     if (parent->type == NodeType::BinaryOperation && parent->binOp() == BinaryOperation::Assign)
         return false;
-    if (first->type == NodeType::VariableName && getVariableAttribute(first, tables))
+    if (first->type == NodeType::VariableName && ctx.findVariable(first).attributes.modified)
         return false;
-    if (second->type == NodeType::VariableName && getVariableAttribute(second, tables))
+    if (second->type == NodeType::VariableName && ctx.findVariable(second).attributes.modified)
         return false;
     if ((first->type == NodeType::IntegerLiteralValue ||
-         (first->type == NodeType::VariableName && getVariable(first, tables).type == BuiltInTypes::IntType)) &&
+         (first->type == NodeType::VariableName && ctx.findVariable(first).type == BuiltInTypes::IntType)) &&
         (second->type == NodeType::IntegerLiteralValue ||
-         (second->type == NodeType::VariableName && getVariable(second, tables).type == BuiltInTypes::IntType))) {
+         (second->type == NodeType::VariableName && ctx.findVariable(second).type == BuiltInTypes::IntType))) {
         parent->type = NodeType::IntegerLiteralValue;
-        parent->value = calcIntOperation(first, second, parent->binOp(), &variablesValue);
+        parent->value = calcIntOperation(first, second, parent->binOp(), &ctx.values);
         parent->children.clear();
         return true;
     }
     if ((first->type == NodeType::FloatingPointLiteralValue ||
-         (first->type == NodeType::VariableName && getVariable(first, tables).type == BuiltInTypes::FloatType)) &&
+         (first->type == NodeType::VariableName && ctx.findVariable(first).type == BuiltInTypes::FloatType)) &&
         (second->type == NodeType::FloatingPointLiteralValue ||
-         (second->type == NodeType::VariableName && getVariable(second, tables).type == BuiltInTypes::FloatType))) {
+         (second->type == NodeType::VariableName && ctx.findVariable(second).type == BuiltInTypes::FloatType))) {
         parent->type = NodeType::FloatingPointLiteralValue;
-        parent->value = calcFloatOperation(first, second, parent->binOp(), &variablesValue);
+        parent->value = calcFloatOperation(first, second, parent->binOp(), &ctx.values);
         parent->children.clear();
         return true;
     }
     return false;
 }
 
-void processTypeConversion(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
+void processTypeConversion(Node::Ptr &node, OptimizerContext &ctx) {
     Node::Ptr &last = node->lastChild();
     if (last->type == NodeType::IntegerLiteralValue || last->type == NodeType::FloatingPointLiteralValue) {
         if (node->firstChild()->typeId() == BuiltInTypes::FloatType) {
@@ -173,13 +149,13 @@ void processTypeConversion(Node::Ptr &node, std::list<VariablesTable *> &table, 
     }
 
     if (last->type == NodeType::VariableName &&
-        !getVariableAttribute(last, table)) { // procces variable in type conversion
+        !ctx.findVariable(last).attributes.modified) { // procces variable in type conversion
         if (node->firstChild()->typeId() == BuiltInTypes::FloatType) {
             node->type = NodeType::FloatingPointLiteralValue;
-            node->value = static_cast<float>(std::get<0>(variablesValue[last->str()]));
+            node->value = static_cast<float>(std::get<0>(ctx.values[last->str()]));
         } else {
             node->type = NodeType::IntegerLiteralValue;
-            node->value = static_cast<long int>(std::get<1>(variablesValue[last->str()]));
+            node->value = static_cast<long int>(std::get<1>(ctx.values[last->str()]));
         }
         node->children.clear();
     }
@@ -202,20 +178,19 @@ bool constantFolding(Node::Ptr &first, Node::Ptr &second) {
     return false;
 }
 
-void variablePropagation(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
-    if (variablesValue.find(node->str()) == variablesValue.cend())
+void variablePropagation(Node::Ptr &node, OptimizerContext &ctx) {
+    if (ctx.values.find(node->str()) == ctx.values.cend())
         return;
-    if (getVariable(node, table).type == BuiltInTypes::FloatType) {
+    if (ctx.findVariable(node).type == BuiltInTypes::FloatType) {
         node->type = NodeType::FloatingPointLiteralValue;
-        node->value = std::get<1>(variablesValue[node->str()]);
+        node->value = std::get<1>(ctx.values[node->str()]);
     } else {
         node->type = NodeType::IntegerLiteralValue;
-        node->value = std::get<0>(variablesValue[node->str()]);
+        node->value = std::get<0>(ctx.values[node->str()]);
     }
 }
 
-void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child,
-                           VariablesValue &variablesValue) { // TODO upgrade VariablesValue
+void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child, OptimizerContext &ctx) {
     TypeId type;
     auto parent = node->parent;
     for (auto &iter : parent->children) {
@@ -224,68 +199,66 @@ void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child,
         }
         if (iter->type == NodeType::VariableName) {
             if (type == BuiltInTypes::IntType)
-                variablesValue.emplace(iter->str(), child->intNum());
+                ctx.values.emplace(iter->str(), child->intNum());
             if (type == BuiltInTypes::FloatType)
-                variablesValue.emplace(iter->str(), child->fpNum());
+                ctx.values.emplace(iter->str(), child->fpNum());
         }
     }
 }
 
-bool processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
-                            FunctionsTable &functions) {
+bool processBinaryOperation(Node::Ptr &node, OptimizerContext &ctx) {
     auto first = node->firstChild();
     auto second = node->lastChild();
     bool haveFunctionCall = false;
     if (second->type == NodeType::BinaryOperation)
-        haveFunctionCall = processBinaryOperation(second, table, variablesValue, functions);
+        haveFunctionCall = processBinaryOperation(second, ctx);
     if (first->type == NodeType::TypeConversion)
-        processTypeConversion(first, table, variablesValue);
+        processTypeConversion(first, ctx);
     if (second->type == NodeType::TypeConversion)
-        processTypeConversion(second, table, variablesValue);
+        processTypeConversion(second, ctx);
     bool isConsExpr = constantFolding(first, second);
     bool isNotModifiedExpr = false;
     if (!isConsExpr)
-        isNotModifiedExpr = constantPropagation(first, second, table, variablesValue);
+        isNotModifiedExpr = constantPropagation(first, second, ctx);
     if (first->type == NodeType::FunctionCall) {
-        functions.find(first->firstChild()->str())->second.useCount++;
+        ctx.functions.find(first->firstChild()->str())->second.useCount++;
         haveFunctionCall = true;
     }
     if (second->type == NodeType::FunctionCall) {
-        functions.find(second->firstChild()->str())->second.useCount++;
+        ctx.functions.find(second->firstChild()->str())->second.useCount++;
         haveFunctionCall = true;
     }
     return haveFunctionCall;
 }
 
-void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
-                       FunctionsTable &functions) {
+void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
     for (auto &child : node->children) {
         if (child->type == NodeType::BinaryOperation) {
             auto first = child->firstChild();
             auto second = child->lastChild();
             bool haveFunctionCall = false;
             if (second->type == NodeType::BinaryOperation)
-                haveFunctionCall = processBinaryOperation(second, table, variablesValue, functions);
+                haveFunctionCall = processBinaryOperation(second, ctx);
             if (first->type == NodeType::TypeConversion)
-                processTypeConversion(first, table, variablesValue);
+                processTypeConversion(first, ctx);
             if (second->type == NodeType::TypeConversion)
-                processTypeConversion(second, table, variablesValue);
+                processTypeConversion(second, ctx);
             bool isConsExpr = constantFolding(first, second);
             bool isNotModifiedExpr = false;
             if (!isConsExpr)
-                isNotModifiedExpr = constantPropagation(first, second, table, variablesValue);
+                isNotModifiedExpr = constantPropagation(first, second, ctx);
             if (isConsExpr || isNotModifiedExpr) {
-                pushVariableAttribute(node, child, variablesValue);
+                pushVariableAttribute(node, child, ctx);
             }
             if (first->type == NodeType::FunctionCall) {
-                functions.find(first->firstChild()->str())->second.useCount++;
+                ctx.functions.find(first->firstChild()->str())->second.useCount++;
             }
             if (second->type == NodeType::FunctionCall) {
-                functions.find(second->firstChild()->str())->second.useCount++;
+                ctx.functions.find(second->firstChild()->str())->second.useCount++;
             }
             if (child->type == NodeType::BinaryOperation && child->binOp() == BinaryOperation::Assign &&
                 haveFunctionCall) {
-                getVariable(child->firstChild(), table).attributes.modified = true;
+                ctx.findVariable(child->firstChild()).attributes.modified = true;
             }
             // if ()
             // TODO need some checks for modified variables
@@ -294,29 +267,29 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
 
         if (child->type == NodeType::FunctionCall) {
             auto end_child = child->children.back();
-            processExpression(end_child, table, variablesValue, functions);
-            functions.find(child->firstChild()->str())->second.useCount++;
+            processExpression(end_child, ctx);
+            ctx.functions.find(child->firstChild()->str())->second.useCount++;
             if (end_child->type == NodeType::FunctionName)
                 continue;
         }
 
         if (child->type == NodeType::TypeConversion) {
-            processTypeConversion(child, table, variablesValue);
-            pushVariableAttribute(node, child, variablesValue);
+            processTypeConversion(child, ctx);
+            pushVariableAttribute(node, child, ctx);
             continue;
         }
 
         if (child->type == NodeType::FloatingPointLiteralValue || child->type == NodeType::IntegerLiteralValue) {
-            pushVariableAttribute(node, child, variablesValue);
+            pushVariableAttribute(node, child, ctx);
             continue;
         }
 
-        if (child->type == NodeType::VariableName && !getVariableAttribute(child, table)) {
-            variablePropagation(child, table, variablesValue);
+        if (child->type == NodeType::VariableName && !ctx.findVariable(child).attributes.modified) {
+            variablePropagation(child, ctx);
             continue;
         }
 
-        processExpression(child, table, variablesValue, functions);
+        processExpression(child, ctx);
     }
 }
 
@@ -329,42 +302,41 @@ bool isLiteral(Node::Ptr &node) {
     return false;
 }
 
-void changeVariablesAttributes(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue) {
+void changeVariablesAttributes(Node::Ptr &node, OptimizerContext &ctx) {
     for (auto &child : node->children) {
         if (child->type == NodeType::Expression) {
             auto &exprNode = child->firstChild();
             if (exprNode->type == NodeType::BinaryOperation && exprNode->binOp() == BinaryOperation::Assign) {
-                getVariableAttribute(exprNode->firstChild(), table) = true;
+                ctx.findVariable(exprNode->firstChild()).attributes.modified = true;
             }
         }
     }
 }
 
-void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
-                       FunctionsTable &functions) {
-    table.push_front(&node->variables());
+void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
+    ctx.variables.push_front(&node->variables());
     for (auto &child : node->children) {
         if (child->type == NodeType::Expression || child->type == NodeType::VariableDeclaration) {
-            processExpression(child, table, variablesValue, functions);
+            processExpression(child, ctx);
         }
 
         if (child->type == NodeType::IfStatement) {
-            processExpression(child->firstChild(), table, variablesValue, functions);
+            processExpression(child->firstChild(), ctx);
             auto &exprResult = child->firstChild()->firstChild();
             if (isLiteral(exprResult)) {
                 child->children.pop_front();
                 if (exprResult->type == NodeType::IntegerLiteralValue && exprResult->intNum() == 1 ||
                     exprResult->type == NodeType::FloatingPointLiteralValue && exprResult->fpNum() == 1.0) {
                     child = child->children.front();
-                    processBranchRoot(child, table, variablesValue, functions);
+                    processBranchRoot(child, ctx);
                 } else {
                     child->children.pop_front();
                     for (auto &ifChild : child->children) {
                         if (ifChild->type == NodeType::ElifStatement) {
-                            processExpression(ifChild->firstChild(), table, variablesValue, functions);
+                            processExpression(ifChild->firstChild(), ctx);
                         } else {
                             child = ifChild->firstChild();
-                            processBranchRoot(child, table, variablesValue, functions);
+                            processBranchRoot(child, ctx);
                             break;
                         }
                         auto &ifExprResult = ifChild->firstChild()->firstChild();
@@ -374,7 +346,7 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                                 ifExprResult->type == NodeType::FloatingPointLiteralValue &&
                                     ifExprResult->fpNum() == 1.0) {
                                 child = ifChild->children.front();
-                                processBranchRoot(child, table, variablesValue, functions);
+                                processBranchRoot(child, ctx);
                                 break;
                             } else {
                                 ifChild->children.clear();
@@ -390,12 +362,12 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                     }
                 }
             } else {
-                processBranchRoot(child->secondChild(), table, variablesValue, functions);
+                processBranchRoot(child->secondChild(), ctx);
             }
         }
 
         if (child->type == NodeType::WhileStatement) {
-            processExpression(child->firstChild(), table, variablesValue, functions);
+            processExpression(child->firstChild(), ctx);
             auto &exprResult = child->firstChild()->firstChild();
             if (isLiteral(exprResult)) {
                 if (exprResult->type == NodeType::IntegerLiteralValue && exprResult->intNum() == 0 ||
@@ -404,8 +376,8 @@ void processBranchRoot(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
                     child->type = NodeType::BranchRoot;
                 }
             } else {
-                changeVariablesAttributes(child->secondChild(), table, variablesValue);
-                processBranchRoot(child->secondChild(), table, variablesValue, functions);
+                changeVariablesAttributes(child->secondChild(), ctx);
+                processBranchRoot(child->secondChild(), ctx);
             }
         }
     }
@@ -430,9 +402,8 @@ void Optimizer::process(SyntaxTree &tree) {
         if (node->type == NodeType::FunctionDefinition) {
             auto child = node->children.begin();
             std::advance(child, 3);
-            std::list<VariablesTable *> variablesTable;
-            VariablesValue variablesValue;
-            processBranchRoot(*child, variablesTable, variablesValue, tree.functions);
+            OptimizerContext ctx(tree.functions);
+            processBranchRoot(*child, ctx);
         }
     }
     tree.root->children.remove_if([&tree](Node::Ptr node) {
