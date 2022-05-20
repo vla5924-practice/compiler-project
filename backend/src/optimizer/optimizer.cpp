@@ -51,6 +51,26 @@ bool isNumericLiteral(const Node::Ptr &node) {
     return node->type == NodeType::IntegerLiteralValue || node->type == NodeType::FloatingPointLiteralValue;
 }
 
+bool isModifiedVariable(const ast::Node::Ptr &node, OptimizerContext &ctx) {
+    return node->type == NodeType::VariableName && ctx.findVariable(node).attributes.modified;
+}
+
+bool isNonModifiedVariable(const ast::Node::Ptr &node, OptimizerContext &ctx) {
+    return node->type == NodeType::VariableName && !ctx.findVariable(node).attributes.modified;
+}
+
+bool isVariableWithType(const ast::Node::Ptr &node, ast::TypeId typeId, OptimizerContext &ctx) {
+    return node->type == NodeType::VariableName && ctx.findVariable(node).type == typeId;
+}
+
+bool canBeConstantInt(const ast::Node::Ptr &node, OptimizerContext &ctx) {
+    return node->type == NodeType::IntegerLiteralValue || isVariableWithType(node, BuiltInTypes::IntType, ctx);
+}
+
+bool canBeConstantFloat(const ast::Node::Ptr &node, OptimizerContext &ctx) {
+    return node->type == NodeType::FloatingPointLiteralValue || isVariableWithType(node, BuiltInTypes::FloatType, ctx);
+}
+
 } // namespace
 
 long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
@@ -143,25 +163,16 @@ double calculateFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperat
 
 bool constantPropagation(Node::Ptr &first, Node::Ptr &second, OptimizerContext &ctx) {
     auto parent = first->parent;
-    if (isAssignment(parent))
+    if (isAssignment(parent) || isModifiedVariable(first, ctx) || isModifiedVariable(second, ctx))
         return false;
-    if (first->type == NodeType::VariableName && ctx.findVariable(first).attributes.modified)
-        return false;
-    if (second->type == NodeType::VariableName && ctx.findVariable(second).attributes.modified)
-        return false;
-    if ((first->type == NodeType::IntegerLiteralValue ||
-         (first->type == NodeType::VariableName && ctx.findVariable(first).type == BuiltInTypes::IntType)) &&
-        (second->type == NodeType::IntegerLiteralValue ||
-         (second->type == NodeType::VariableName && ctx.findVariable(second).type == BuiltInTypes::IntType))) {
+
+    if (canBeConstantInt(first, ctx) && canBeConstantInt(second, ctx)) {
         parent->type = NodeType::IntegerLiteralValue;
         parent->value = calculateIntOperation(first, second, parent->binOp(), ctx);
         parent->children.clear();
         return true;
     }
-    if ((first->type == NodeType::FloatingPointLiteralValue ||
-         (first->type == NodeType::VariableName && ctx.findVariable(first).type == BuiltInTypes::FloatType)) &&
-        (second->type == NodeType::FloatingPointLiteralValue ||
-         (second->type == NodeType::VariableName && ctx.findVariable(second).type == BuiltInTypes::FloatType))) {
+    if (canBeConstantFloat(first, ctx) && canBeConstantFloat(second, ctx)) {
         parent->type = NodeType::FloatingPointLiteralValue;
         parent->value = calculateFloatOperation(first, second, parent->binOp(), ctx);
         parent->children.clear();
@@ -184,8 +195,7 @@ void processTypeConversion(Node::Ptr &node, OptimizerContext &ctx) {
         return;
     }
 
-    if (last->type == NodeType::VariableName &&
-        !ctx.findVariable(last).attributes.modified) { // procces variable in type conversion
+    if (isNonModifiedVariable(last, ctx)) { // procces variable in type conversion
         if (node->firstChild()->typeId() == BuiltInTypes::FloatType) {
             node->type = NodeType::FloatingPointLiteralValue;
             node->value = static_cast<float>(std::get<0>(ctx.values[last->str()]));
@@ -319,7 +329,7 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
             continue;
         }
 
-        if (child->type == NodeType::VariableName && !ctx.findVariable(child).attributes.modified) {
+        if (isNonModifiedVariable(child, ctx)) {
             variablePropagation(child, ctx);
             continue;
         }
