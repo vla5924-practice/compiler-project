@@ -76,6 +76,49 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
+TEST(Optimizer, can_correct_assign_with_function_call) {
+    StringVec source = {"def foo() -> int:", "    return 1", "def main() -> None:", "    x: int = 1", "    y: int = x",
+                        "    x = foo()",     "    y = x"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: foo\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: IntType\n"
+                           "    BranchRoot:\n"
+                           "      ReturnStatement\n"
+                           "        Expression\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          FunctionCall\n"
+                           "            FunctionName: foo\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: y\n"
+                           "          VariableName: x\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
 TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration) {
     StringVec source = {"def main() -> None:", "    x: float = 1.0", "    y: float = x"};
     TokenList token_list = Lexer::process(source);

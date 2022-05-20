@@ -231,12 +231,13 @@ void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child,
     }
 }
 
-void processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
+bool processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
                             FunctionsTable &functions) {
     auto first = node->firstChild();
     auto second = node->lastChild();
+    bool haveFunctionCall = false;
     if (second->type == NodeType::BinaryOperation)
-        processBinaryOperation(second, table, variablesValue, functions);
+        haveFunctionCall = processBinaryOperation(second, table, variablesValue, functions);
     if (first->type == NodeType::TypeConversion)
         processTypeConversion(first, table, variablesValue);
     if (second->type == NodeType::TypeConversion)
@@ -247,10 +248,13 @@ void processBinaryOperation(Node::Ptr &node, std::list<VariablesTable *> &table,
         isNotModifiedExpr = constantPropagation(first, second, table, variablesValue);
     if (first->type == NodeType::FunctionCall) {
         functions.find(first->firstChild()->str())->second.useCount++;
+        haveFunctionCall = true;
     }
     if (second->type == NodeType::FunctionCall) {
         functions.find(second->firstChild()->str())->second.useCount++;
+        haveFunctionCall = true;
     }
+    return haveFunctionCall;
 }
 
 void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, VariablesValue &variablesValue,
@@ -259,8 +263,9 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
         if (child->type == NodeType::BinaryOperation) {
             auto first = child->firstChild();
             auto second = child->lastChild();
+            bool haveFunctionCall = false;
             if (second->type == NodeType::BinaryOperation)
-                processBinaryOperation(second, table, variablesValue, functions);
+                haveFunctionCall = processBinaryOperation(second, table, variablesValue, functions);
             if (first->type == NodeType::TypeConversion)
                 processTypeConversion(first, table, variablesValue);
             if (second->type == NodeType::TypeConversion)
@@ -277,6 +282,9 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
             }
             if (second->type == NodeType::FunctionCall) {
                 functions.find(second->firstChild()->str())->second.useCount++;
+            }
+            if (child->type == NodeType::BinaryOperation && child->binOp() == BinaryOperation::Assign && haveFunctionCall) {
+                getVariable(child->firstChild(), table).attributes.modified = true;
             }
             // if ()
             // TODO need some checks for modified variables
