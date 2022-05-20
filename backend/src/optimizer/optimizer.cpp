@@ -51,23 +51,23 @@ bool isNumericLiteral(const Node::Ptr &node) {
     return node->type == NodeType::IntegerLiteralValue || node->type == NodeType::FloatingPointLiteralValue;
 }
 
-bool isModifiedVariable(const ast::Node::Ptr &node, OptimizerContext &ctx) {
+bool isModifiedVariable(const Node::Ptr &node, OptimizerContext &ctx) {
     return node->type == NodeType::VariableName && ctx.findVariable(node).attributes.modified;
 }
 
-bool isNonModifiedVariable(const ast::Node::Ptr &node, OptimizerContext &ctx) {
+bool isNonModifiedVariable(const Node::Ptr &node, OptimizerContext &ctx) {
     return node->type == NodeType::VariableName && !ctx.findVariable(node).attributes.modified;
 }
 
-bool isVariableWithType(const ast::Node::Ptr &node, ast::TypeId typeId, OptimizerContext &ctx) {
+bool isVariableWithType(const Node::Ptr &node, TypeId typeId, OptimizerContext &ctx) {
     return node->type == NodeType::VariableName && ctx.findVariable(node).type == typeId;
 }
 
-bool canBeConstantInt(const ast::Node::Ptr &node, OptimizerContext &ctx) {
+bool canBeConstantInt(const Node::Ptr &node, OptimizerContext &ctx) {
     return node->type == NodeType::IntegerLiteralValue || isVariableWithType(node, BuiltInTypes::IntType, ctx);
 }
 
-bool canBeConstantFloat(const ast::Node::Ptr &node, OptimizerContext &ctx) {
+bool canBeConstantFloat(const Node::Ptr &node, OptimizerContext &ctx) {
     return node->type == NodeType::FloatingPointLiteralValue || isVariableWithType(node, BuiltInTypes::FloatType, ctx);
 }
 
@@ -76,43 +76,32 @@ bool canBeConstantFloat(const ast::Node::Ptr &node, OptimizerContext &ctx) {
 long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
     long int lhs = first->type == NodeType::VariableName ? std::get<0>(ctx.values[first->str()]) : first->intNum();
     long int rhs = second->type == NodeType::VariableName ? std::get<0>(ctx.values[second->str()]) : second->intNum();
+
     switch (operation) {
     case BinaryOperation::Add:
         return lhs + rhs;
-        break;
     case BinaryOperation::Sub:
         return lhs - rhs;
-        break;
     case BinaryOperation::Mult:
         return lhs * rhs;
-        break;
     case BinaryOperation::Div:
         return lhs / rhs;
-        break;
     case BinaryOperation::Equal:
         return lhs == rhs;
-        break;
     case BinaryOperation::And:
         return lhs && rhs;
-        break;
     case BinaryOperation::Or:
         return lhs || rhs;
-        break;
     case BinaryOperation::Greater:
         return lhs > rhs;
-        break;
     case BinaryOperation::GreaterEqual:
         return lhs >= rhs;
-        break;
     case BinaryOperation::Less:
         return lhs < rhs;
-        break;
     case BinaryOperation::LessEqual:
         return lhs <= rhs;
-        break;
     case BinaryOperation::NotEqual:
         return lhs != rhs;
-        break;
     }
     return 0;
 }
@@ -120,43 +109,32 @@ long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperat
 double calculateFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
     double lhs = first->type == NodeType::VariableName ? std::get<1>(ctx.values[first->str()]) : first->fpNum();
     double rhs = second->type == NodeType::VariableName ? std::get<1>(ctx.values[second->str()]) : second->fpNum();
+
     switch (operation) {
     case BinaryOperation::FAdd:
         return lhs + rhs;
-        break;
     case BinaryOperation::FSub:
         return lhs - rhs;
-        break;
     case BinaryOperation::FMult:
         return lhs * rhs;
-        break;
     case BinaryOperation::FDiv:
         return lhs / rhs;
-        break;
     case BinaryOperation::FEqual:
         return lhs == rhs;
-        break;
     case BinaryOperation::FAnd:
         return lhs && rhs;
-        break;
     case BinaryOperation::FOr:
         return lhs || rhs;
-        break;
     case BinaryOperation::FGreater:
         return lhs > rhs;
-        break;
     case BinaryOperation::FGreaterEqual:
         return lhs >= rhs;
-        break;
     case BinaryOperation::FLess:
         return lhs < rhs;
-        break;
     case BinaryOperation::FLessEqual:
         return lhs <= rhs;
-        break;
     case BinaryOperation::FNotEqual:
         return lhs != rhs;
-        break;
     }
     return 0.0;
 }
@@ -165,7 +143,6 @@ bool constantPropagation(Node::Ptr &first, Node::Ptr &second, OptimizerContext &
     auto parent = first->parent;
     if (isAssignment(parent) || isModifiedVariable(first, ctx) || isModifiedVariable(second, ctx))
         return false;
-
     if (canBeConstantInt(first, ctx) && canBeConstantInt(second, ctx)) {
         parent->type = NodeType::IntegerLiteralValue;
         parent->value = calculateIntOperation(first, second, parent->binOp(), ctx);
@@ -182,26 +159,27 @@ bool constantPropagation(Node::Ptr &first, Node::Ptr &second, OptimizerContext &
 }
 
 void processTypeConversion(Node::Ptr &node, OptimizerContext &ctx) {
-    Node::Ptr &last = node->lastChild();
-    if (last->type == NodeType::IntegerLiteralValue || last->type == NodeType::FloatingPointLiteralValue) {
+    Node::Ptr &operand = node->lastChild();
+    if (isNumericLiteral(operand)) {
         if (node->firstChild()->typeId() == BuiltInTypes::FloatType) {
             node->type = NodeType::FloatingPointLiteralValue;
-            node->value = static_cast<float>(last->intNum());
+            node->value = static_cast<double>(operand->intNum());
         } else {
             node->type = NodeType::IntegerLiteralValue;
-            node->value = static_cast<long int>(last->fpNum());
+            node->value = static_cast<long int>(operand->fpNum());
         }
         node->children.clear();
         return;
     }
 
-    if (isNonModifiedVariable(last, ctx)) { // procces variable in type conversion
+    if (isNonModifiedVariable(operand, ctx)) {
+        const std::string &varName = operand->str();
         if (node->firstChild()->typeId() == BuiltInTypes::FloatType) {
             node->type = NodeType::FloatingPointLiteralValue;
-            node->value = static_cast<float>(std::get<0>(ctx.values[last->str()]));
+            node->value = static_cast<double>(std::get<long int>(ctx.values[varName]));
         } else {
             node->type = NodeType::IntegerLiteralValue;
-            node->value = static_cast<long int>(std::get<1>(ctx.values[last->str()]));
+            node->value = static_cast<long int>(std::get<double>(ctx.values[varName]));
         }
         node->children.clear();
     }
@@ -225,14 +203,15 @@ bool constantFolding(Node::Ptr &first, Node::Ptr &second, OptimizerContext &ctx)
 }
 
 void variablePropagation(Node::Ptr &node, OptimizerContext &ctx) {
-    if (ctx.values.find(node->str()) == ctx.values.cend())
+    const std::string &varName = node->str();
+    if (ctx.values.find(varName) == ctx.values.cend())
         return;
     if (ctx.findVariable(node).type == BuiltInTypes::FloatType) {
         node->type = NodeType::FloatingPointLiteralValue;
-        node->value = std::get<1>(ctx.values[node->str()]);
+        node->value = std::get<double>(ctx.values[varName]);
     } else {
         node->type = NodeType::IntegerLiteralValue;
-        node->value = std::get<0>(ctx.values[node->str()]);
+        node->value = std::get<long int>(ctx.values[varName]);
     }
 }
 
@@ -242,12 +221,14 @@ void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child, OptimizerContext &
     for (auto &iter : parent->children) {
         if (iter->type == NodeType::TypeName) {
             type = iter->typeId();
+            continue;
         }
         if (iter->type == NodeType::VariableName) {
+            const std::string &varName = iter->str();
             if (type == BuiltInTypes::IntType)
-                ctx.values.emplace(iter->str(), child->intNum());
-            if (type == BuiltInTypes::FloatType)
-                ctx.values.emplace(iter->str(), child->fpNum());
+                ctx.values.emplace(varName, child->intNum());
+            else if (type == BuiltInTypes::FloatType)
+                ctx.values.emplace(varName, child->fpNum());
         }
     }
 }
@@ -429,6 +410,13 @@ void removeEmptyBranchRoots(Node::Ptr node) {
     }
 }
 
+void removeUnusedFunctions(SyntaxTree &tree) {
+    tree.root->children.remove_if([&functions = tree.functions](Node::Ptr node) {
+        const std::string &funcName = node->firstChild()->str();
+        return functions[funcName].useCount == 0 && funcName != "main";
+    });
+}
+
 void Optimizer::process(SyntaxTree &tree) {
     for (auto &node : tree.root->children) {
         if (node->type == NodeType::FunctionDefinition) {
@@ -438,9 +426,6 @@ void Optimizer::process(SyntaxTree &tree) {
             processBranchRoot(*child, ctx);
         }
     }
-    tree.root->children.remove_if([&tree](Node::Ptr node) {
-        return tree.functions.find(node->firstChild()->str())->second.useCount == 0 &&
-               node->firstChild()->str() != "main";
-    });
+    removeUnusedFunctions(tree);
     removeEmptyBranchRoots(tree.root);
 }
