@@ -7,12 +7,11 @@
 using namespace ast;
 using namespace optimizer;
 
-long int calcIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation,
-                          VariableValue *variablesValue = nullptr) {
+long int calcIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
     long int firstValue =
-        first->type == NodeType::VariableName ? std::get<0>((*variablesValue)[first->str()]) : first->intNum();
+        first->type == NodeType::VariableName ? std::get<0>(ctx.values[first->str()]) : first->intNum();
     long int secondValue =
-        second->type == NodeType::VariableName ? std::get<0>((*variablesValue)[second->str()]) : second->intNum();
+        second->type == NodeType::VariableName ? std::get<0>(ctx.values[second->str()]) : second->intNum();
     switch (operation) {
     case BinaryOperation::Add:
         return firstValue + secondValue;
@@ -56,12 +55,10 @@ long int calcIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation o
     }
 }
 
-double calcFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation,
-                          VariableValue *variablesValue = nullptr) {
-    double firstValue =
-        first->type == NodeType::VariableName ? std::get<1>((*variablesValue)[first->str()]) : first->fpNum();
+double calcFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
+    double firstValue = first->type == NodeType::VariableName ? std::get<1>(ctx.values[first->str()]) : first->fpNum();
     double secondValue =
-        second->type == NodeType::VariableName ? std::get<1>((*variablesValue)[second->str()]) : second->fpNum();
+        second->type == NodeType::VariableName ? std::get<1>(ctx.values[second->str()]) : second->fpNum();
     switch (operation) {
     case BinaryOperation::FAdd:
         return firstValue + secondValue;
@@ -118,7 +115,7 @@ bool constantPropagation(Node::Ptr &first, Node::Ptr &second, OptimizerContext &
         (second->type == NodeType::IntegerLiteralValue ||
          (second->type == NodeType::VariableName && ctx.findVariable(second).type == BuiltInTypes::IntType))) {
         parent->type = NodeType::IntegerLiteralValue;
-        parent->value = calcIntOperation(first, second, parent->binOp(), &ctx.values);
+        parent->value = calcIntOperation(first, second, parent->binOp(), ctx);
         parent->children.clear();
         return true;
     }
@@ -127,7 +124,7 @@ bool constantPropagation(Node::Ptr &first, Node::Ptr &second, OptimizerContext &
         (second->type == NodeType::FloatingPointLiteralValue ||
          (second->type == NodeType::VariableName && ctx.findVariable(second).type == BuiltInTypes::FloatType))) {
         parent->type = NodeType::FloatingPointLiteralValue;
-        parent->value = calcFloatOperation(first, second, parent->binOp(), &ctx.values);
+        parent->value = calcFloatOperation(first, second, parent->binOp(), ctx);
         parent->children.clear();
         return true;
     }
@@ -161,17 +158,17 @@ void processTypeConversion(Node::Ptr &node, OptimizerContext &ctx) {
     }
 }
 
-bool constantFolding(Node::Ptr &first, Node::Ptr &second) {
+bool constantFolding(Node::Ptr &first, Node::Ptr &second, OptimizerContext &ctx) {
     auto parent = first->parent;
     if (first->type == NodeType::IntegerLiteralValue && second->type == NodeType::IntegerLiteralValue) {
         parent->type = NodeType::IntegerLiteralValue;
-        parent->value = calcIntOperation(first, second, parent->binOp());
+        parent->value = calcIntOperation(first, second, parent->binOp(), ctx);
         parent->children.clear();
         return true;
     }
     if (first->type == NodeType::FloatingPointLiteralValue && second->type == NodeType::FloatingPointLiteralValue) {
         parent->type = NodeType::FloatingPointLiteralValue;
-        parent->value = calcFloatOperation(first, second, parent->binOp());
+        parent->value = calcFloatOperation(first, second, parent->binOp(), ctx);
         parent->children.clear();
         return true;
     }
@@ -216,7 +213,7 @@ bool processBinaryOperation(Node::Ptr &node, OptimizerContext &ctx) {
         processTypeConversion(first, ctx);
     if (second->type == NodeType::TypeConversion)
         processTypeConversion(second, ctx);
-    bool isConsExpr = constantFolding(first, second);
+    bool isConsExpr = constantFolding(first, second, ctx);
     bool isNotModifiedExpr = false;
     if (!isConsExpr)
         isNotModifiedExpr = constantPropagation(first, second, ctx);
@@ -243,7 +240,7 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
                 processTypeConversion(first, ctx);
             if (second->type == NodeType::TypeConversion)
                 processTypeConversion(second, ctx);
-            bool isConsExpr = constantFolding(first, second);
+            bool isConsExpr = constantFolding(first, second, ctx);
             bool isNotModifiedExpr = false;
             if (!isConsExpr)
                 isNotModifiedExpr = constantPropagation(first, second, ctx);
