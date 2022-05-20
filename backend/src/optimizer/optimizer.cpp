@@ -283,7 +283,8 @@ void processExpression(Node::Ptr &node, std::list<VariablesTable *> &table, Vari
             if (second->type == NodeType::FunctionCall) {
                 functions.find(second->firstChild()->str())->second.useCount++;
             }
-            if (child->type == NodeType::BinaryOperation && child->binOp() == BinaryOperation::Assign && haveFunctionCall) {
+            if (child->type == NodeType::BinaryOperation && child->binOp() == BinaryOperation::Assign &&
+                haveFunctionCall) {
                 getVariable(child->firstChild(), table).attributes.modified = true;
             }
             // if ()
