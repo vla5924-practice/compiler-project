@@ -2,6 +2,7 @@
 
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
+#include "stringvec.hpp"
 
 using namespace ast;
 using namespace lexer;

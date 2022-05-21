@@ -9,7 +9,8 @@ class ParserError : public BaseError {
   public:
     ParserError(size_t line_number, size_t column_number, const std::string &message)
         : BaseError(line_number, column_number, message){};
-    ParserError(const lexer::Token &token, const std::string &message) : BaseError(token.line, token.column, message){};
+    ParserError(const lexer::Token &token, const std::string &message)
+        : BaseError(token.ref.line, token.ref.column, message){};
     ~ParserError() = default;
 };
 

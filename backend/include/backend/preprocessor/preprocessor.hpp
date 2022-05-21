@@ -1,19 +1,17 @@
 #pragma once
 
-#include "stringvec.hpp"
+#include <utils/source_files.hpp>
 
 namespace preprocessor {
 
 class Preprocessor {
-    static StringVec removeComments(const StringVec &source);
-
   public:
     Preprocessor() = delete;
     Preprocessor(const Preprocessor &) = delete;
     Preprocessor(Preprocessor &&) = delete;
     ~Preprocessor() = delete;
 
-    static StringVec process(const StringVec &source);
+    static utils::SourceFile process(const utils::SourceFile &source);
 };
 
 } // namespace preprocessor

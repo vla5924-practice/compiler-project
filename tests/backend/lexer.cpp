@@ -426,6 +426,8 @@ TEST(Lexer, raise_error_on_extra_spaces) {
 
 TEST(Lexer, raise_error_on_extra_spaces_with_several_lines) {
     StringVec source = {"  int", " int"};
+    source[0].ref.line = 1;
+    source[1].ref.line = 2;
     ErrorBuffer expected;
     expected.push<LexerError>(1, 1, "Extra spaces at the begining of line are not allowed");
     expected.push<LexerError>(2, 1, "Extra spaces at the begining of line are not allowed");
