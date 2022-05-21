@@ -18,3 +18,5 @@ PUBLIC
 PRIVATE
     include/ast
 )
+
+target_link_libraries(${TARGET_NAME} PUBLIC utils)
