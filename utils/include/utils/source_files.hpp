@@ -21,6 +21,11 @@ struct SourceLine {
     SourceLine(const char *const text_) : text(text_), ref(){};
     SourceLine(const std::string &text_, const SourceRef &ref_) : text(text_), ref(ref_){};
 
+    SourceRef makeRef(const std::string::const_iterator &iter) const {
+        size_t column = std::distance(text.begin(), iter);
+        return ref.inSameLine(column);
+    }
+
     SourceLine &operator=(const SourceLine &) = default;
     SourceLine &operator=(SourceLine &&) = default;
 

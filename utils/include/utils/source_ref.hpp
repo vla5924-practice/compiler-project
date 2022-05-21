@@ -18,10 +18,15 @@ struct SourceRef {
     SourceRef(std::shared_ptr<const std::string> filename_, size_t line_, size_t column_)
         : filename(filename_), line(line_), column(column_){};
 
-    SourceRef inSameFile(size_t line_, size_t column_) const {
+    SourceRef inSameLine(size_t column_) const {
         SourceRef other(*this);
-        other.line = line_;
         other.column = column_;
+        return other;
+    }
+
+    SourceRef inSameFile(size_t line_, size_t column_) const {
+        SourceRef other = inSameLine(column_);
+        other.line = line_;
         return other;
     }
 
