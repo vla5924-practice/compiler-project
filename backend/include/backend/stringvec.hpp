@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
-#include <vector>
+#include <utils/source_files.hpp>
 
-using StringVec = std::vector<std::string>;
+using StringVec = utils::SourceFile; // FIXME: remove backward compatiability alias

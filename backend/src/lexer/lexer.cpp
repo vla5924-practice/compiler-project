@@ -38,7 +38,7 @@ TokenList Lexer::process(const StringVec &source) {
     size_t line_number = 1;
     ErrorBuffer errors;
     for (const auto &str : source) {
-        TokenList part = processString(str, line_number++, errors);
+        TokenList part = processString(str.text, line_number++, errors);
         tokens.splice(tokens.end(), part);
     }
     if (!errors.empty()) {

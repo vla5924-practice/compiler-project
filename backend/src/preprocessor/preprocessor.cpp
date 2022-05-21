@@ -8,7 +8,7 @@ StringVec Preprocessor::removeComments(const StringVec &source) {
         bool inStringApostrophe = false;
         bool inStringQuotes = false;
         size_t i = 0;
-        for (; i < str.length(); i++) {
+        for (; i < str.text.length(); i++) {
             if (str[i] == '\'')
                 inStringApostrophe = !inStringApostrophe;
             if (str[i] == '"')
@@ -20,7 +20,7 @@ StringVec Preprocessor::removeComments(const StringVec &source) {
             }
         }
         if (i != 0)
-            result.emplace_back(std::move(str.substr(0, i)));
+            result.emplace_back(std::move(str.text.substr(0, i)));
     }
     return result;
 }
