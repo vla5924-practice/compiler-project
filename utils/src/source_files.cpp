@@ -5,7 +5,7 @@
 #include <memory>
 #include <stdexcept>
 
-using namespace utils;
+namespace utils {
 
 SourceFile readFile(const std::string &path) {
     std::ifstream stream(path);
@@ -25,3 +25,5 @@ SourceFile readFile(const std::string &path) {
 
     return file;
 }
+
+} // namespace utils

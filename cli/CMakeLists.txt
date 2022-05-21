@@ -22,6 +22,7 @@ PRIVATE
 target_link_libraries(${TARGET_NAME} PUBLIC
     argparse
     backend
+    utils
 )
 if (ENABLE_IR_GENERATOR)
     target_link_libraries(${TARGET_NAME} PUBLIC ir_generator)

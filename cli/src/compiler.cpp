@@ -12,7 +12,7 @@
 #include <backend/parser/parser.hpp>
 #include <backend/preprocessor/preprocessor.hpp>
 #include <backend/semantizer/semantizer.hpp>
-#include <backend/stringvec.hpp>
+#include <utils/source_files.hpp>
 
 #ifdef ENABLE_IR_GENERATOR
 #include <ir_generator/ir_generator.hpp>
@@ -29,6 +29,7 @@ using lexer::Lexer;
 using parser::Parser;
 using preprocessor::Preprocessor;
 using semantizer::Semantizer;
+using utils::SourceFile;
 
 #ifdef ENABLE_IR_GENERATOR
 using ir_generator::IRGenerator;
@@ -55,16 +56,6 @@ argparse::ArgumentParser createArgumentParser() {
 #endif
     parser.add_argument("FILES").required().remaining();
     return parser;
-}
-
-StringVec readFile(const std::string &path) {
-    std::ifstream file(path);
-    std::string str;
-    StringVec content;
-    while (std::getline(file, str)) {
-        content.push_back(str);
-    }
-    return content;
 }
 
 #ifdef ENABLE_IR_GENERATOR
@@ -135,9 +126,9 @@ int Compiler::exec(int argc, char *argv[]) {
         return 2;
     }
 
-    StringVec source;
+    SourceFile source;
     for (const std::string &path : files) {
-        StringVec other = readFile(path);
+        SourceFile other = utils::readFile(path);
         source.insert(source.end(), std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()));
         VERBOSE(std::cout << "Read file " << path << std::endl);
     }
