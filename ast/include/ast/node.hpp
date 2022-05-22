@@ -6,6 +6,8 @@
 #include <string>
 #include <variant>
 
+#include <utils/source_ref.hpp>
+
 #include "ast/node_type.hpp"
 #include "ast/variables_table.hpp"
 
@@ -17,6 +19,8 @@ struct Node {
 
     std::list<Ptr> children;
     Ptr parent;
+
+    utils::SourceRef ref;
 
     /**
      * value type      : node type
