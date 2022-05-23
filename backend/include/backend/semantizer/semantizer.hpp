@@ -4,8 +4,9 @@
 #include <ast/types.hpp>
 
 #include "error_buffer.hpp"
-#include "semantizer_error.hpp"
 #include "semantizer_contex.hpp"
+#include "semantizer_error.hpp"
+
 
 namespace semantizer {
 
