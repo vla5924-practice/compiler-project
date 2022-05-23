@@ -5,6 +5,7 @@
 
 #include "error_buffer.hpp"
 #include "semantizer_error.hpp"
+#include "semantizer_contex.hpp"
 
 namespace semantizer {
 
