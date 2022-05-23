@@ -3,6 +3,7 @@
 #include <list>
 
 #include "error_buffer.hpp"
+#include "semantizer_error.hpp"
 #include <ast/functions_table.hpp>
 #include <ast/node.hpp>
 #include <ast/variables_table.hpp>
