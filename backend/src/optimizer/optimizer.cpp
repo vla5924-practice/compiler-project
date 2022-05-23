@@ -332,7 +332,8 @@ void changeVariablesAttributes(Node::Ptr &node, OptimizerContext &ctx) {
 
 void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
     ctx.variables.push_front(&node->variables());
-    for (auto &child : node->children) {
+    for (auto childIter = node->children.begin(); childIter != node->children.end(); childIter++) {
+        Node::Ptr &child = *childIter;
         if (child->type == NodeType::Expression || child->type == NodeType::VariableDeclaration) {
             processExpression(child, ctx);
         }
@@ -391,6 +392,14 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
             } else {
                 changeVariablesAttributes(child->secondChild(), ctx);
                 processBranchRoot(child->secondChild(), ctx);
+            }
+        }
+
+        if (child->type == NodeType::ReturnStatement) {
+            processExpression(child->firstChild(), ctx);
+            if (node->parent->type == NodeType::FunctionDefinition) {
+                node->children.erase(std::next(childIter), node->children.end());
+                break;
             }
         }
     }
