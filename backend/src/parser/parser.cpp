@@ -196,33 +196,37 @@ void buildExpressionSubtree(std::stack<SubExpression> postfixForm, ast::Node::Pt
             if (expType == ExpressionTokenType::Operation) {
                 OperationType opType = getOperationType(token);
                 if (opType == OperationType::Binary) {
-                    currNode = ParserContext::unshiftChildNode(currNode, ast::NodeType::BinaryOperation);
+                    currNode = ParserContext::unshiftChildNode(currNode, ast::NodeType::BinaryOperation, token.ref);
                     currNode->value = getBinaryOperation(token);
                 } else if (opType == OperationType::Unary) {
-                    currNode = ParserContext::unshiftChildNode(currNode, ast::NodeType::UnaryOperation);
+                    currNode = ParserContext::unshiftChildNode(currNode, ast::NodeType::UnaryOperation, token.ref);
                 } else {
                     errors.push<ParserError>(token,
                                              "Unknown operator found in expression, it must be either unary or binary");
                 }
             } else if (expType == ExpressionTokenType::Operand) {
                 if (token.type == TokenType::Identifier) {
-                    ast::Node::Ptr node = ParserContext::unshiftChildNode(currNode, ast::NodeType::VariableName);
+                    ast::Node::Ptr node =
+                        ParserContext::unshiftChildNode(currNode, ast::NodeType::VariableName, token.ref);
                     node->value = token.id();
                 } else if (token.type == TokenType::IntegerLiteral) {
-                    ast::Node::Ptr node = ParserContext::unshiftChildNode(currNode, ast::NodeType::IntegerLiteralValue);
+                    ast::Node::Ptr node =
+                        ParserContext::unshiftChildNode(currNode, ast::NodeType::IntegerLiteralValue, token.ref);
                     node->value = std::atol(token.literal().c_str());
                 } else if (token.type == TokenType::FloatingPointLiteral) {
                     ast::Node::Ptr node =
-                        ParserContext::unshiftChildNode(currNode, ast::NodeType::FloatingPointLiteralValue);
+                        ParserContext::unshiftChildNode(currNode, ast::NodeType::FloatingPointLiteralValue, token.ref);
                     node->value = std::stod(token.literal());
                 } else if (token.type == TokenType::StringLiteral) {
-                    ast::Node::Ptr node = ParserContext::unshiftChildNode(currNode, ast::NodeType::StringLiteralValue);
+                    ast::Node::Ptr node =
+                        ParserContext::unshiftChildNode(currNode, ast::NodeType::StringLiteralValue, token.ref);
                     node->value = token.literal();
                 }
             }
         } else {
             ast::Node::Ptr funcCallNode = std::get<ast::Node::Ptr>(subexpr);
             assert(funcCallNode->type == ast::NodeType::FunctionCall);
+            funcCallNode->parent = currNode;
             currNode->children.push_front(funcCallNode);
         }
         while (currNode->children.size() >= getOperandCount(getOperationType(*currNode)))
@@ -239,22 +243,28 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
         const Token &token = *tokenIter;
         if (isFunctionCall(tokenIter)) {
             ast::Node::Ptr funcCallNode = std::make_shared<ast::Node>(ast::NodeType::FunctionCall);
-            auto node = ParserContext::pushChildNode(funcCallNode, ast::NodeType::FunctionName);
+            auto node = ParserContext::pushChildNode(funcCallNode, ast::NodeType::FunctionName, token.ref);
             node->value = token.id();
             auto argsBegin = std::next(tokenIter);
             auto it = argsBegin;
-            while (!it->is(Operator::RightBrace))
+            unsigned nestingLevel = 0;
+            do {
+                if (it->is(Operator::RightBrace))
+                    nestingLevel--;
+                else if (it->is(Operator::LeftBrace))
+                    nestingLevel++;
                 it++;
-            auto argsEnd = it;
+            } while (nestingLevel > 0);
+            auto argsEnd = std::prev(it);
             if (std::distance(argsBegin, argsEnd) > 1) {
-                auto argsNode = ParserContext::pushChildNode(funcCallNode, ast::NodeType::FunctionArguments);
+                auto argsNode = ParserContext::pushChildNode(funcCallNode, ast::NodeType::FunctionArguments, token.ref);
                 auto argBegin = std::next(argsBegin);
                 for (auto argsIter = argBegin; argsIter != std::next(argsEnd); argsIter++) {
                     if (!argsIter->is(Operator::Comma) && argsIter != argsEnd)
                         continue;
                     const Token &token = *argsIter;
                     std::stack<SubExpression> argPostfixForm = generatePostfixForm(argBegin, argsIter, errors);
-                    auto exprNode = ParserContext::pushChildNode(argsNode, ast::NodeType::Expression);
+                    auto exprNode = ParserContext::pushChildNode(argsNode, ast::NodeType::Expression, token.ref);
                     buildExpressionSubtree(argPostfixForm, exprNode, errors);
                     argBegin = std::next(argsIter);
                 }
@@ -349,7 +359,7 @@ static void parseBranchRoot(ParserContext &ctx) {
             if (lastNode->type == ast::NodeType::IfStatement) {
                 auto nodeType =
                     currToken.is(Keyword::Elif) ? ast::NodeType::ElifStatement : ast::NodeType::ElseStatement;
-                ctx.node = ParserContext::pushChildNode(lastNode, nodeType);
+                ctx.node = ParserContext::pushChildNode(lastNode, nodeType, currToken.ref);
             } else {
                 ctx.pushError((currToken.is(Keyword::Elif) ? std::string("elif") : std::string("else")) +
                               " is not allowed here");
@@ -415,9 +425,9 @@ static void parseFunctionArguments(ParserContext &ctx) {
             break;
         }
         auto node = ctx.pushChildNode(ast::NodeType::FunctionArgument);
-        auto argTypeNode = ParserContext::pushChildNode(node, ast::NodeType::TypeName);
+        auto argTypeNode = ParserContext::pushChildNode(node, ast::NodeType::TypeName, argType.ref);
         argTypeNode->value = TypeRegistry::typeId(argType);
-        auto argNameNode = ParserContext::pushChildNode(node, ast::NodeType::VariableName);
+        auto argNameNode = ParserContext::pushChildNode(node, ast::NodeType::VariableName, argName.ref);
         argNameNode->value = argName.id();
 
         const Token &last = *std::next(ctx.tokenIter, 3);

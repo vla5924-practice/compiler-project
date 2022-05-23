@@ -44,6 +44,7 @@ class IRGenerator {
     llvm::BasicBlock *processBranchRoot(ast::Node::Ptr node, bool createBlock = true);
     llvm::Value *declareString(const std::string &str, std::string name = "");
     void declareLocalVariable(ast::TypeId type, std::string &name, llvm::Value *initialValue = nullptr);
+    llvm::Constant *getGlobalString(const std::string &name);
 
     llvm::Value *visitNode(ast::Node::Ptr node);
     llvm::Value *visitBinaryOperation(ast::Node *node);

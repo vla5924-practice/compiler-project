@@ -2,6 +2,7 @@
 
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
+#include "stringvec.hpp"
 
 using namespace ast;
 using namespace lexer;
@@ -308,5 +309,154 @@ TEST(Parser, can_parse_multiple_functions) {
                            "      VariableDeclaration\n"
                            "        TypeName: FloatType\n"
                            "        VariableName: x\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Parser, can_parse_nested_function_call_alone) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x = foo(bar())",
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          FunctionCall\n"
+                           "            FunctionName: foo\n"
+                           "            FunctionArguments\n"
+                           "              Expression\n"
+                           "                FunctionCall\n"
+                           "                  FunctionName: bar\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Parser, can_parse_nested_function_call_inside_expression) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x = foo(1 + bar())",
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          FunctionCall\n"
+                           "            FunctionName: foo\n"
+                           "            FunctionArguments\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  IntegerLiteralValue: 1\n"
+                           "                  FunctionCall\n"
+                           "                    FunctionName: bar\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Parser, can_parse_multiple_nested_function_calls) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x = foo(bar(), 1 + baz())",
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          FunctionCall\n"
+                           "            FunctionName: foo\n"
+                           "            FunctionArguments\n"
+                           "              Expression\n"
+                           "                FunctionCall\n"
+                           "                  FunctionName: bar\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  IntegerLiteralValue: 1\n"
+                           "                  FunctionCall\n"
+                           "                    FunctionName: baz\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Parser, can_parse_nested_function_call_with_arguments) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x = foo(bar(y))",
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          FunctionCall\n"
+                           "            FunctionName: foo\n"
+                           "            FunctionArguments\n"
+                           "              Expression\n"
+                           "                FunctionCall\n"
+                           "                  FunctionName: bar\n"
+                           "                  FunctionArguments\n"
+                           "                    Expression\n"
+                           "                      VariableName: y\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Parser, can_parse_complex_nested_function_call) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x = foo(bar(fun()) + 1, baz(y), z)",
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          FunctionCall\n"
+                           "            FunctionName: foo\n"
+                           "            FunctionArguments\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  FunctionCall\n"
+                           "                    FunctionName: bar\n"
+                           "                    FunctionArguments\n"
+                           "                      Expression\n"
+                           "                        FunctionCall\n"
+                           "                          FunctionName: fun\n"
+                           "                  IntegerLiteralValue: 1\n"
+                           "              Expression\n"
+                           "                FunctionCall\n"
+                           "                  FunctionName: baz\n"
+                           "                  FunctionArguments\n"
+                           "                    Expression\n"
+                           "                      VariableName: y\n"
+                           "              Expression\n"
+                           "                VariableName: z\n";
     ASSERT_EQ(tree_str, tree.dump());
 }

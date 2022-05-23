@@ -111,13 +111,58 @@ static BinaryOperation convertToFloatOperation(BinaryOperation operation) {
 
 static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContext &ctx);
 
-static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
+static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTable *> &tables, FunctionsTable &functions,
+                                  ErrorBuffer &errors);
+
+static TypeId processPrintFunction(Node::Ptr &node, NodeType type, const std::list<VariablesTable *> &tables,
+                                   FunctionsTable &functions, ErrorBuffer &errors) {
+    if (type == NodeType::BinaryOperation) {
+        auto &first = node->firstChild();
+        auto &second = node->secondChild();
+        auto firstType = processPrintFunction(first, first->type, tables, functions, errors);
+        auto secondType = processPrintFunction(second, second->type, tables, functions, errors);
+        if (firstType == BuiltInTypes::FloatType || secondType == BuiltInTypes::FloatType) {
+            if (firstType != BuiltInTypes::FloatType)
+                pushTypeConversion(first, BuiltInTypes::FloatType);
+            if (secondType != BuiltInTypes::FloatType)
+                pushTypeConversion(second, BuiltInTypes::FloatType);
+            node->value = convertToFloatOperation(node->binOp());
+            return BuiltInTypes::FloatType;
+        }
+        return BuiltInTypes::IntType;
+    }
+    if (type == NodeType::VariableName)
+        return searchVariable(node, tables, errors);
+    if (type == NodeType::FunctionCall)
+        return processFunctionCall(node->firstChild(), tables, functions, errors);
+    if (type == NodeType::FloatingPointLiteralValue)
+        return BuiltInTypes::FloatType;
+    if (type == NodeType::IntegerLiteralValue)
+        return BuiltInTypes::IntType;
+    if (type == NodeType::StringLiteralValue)
+        return BuiltInTypes::StrType;
+    return BuiltInTypes::NoneType;
+}
+
+static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTable *> &tables, FunctionsTable &functions,
+                                  ErrorBuffer &errors) {
     const std::string &funcName = node->firstChild()->str();
     bool isPrintFunction = (funcName == "print");
-    auto funcIter = ctx.functions.find(funcName);
-    if (funcIter == ctx.functions.cend()) {
-        if (isPrintFunction || funcName == "input") {
-            funcIter = ctx.functions.emplace(funcName, Function(BuiltInTypes::NoneType)).first;
+    if (isPrintFunction) {
+        auto exprNode = node->lastChild()->lastChild();
+        auto child = exprNode->firstChild();
+        auto type = child->type;
+        exprNode->value = processPrintFunction(child, type, tables, functions, errors);
+        return BuiltInTypes::NoneType;
+    }
+    auto funcIter = functions.find(funcName);
+    if (funcIter == functions.cend()) {
+        if (funcName == "input") {
+            funcIter = functions.emplace(funcName, Function(BuiltInTypes::NoneType)).first;
+            TypeId type = searchVariable(node->parent->firstChild(), tables, errors);
+            Node::Ptr returnTypeNode = std::make_shared<Node>(NodeType::FunctionReturnType, node);
+            returnTypeNode->value = type;
+            node->children.push_back(returnTypeNode);
         } else {
             ctx.errors.push<SemantizerError>(*node, funcName + " was not declared in this scope");
         }
@@ -182,8 +227,8 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
         if (child->type == NodeType::VariableName) {
             auto find_type = searchVariable(child, tables, errors);
             if (find_type != var_type) {
-                if (find_type == BuiltInTypes::StrType && child->str().size() != 1) {
-                    ctx.errors.push<SemantizerError>(*node,
+                if (find_type == BuiltInTypes::StrType && child->str().size() != 1u) {
+                    errors.push<SemantizerError>(*node,
                                                  "Invalid conversion from string to " + std::to_string(var_type));
                 }
                 pushTypeConversion(child, type);
