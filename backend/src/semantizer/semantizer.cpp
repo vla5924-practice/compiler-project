@@ -18,23 +18,6 @@ static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &func
     return result;
 }
 
-static TypeId searchVariable(const Node::Ptr &node, const std::list<VariablesTable *> &tables, ErrorBuffer &errors) {
-    TypeId type = BuiltInTypes::BuiltInTypesCount;
-    for (const auto &table : tables) {
-        VariablesTable::const_iterator table_name = table->find(node->str());
-        if (table_name != table->cend()) {
-            type = table_name->second;
-            break;
-        }
-    }
-
-    if (type == BuiltInTypes::BuiltInTypesCount) {
-        errors.push<SemantizerError>(*node, node->str() + " was not declared in this scope");
-    }
-
-    return type;
-};
-
 static void pushTypeConversion(Node::Ptr &node, TypeId type) {
     Node::Ptr conv_node = std::make_shared<Node>(NodeType::TypeConversion, node->parent);
     conv_node->children.push_front(node);
@@ -111,16 +94,14 @@ static BinaryOperation convertToFloatOperation(BinaryOperation operation) {
 
 static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContext &ctx);
 
-static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTable *> &tables, FunctionsTable &functions,
-                                  ErrorBuffer &errors);
+static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx);
 
-static TypeId processPrintFunction(Node::Ptr &node, NodeType type, const std::list<VariablesTable *> &tables,
-                                   FunctionsTable &functions, ErrorBuffer &errors) {
+static TypeId processPrintFunction(Node::Ptr &node, NodeType type, SemantizerContext &ctx) {
     if (type == NodeType::BinaryOperation) {
         auto &first = node->firstChild();
         auto &second = node->secondChild();
-        auto firstType = processPrintFunction(first, first->type, tables, functions, errors);
-        auto secondType = processPrintFunction(second, second->type, tables, functions, errors);
+        auto firstType = processPrintFunction(first, first->type, ctx);
+        auto secondType = processPrintFunction(second, second->type, ctx);
         if (firstType == BuiltInTypes::FloatType || secondType == BuiltInTypes::FloatType) {
             if (firstType != BuiltInTypes::FloatType)
                 pushTypeConversion(first, BuiltInTypes::FloatType);
@@ -132,9 +113,9 @@ static TypeId processPrintFunction(Node::Ptr &node, NodeType type, const std::li
         return BuiltInTypes::IntType;
     }
     if (type == NodeType::VariableName)
-        return searchVariable(node, tables, errors);
+        return ctx.searchVariable(node);
     if (type == NodeType::FunctionCall)
-        return processFunctionCall(node->firstChild(), tables, functions, errors);
+        return processFunctionCall(node->firstChild(), ctx);
     if (type == NodeType::FloatingPointLiteralValue)
         return BuiltInTypes::FloatType;
     if (type == NodeType::IntegerLiteralValue)
@@ -144,22 +125,21 @@ static TypeId processPrintFunction(Node::Ptr &node, NodeType type, const std::li
     return BuiltInTypes::NoneType;
 }
 
-static TypeId processFunctionCall(Node::Ptr &node, const std::list<VariablesTable *> &tables, FunctionsTable &functions,
-                                  ErrorBuffer &errors) {
+static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
     const std::string &funcName = node->firstChild()->str();
     bool isPrintFunction = (funcName == "print");
     if (isPrintFunction) {
         auto exprNode = node->lastChild()->lastChild();
         auto child = exprNode->firstChild();
         auto type = child->type;
-        exprNode->value = processPrintFunction(child, type, tables, functions, errors);
+        exprNode->value = processPrintFunction(child, type, ctx);
         return BuiltInTypes::NoneType;
     }
-    auto funcIter = functions.find(funcName);
-    if (funcIter == functions.cend()) {
+    auto funcIter = ctx.functions.find(funcName);
+    if (funcIter == ctx.functions.cend()) {
         if (funcName == "input") {
-            funcIter = functions.emplace(funcName, Function(BuiltInTypes::NoneType)).first;
-            TypeId type = searchVariable(node->parent->firstChild(), tables, errors);
+            funcIter = ctx.functions.emplace(funcName, Function(BuiltInTypes::NoneType)).first;
+            TypeId type = ctx.searchVariable(node->parent->firstChild());
             Node::Ptr returnTypeNode = std::make_shared<Node>(NodeType::FunctionReturnType, node);
             returnTypeNode->value = type;
             node->children.push_back(returnTypeNode);
@@ -225,11 +205,11 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
         }
 
         if (child->type == NodeType::VariableName) {
-            auto find_type = searchVariable(child, tables, errors);
+            auto find_type = ctx.searchVariable(child);
             if (find_type != var_type) {
                 if (find_type == BuiltInTypes::StrType && child->str().size() != 1u) {
-                    errors.push<SemantizerError>(*node,
-                                                 "Invalid conversion from string to " + std::to_string(var_type));
+                    ctx.errors.push<SemantizerError>(*node,
+                                                     "Invalid conversion from string to " + std::to_string(var_type));
                 }
                 pushTypeConversion(child, type);
             }
@@ -251,7 +231,7 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
     }
 
     if (node->type == NodeType::VariableName) {
-        auto find_type = searchVariable(node, );
+        auto find_type = ctx.searchVariable(node);
         if (find_type != var_type) {
             pushTypeConversion(node, type);
         }
@@ -288,7 +268,7 @@ static void processBranchRoot(Node::Ptr &node, SemantizerContext &ctx) {
             Node::Ptr &expr_root = child->children.front();
             if (expr_root->type == NodeType::BinaryOperation && expr_root->binOp() == BinaryOperation::Assign) {
                 auto name = expr_root->children.front()->str();
-                auto type = searchVariable(expr_root->children.front(), tables, errors);
+                auto type = ctx.searchVariable(expr_root->children.front());
                 processExpression(expr_root, type, ctx);
                 if (!std::holds_alternative<TypeId>(node->value))
                     child->value.emplace<TypeId>(type);
@@ -337,9 +317,8 @@ static void parseFunctions(const std::list<Node::Ptr> &children, SemantizerConte
 }
 
 void Semantizer::process(SyntaxTree &tree) {
-    ErrorBuffer errors;
     SemantizerContext ctx(tree.functions);
     parseFunctions(tree.root->children, ctx);
-    if (!errors.empty())
-        throw errors;
+    if (!ctx.errors.empty())
+        throw ctx.errors;
 }
