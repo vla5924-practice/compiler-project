@@ -1,9 +1,6 @@
 #pragma once
 
 #include <list>
-#include <string>
-#include <unordered_map>
-#include <variant>
 
 #include "error_buffer.hpp"
 #include <ast/functions_table.hpp>

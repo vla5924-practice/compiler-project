@@ -7,7 +7,6 @@
 #include "semantizer_contex.hpp"
 #include "semantizer_error.hpp"
 
-
 namespace semantizer {
 
 class Semantizer {
