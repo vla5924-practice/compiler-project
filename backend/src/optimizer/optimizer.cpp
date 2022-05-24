@@ -1,5 +1,6 @@
 #include "optimizer/optimizer.hpp"
 
+#include <algorithm>
 #include <variant>
 
 #include "optimizer/optimizer_context.hpp"
@@ -388,6 +389,25 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
                 if (isFalsyLiteral(exprResult)) {
                     child->children.clear();
                     child->type = NodeType::BranchRoot;
+                } else if (isTruthyLiteral(exprResult)) {
+                    auto currNode = child->parent;
+                    auto prevNode = child;
+                    while (currNode->parent->type != NodeType::FunctionDefinition) {
+                        if ((currNode->type == NodeType::IfStatement || currNode->type == NodeType::ElifStatement ||
+                             currNode->type == NodeType::WhileStatement) &&
+                            isNumericLiteral(currNode->firstChild()->firstChild()) &&
+                            !isTruthyLiteral(currNode->firstChild()->firstChild()))
+                            break;
+                        prevNode = currNode;
+                        currNode = currNode->parent;
+                    }
+                    if (currNode->parent->type == NodeType::FunctionDefinition) {
+                        auto iter =
+                            std::find_if(currNode->children.begin(), currNode->children.end(),
+                                         [&prevNode](const Node::Ptr &node) { return node.get() == prevNode.get(); });
+                        currNode->parent->children.erase(std::next(iter), currNode->parent->children.end());
+                        break;
+                    }
                 }
             } else {
                 changeVariablesAttributes(child->secondChild(), ctx);

@@ -4,6 +4,7 @@
 #include "optimizer/optimizer.hpp"
 #include "parser/parser.hpp"
 #include "semantizer/semantizer.hpp"
+#include "stringvec.hpp"
 
 using namespace ast;
 using namespace lexer;
@@ -532,6 +533,29 @@ TEST(Optimizer, DCE_for_if_0_elif_1_elif_1) {
 
 TEST(Optimizer, DCE_return_statement) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    return 1", "    x = 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "      ReturnStatement\n"
+                           "        Expression\n"
+                           "          IntegerLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, DCE_while_1) {
+    StringVec source = {"def main() -> None:", "    x: int", "    if 1:", "        while 1:", "            x = 2", "        x = 3", "    x = 4"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
