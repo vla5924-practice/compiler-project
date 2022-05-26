@@ -233,7 +233,7 @@ void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child, OptimizerContext &
         if (iter->type == NodeType::VariableName) {
             const std::string &varName = iter->str();
             if (type == BuiltInTypes::IntType)
-                ctx.values.front().emplace(varName, child->intNum()); // fix 
+                ctx.values.front().emplace(varName, child->intNum()); // fix
             else if (type == BuiltInTypes::FloatType)
                 ctx.values.front().emplace(varName, child->fpNum());
         }
@@ -357,8 +357,8 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
             if (isNumericLiteral(exprResult)) {
                 child->children.pop_front();
                 if (isTruthyLiteral(exprResult)) {
+                    processBranchRoot(child->children.front(), ctx);
                     child = child->children.front();
-                    processBranchRoot(child, ctx);
                 } else {
                     child->children.pop_front();
                     for (auto &ifChild : child->children) {
@@ -414,10 +414,9 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
                         currNode = currNode->parent;
                     }
                     if (currNode->parent->type == NodeType::FunctionDefinition) {
-                        auto iter =
-                            std::find_if(currNode->children.begin(), currNode->children.end(),
-                                         [&prevNode](const Node::Ptr &node) { return node.get() == prevNode.get(); });
-                        currNode->parent->children.erase(std::next(iter), currNode->parent->children.end());
+                        auto iter = std::find_if(currNode->children.begin(), currNode->children.end(),
+                                                 [&prevNode](const Node::Ptr &node) { return *node == *prevNode; });
+                        currNode->children.erase(std::next(iter), currNode->children.end());
                         break;
                     }
                 }
