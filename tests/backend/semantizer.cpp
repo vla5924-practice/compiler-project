@@ -3,6 +3,7 @@
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
 #include "semantizer/semantizer.hpp"
+#include "stringvec.hpp"
 
 using namespace ast;
 using namespace lexer;

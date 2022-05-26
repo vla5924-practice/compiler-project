@@ -22,6 +22,7 @@ if(WIN32)
     option(gtest_force_shared_crt "" TRUE)
 endif()
 
+add_subdirectory(utils)
 add_subdirectory(ast)
 add_subdirectory(backend)
 add_subdirectory(thirdparty)

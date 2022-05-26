@@ -1,8 +1,13 @@
 #include "base_error.hpp"
 
-BaseError::BaseError(size_t line_number, size_t column_number, const std::string &message) {
-    what_str = "In line " + std::to_string(line_number) + " in column " + std::to_string(column_number) + " error:\n" +
-               message;
+#include <sstream>
+
+using utils::SourceRef;
+
+BaseError::BaseError(const SourceRef &ref, const std::string &message) {
+    std::stringstream str;
+    str << "In line " << ref.line << " in column " << ref.column << " error:\n" << message;
+    what_str = str.str();
 }
 
 BaseError::BaseError(const std::string &message) {
