@@ -57,7 +57,8 @@ bool isModifiedVariable(const Node::Ptr &node, OptimizerContext &ctx) {
 }
 
 bool isNonModifiedVariable(const Node::Ptr &node, OptimizerContext &ctx) {
-    return node->type == NodeType::VariableName && !ctx.findVariable(node).attributes.modified;
+    return node->type == NodeType::VariableName && !ctx.findVariable(node).attributes.modified &&
+           node->parent->type != NodeType::VariableDeclaration;
 }
 
 bool isVariableWithType(const Node::Ptr &node, TypeId typeId, OptimizerContext &ctx) {
@@ -75,8 +76,10 @@ bool canBeConstantFloat(const Node::Ptr &node, OptimizerContext &ctx) {
 } // namespace
 
 long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
-    long int lhs = first->type == NodeType::VariableName ? std::get<0>(ctx.values[first->str()]) : first->intNum();
-    long int rhs = second->type == NodeType::VariableName ? std::get<0>(ctx.values[second->str()]) : second->intNum();
+    long int lhs =
+        first->type == NodeType::VariableName ? std::get<0>(ctx.findVariableValue(first->str())) : first->intNum();
+    long int rhs =
+        second->type == NodeType::VariableName ? std::get<0>(ctx.findVariableValue(second->str())) : second->intNum();
 
     switch (operation) {
     case BinaryOperation::Add:
@@ -108,8 +111,9 @@ long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperat
 }
 
 double calculateFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
-    double lhs = first->type == NodeType::VariableName ? std::get<1>(ctx.values[first->str()]) : first->fpNum();
-    double rhs = second->type == NodeType::VariableName ? std::get<1>(ctx.values[second->str()]) : second->fpNum();
+    double lhs = first->type == NodeType::VariableName ? std::get<1>(ctx.values.front()[first->str()]) : first->fpNum();
+    double rhs =
+        second->type == NodeType::VariableName ? std::get<1>(ctx.values.front()[second->str()]) : second->fpNum();
 
     switch (operation) {
     case BinaryOperation::FAdd:
@@ -177,10 +181,10 @@ void processTypeConversion(Node::Ptr &node, OptimizerContext &ctx) {
         const std::string &varName = operand->str();
         if (node->firstChild()->typeId() == BuiltInTypes::FloatType) {
             node->type = NodeType::FloatingPointLiteralValue;
-            node->value = static_cast<double>(std::get<long int>(ctx.values[varName]));
+            node->value = static_cast<double>(std::get<long int>(ctx.findVariableValue(varName)));
         } else {
             node->type = NodeType::IntegerLiteralValue;
-            node->value = static_cast<long int>(std::get<double>(ctx.values[varName]));
+            node->value = static_cast<long int>(std::get<double>(ctx.findVariableValue(varName)));
         }
         node->children.clear();
     }
@@ -205,14 +209,15 @@ bool constantFolding(Node::Ptr &first, Node::Ptr &second, OptimizerContext &ctx)
 
 void variablePropagation(Node::Ptr &node, OptimizerContext &ctx) {
     const std::string &varName = node->str();
-    if (ctx.values.find(varName) == ctx.values.cend())
+    if (!ctx.hasVariable(varName)) // fix me
         return;
+    auto variableIter = ctx.findVariableValue(varName);
     if (ctx.findVariable(node).type == BuiltInTypes::FloatType) {
         node->type = NodeType::FloatingPointLiteralValue;
-        node->value = std::get<double>(ctx.values[varName]);
+        node->value = std::get<double>(variableIter);
     } else {
         node->type = NodeType::IntegerLiteralValue;
-        node->value = std::get<long int>(ctx.values[varName]);
+        node->value = std::get<long int>(variableIter);
     }
 }
 
@@ -227,9 +232,9 @@ void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child, OptimizerContext &
         if (iter->type == NodeType::VariableName) {
             const std::string &varName = iter->str();
             if (type == BuiltInTypes::IntType)
-                ctx.values.emplace(varName, child->intNum());
+                ctx.values.front().emplace(varName, child->intNum());
             else if (type == BuiltInTypes::FloatType)
-                ctx.values.emplace(varName, child->fpNum());
+                ctx.values.front().emplace(varName, child->fpNum());
         }
     }
 }
@@ -267,6 +272,11 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
             bool haveFunctionCall = false;
             if (second->type == NodeType::BinaryOperation)
                 haveFunctionCall = processBinaryOperation(second, ctx);
+            if (child->binOp() == BinaryOperation::Assign) {
+                if (isNonModifiedVariable(second, ctx)) {
+                    variablePropagation(second, ctx);
+                }
+            }
             if (first->type == NodeType::TypeConversion)
                 processTypeConversion(first, ctx);
             if (second->type == NodeType::TypeConversion)
@@ -280,9 +290,11 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
             }
             if (first->type == NodeType::FunctionCall) {
                 ctx.functions.find(first->firstChild()->str())->second.useCount++;
+                haveFunctionCall = true;
             }
             if (second->type == NodeType::FunctionCall) {
                 ctx.functions.find(second->firstChild()->str())->second.useCount++;
+                haveFunctionCall = true;
             }
             if (isAssignment(child) && haveFunctionCall) {
                 ctx.findVariable(child->firstChild()).attributes.modified = true;
@@ -333,6 +345,7 @@ void changeVariablesAttributes(Node::Ptr &node, OptimizerContext &ctx) {
 
 void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
     ctx.variables.push_front(&node->variables());
+    ctx.values.emplace_front();
     for (auto childIter = node->children.begin(); childIter != node->children.end(); childIter++) {
         Node::Ptr &child = *childIter;
         if (child->type == NodeType::Expression || child->type == NodeType::VariableDeclaration) {
@@ -423,6 +436,7 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
             }
         }
     }
+    ctx.values.pop_front();
 }
 
 void removeEmptyBranchRoots(Node::Ptr node) {

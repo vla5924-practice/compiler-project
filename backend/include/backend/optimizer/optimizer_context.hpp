@@ -15,7 +15,7 @@ using VariableValue = std::variant<long int, double>;
 
 struct OptimizerContext {
     std::list<ast::VariablesTable *> variables;
-    std::unordered_map<std::string, VariableValue> values; // TODO: std::map -> std::list<std::map>
+    std::list<std::unordered_map<std::string, VariableValue>> values;
     ast::FunctionsTable &functions;
 
     OptimizerContext(ast::FunctionsTable &functions_) : variables(), values(), functions(functions_){};
@@ -33,6 +33,29 @@ struct OptimizerContext {
 
     ast::Variable &findVariable(const ast::Node::Ptr &varNode) {
         return findVariable(varNode->str());
+    }
+
+    VariableValue &findVariableValue(const std::string &name) {
+        std::unordered_map<std::string, VariableValue>::iterator varIter;
+        for (auto &table : values) {
+            varIter = table.find(name);
+            if (varIter != table.cend()) {
+                break;
+            }
+        }
+        return varIter->second;
+    }
+
+    bool hasVariable(const std::string &name) {
+        std::unordered_map<std::string, VariableValue>::iterator varIter;
+        for (auto &table : values) {
+            varIter = table.find(name);
+            if (varIter != table.cend()) {
+                return true;
+                break;
+            }
+        }
+        return false;
     }
 };
 
