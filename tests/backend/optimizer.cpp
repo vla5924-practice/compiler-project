@@ -295,7 +295,7 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, correct_work_with_scopes) {
+TEST(Optimizer, can_deal_with_variable_scopes) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    y: int = x", "    if 1:",
                         "        x: int = 2",  "        y = x",  "    y = x"};
     TokenList token_list = Lexer::process(source);
@@ -335,7 +335,7 @@ TEST(Optimizer, correct_work_with_scopes) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_function) {
+TEST(Optimizer, can_remove_unused_function) {
     StringVec source = {"def main() -> None:", "    x: float = 1", "def killMe() -> None:", "    y: float = 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -355,7 +355,7 @@ TEST(Optimizer, DCE_for_function) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_while_0) {
+TEST(Optimizer, can_remove_while_loop_with_always_false_condition) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    while 0:", "        x = 2"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -375,7 +375,7 @@ TEST(Optimizer, DCE_for_while_0) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_if_1) {
+TEST(Optimizer, can_join_up_if_with_always_true_condition) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    if 1:", "        x = 2"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -400,7 +400,7 @@ TEST(Optimizer, DCE_for_if_1) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_if_0) {
+TEST(Optimizer, can_join_up_if_with_always_false_condition) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -420,7 +420,7 @@ TEST(Optimizer, DCE_for_if_0) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_if_0_else) {
+TEST(Optimizer, can_remove_if_false_and_join_up_else) {
     StringVec source = {
         "def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2", "    else:", "        x = 4"};
     TokenList token_list = Lexer::process(source);
@@ -446,7 +446,7 @@ TEST(Optimizer, DCE_for_if_0_else) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_if_0_elif_1) {
+TEST(Optimizer, can_remove_if_false_and_join_up_elif_true) {
     StringVec source = {
         "def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2", "    elif 1:", "        x = 3"};
     TokenList token_list = Lexer::process(source);
@@ -472,7 +472,7 @@ TEST(Optimizer, DCE_for_if_0_elif_1) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_if_0_elif_0) {
+TEST(Optimizer, can_remove_if_and_elif_with_always_false_conditions) {
     StringVec source = {
         "def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2", "    elif 0:", "        x = 3"};
     TokenList token_list = Lexer::process(source);
@@ -493,7 +493,7 @@ TEST(Optimizer, DCE_for_if_0_elif_0) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_if_0_elif_0_else) {
+TEST(Optimizer, can_remove_if_false_elif_false_and_join_up_else) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2",
                         "    elif 0:",         "        x = 3",  "    else:", "        x = 4"};
     TokenList token_list = Lexer::process(source);
@@ -519,7 +519,7 @@ TEST(Optimizer, DCE_for_if_0_elif_0_else) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_if_0_elif_1_else) {
+TEST(Optimizer, can_remove_if_false_with_else_and_join_up_elif_true) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    if 0:", "        x = 2",
                         "    elif 1:",         "        x = 5",  "    else:", "        x = 4"};
     TokenList token_list = Lexer::process(source);
@@ -545,7 +545,7 @@ TEST(Optimizer, DCE_for_if_0_elif_1_else) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_for_if_0_elif_1_elif_1) {
+TEST(Optimizer, can_join_up_first_elif_with_true_condition_in_sequence) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    if 0:",   "        x = 2",
                         "    elif 1:",         "        x = 3",  "    elif 1:", "        x = 5"};
     TokenList token_list = Lexer::process(source);
@@ -571,7 +571,7 @@ TEST(Optimizer, DCE_for_if_0_elif_1_elif_1) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_return_statement) {
+TEST(Optimizer, can_remove_inaccessible_code_after_return) {
     StringVec source = {"def main() -> None:", "    x: int = 1", "    return 1", "    x = 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -594,7 +594,7 @@ TEST(Optimizer, DCE_return_statement) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Optimizer, DCE_while_1) {
+TEST(Optimizer, can_remove_inaccessible_code_after_infinite_loop) {
     StringVec source = {"def main() -> None:", "    x: int", "    if 1:", "        while 1:",
                         "            x = 2",   "    x = 3 ", "    x = 4 "};
     TokenList token_list = Lexer::process(source);
