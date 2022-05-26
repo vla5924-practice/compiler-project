@@ -76,10 +76,10 @@ bool canBeConstantFloat(const Node::Ptr &node, OptimizerContext &ctx) {
 } // namespace
 
 long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
-    long int lhs =
-        first->type == NodeType::VariableName ? std::get<0>(ctx.findVariableValue(first->str())) : first->intNum();
-    long int rhs =
-        second->type == NodeType::VariableName ? std::get<0>(ctx.findVariableValue(second->str())) : second->intNum();
+    long int lhs = first->type == NodeType::VariableName ? std::get<long int>(ctx.findVariableValue(first->str()))
+                                                         : first->intNum();
+    long int rhs = second->type == NodeType::VariableName ? std::get<long int>(ctx.findVariableValue(second->str()))
+                                                          : second->intNum();
 
     switch (operation) {
     case BinaryOperation::Add:
@@ -112,9 +112,9 @@ long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperat
 
 double calculateFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
     double lhs =
-        first->type == NodeType::VariableName ? std::get<1>(ctx.findVariableValue(first->str())) : first->fpNum();
-    double rhs =
-        second->type == NodeType::VariableName ? std::get<1>(ctx.findVariableValue(second->str())) : second->fpNum();
+        first->type == NodeType::VariableName ? std::get<double>(ctx.findVariableValue(first->str())) : first->fpNum();
+    double rhs = second->type == NodeType::VariableName ? std::get<double>(ctx.findVariableValue(second->str()))
+                                                        : second->fpNum();
 
     switch (operation) {
     case BinaryOperation::FAdd:
@@ -390,6 +390,7 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
                     }
                 }
             } else {
+                changeVariablesAttributes(child->secondChild(), ctx);
                 processBranchRoot(child->secondChild(), ctx);
             }
         }
@@ -414,8 +415,9 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
                         currNode = currNode->parent;
                     }
                     if (currNode->parent->type == NodeType::FunctionDefinition) {
-                        auto iter = std::find_if(currNode->children.begin(), currNode->children.end(),
-                                                 [&prevNode](const Node::Ptr &node) { return node.get() == prevNode.get(); });
+                        auto iter =
+                            std::find_if(currNode->children.begin(), currNode->children.end(),
+                                         [&prevNode](const Node::Ptr &node) { return node.get() == prevNode.get(); });
                         currNode->children.erase(std::next(iter), currNode->children.end());
                         break;
                     }
