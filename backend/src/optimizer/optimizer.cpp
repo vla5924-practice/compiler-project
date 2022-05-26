@@ -111,9 +111,10 @@ long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperat
 }
 
 double calculateFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
-    double lhs = first->type == NodeType::VariableName ? std::get<1>(ctx.values.front()[first->str()]) : first->fpNum();
+    double lhs =
+        first->type == NodeType::VariableName ? std::get<1>(ctx.findVariableValue(first->str())) : first->fpNum();
     double rhs =
-        second->type == NodeType::VariableName ? std::get<1>(ctx.values.front()[second->str()]) : second->fpNum();
+        second->type == NodeType::VariableName ? std::get<1>(ctx.findVariableValue(second->str())) : second->fpNum();
 
     switch (operation) {
     case BinaryOperation::FAdd:
@@ -209,7 +210,7 @@ bool constantFolding(Node::Ptr &first, Node::Ptr &second, OptimizerContext &ctx)
 
 void variablePropagation(Node::Ptr &node, OptimizerContext &ctx) {
     const std::string &varName = node->str();
-    if (!ctx.hasVariable(varName)) // fix me
+    if (!ctx.hasVariable(varName))
         return;
     auto variableIter = ctx.findVariableValue(varName);
     if (ctx.findVariable(node).type == BuiltInTypes::FloatType) {
@@ -232,7 +233,7 @@ void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child, OptimizerContext &
         if (iter->type == NodeType::VariableName) {
             const std::string &varName = iter->str();
             if (type == BuiltInTypes::IntType)
-                ctx.values.front().emplace(varName, child->intNum());
+                ctx.values.front().emplace(varName, child->intNum()); // fix 
             else if (type == BuiltInTypes::FloatType)
                 ctx.values.front().emplace(varName, child->fpNum());
         }
@@ -299,8 +300,6 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
             if (isAssignment(child) && haveFunctionCall) {
                 ctx.findVariable(child->firstChild()).attributes.modified = true;
             }
-            // if ()
-            // TODO need some checks for modified variables
             continue;
         }
 

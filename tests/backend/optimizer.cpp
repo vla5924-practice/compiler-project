@@ -302,7 +302,6 @@ TEST(Optimizer, correct_work_with_scopes) {
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
-    tree.dump(std::cout);
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
