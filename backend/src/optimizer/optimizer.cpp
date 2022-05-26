@@ -415,7 +415,7 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
                     }
                     if (currNode->parent->type == NodeType::FunctionDefinition) {
                         auto iter = std::find_if(currNode->children.begin(), currNode->children.end(),
-                                                 [&prevNode](const Node::Ptr &node) { return *node == *prevNode; });
+                                                 [&prevNode](const Node::Ptr &node) { return node.get() == prevNode.get(); });
                         currNode->children.erase(std::next(iter), currNode->children.end());
                         break;
                     }
