@@ -76,8 +76,8 @@ const char *const typeIdToString(TypeId typeId) {
 }
 
 void dumpVariablesTable(std::ostream &stream, const VariablesTable &table) {
-    for (const auto &[name, typeId] : table)
-        stream << " " << name << ":" << typeIdToString(typeId);
+    for (const auto &[name, variable] : table)
+        stream << " " << name << ":" << typeIdToString(variable.type);
 }
 
 } // namespace

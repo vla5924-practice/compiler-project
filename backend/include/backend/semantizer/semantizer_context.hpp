@@ -24,7 +24,7 @@ struct SemantizerContext {
         for (const auto &table : variables) {
             auto tableName = table->find(variableName);
             if (tableName != table->cend()) {
-                type = tableName->second;
+                type = tableName->second.type;
                 break;
             }
         }

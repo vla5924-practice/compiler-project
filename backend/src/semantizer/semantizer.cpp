@@ -12,7 +12,7 @@ static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &func
         children++;
         auto name = (*children)->str();
         result.push_back(type);
-        table.emplace(name, type);
+        table[name] = {type};
     }
 
     return result;
@@ -88,8 +88,10 @@ static BinaryOperation convertToFloatOperation(BinaryOperation operation) {
     case BinaryOperation::FAssign:
         return BinaryOperation::Assign;
         break;
+    default:
+        return operation;
+        break;
     }
-    return BinaryOperation::Unknown;
 }
 
 static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContext &ctx);
@@ -254,7 +256,7 @@ static void processBranchRoot(Node::Ptr &node, SemantizerContext &ctx) {
                 ctx.errors.push<SemantizerError>(*child, "Redeclaration of " + name);
             }
 
-            node->variables().emplace(name, type);
+            node->variables()[name] = {type};
             list_child++;
 
             if (list_child != child->children.end() && (*list_child)->type == NodeType::Expression) {
