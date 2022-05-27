@@ -200,7 +200,7 @@ llvm::Value *IRGenerator::declareString(const std::string &str, std::string name
         static size_t counter = 0;
         name = ".str." + std::to_string(counter++);
     }
-    return builder->CreateGlobalStringPtr(str, name, 0, module.get());
+    return builder->CreateGlobalString(str, name, 0, module.get());
 }
 
 void IRGenerator::declareLocalVariable(TypeId type, std::string &name, llvm::Value *initialValue) {
@@ -214,7 +214,7 @@ void IRGenerator::declareLocalVariable(TypeId type, std::string &name, llvm::Val
 }
 
 llvm::Constant *IRGenerator::getGlobalString(const std::string &name) {
-    static llvm::Type *charPointerType = createLLVMType(BuiltInTypes::StrType);
+    llvm::Type *charPointerType = createLLVMType(BuiltInTypes::StrType);
     llvm::GlobalVariable *globalVariable = module->getNamedGlobal(name);
     return llvm::ConstantExpr::getBitCast(globalVariable, charPointerType);
 }
