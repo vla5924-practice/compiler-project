@@ -98,12 +98,12 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
 
 static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx);
 
-static TypeId processPrintFunction(Node::Ptr &node, NodeType type, SemantizerContext &ctx) {
+static TypeId processRightExpression(Node::Ptr &node, NodeType type, SemantizerContext &ctx) {
     if (type == NodeType::BinaryOperation) {
         auto &first = node->firstChild();
         auto &second = node->secondChild();
-        auto firstType = processPrintFunction(first, first->type, ctx);
-        auto secondType = processPrintFunction(second, second->type, ctx);
+        auto firstType = processRightExpression(first, first->type, ctx);
+        auto secondType = processRightExpression(second, second->type, ctx);
         if (firstType == BuiltInTypes::FloatType || secondType == BuiltInTypes::FloatType) {
             if (firstType != BuiltInTypes::FloatType)
                 pushTypeConversion(first, BuiltInTypes::FloatType);
@@ -134,7 +134,7 @@ static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
         auto exprNode = node->lastChild()->lastChild();
         auto child = exprNode->firstChild();
         auto type = child->type;
-        exprNode->value = processPrintFunction(child, type, ctx);
+        exprNode->value = processRightExpression(child, type, ctx);
         return BuiltInTypes::NoneType;
     }
     auto funcIter = ctx.functions.find(funcName);
@@ -145,6 +145,7 @@ static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
             Node::Ptr returnTypeNode = std::make_shared<Node>(NodeType::FunctionReturnType, node);
             returnTypeNode->value = type;
             node->children.push_back(returnTypeNode);
+            return funcIter->second.returnType;
         } else {
             ctx.errors.push<SemantizerError>(*node, funcName + " was not declared in this scope");
         }
@@ -199,6 +200,8 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
         }
 
         if (child->type == NodeType::FunctionCall) {
+            if (child->firstChild()->str() == "input")
+                continue;
             TypeId retType = processFunctionCall(child, ctx);
             if (retType != var_type) {
                 pushTypeConversion(node, var_type);
@@ -296,7 +299,7 @@ static void processBranchRoot(Node::Ptr &node, SemantizerContext &ctx) {
         if (child->type == NodeType::IfStatement || child->type == NodeType::WhileStatement ||
             child->type == NodeType::ElifStatement) {
             Node::Ptr &expr_root = child->firstChild()->firstChild();
-            processPrintFunction(expr_root, expr_root->type, ctx);
+            processRightExpression(expr_root, expr_root->type, ctx);
         }
 
         if (child->type == NodeType::ElseStatement) {

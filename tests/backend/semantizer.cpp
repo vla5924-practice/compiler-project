@@ -635,6 +635,37 @@ TEST(Semantizer, can_insert_type_conversion_in_if_statment) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
+TEST(Semantizer, can_correct_work_with_input) {
+    StringVec source = {"def main() -> None:", "    y: float", "    y = input()", "    x: int", "    x = input()"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    tree.dump(std::cout);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "      Expression: FloatType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: y\n"
+                           "          FunctionCall\n"
+                           "            FunctionName: input\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          FunctionCall\n"
+                           "            FunctionName: input\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
 TEST(Semantizer, can_throw_exception_in_return_statment) {
     StringVec source = {"def main() -> None:", "    return 1"};
     TokenList token_list = Lexer::process(source);
