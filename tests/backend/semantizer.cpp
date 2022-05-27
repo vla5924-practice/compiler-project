@@ -575,7 +575,6 @@ TEST(Semantizer, can_work_with_return_statment_different_functions) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    tree.dump(std::cout);
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: foo\n"
@@ -605,6 +604,37 @@ TEST(Semantizer, can_work_with_return_statment_different_functions) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
+TEST(Semantizer, can_insert_type_conversion_in_if_statment) {
+    StringVec source = {"def main() -> None:", "    y: float", "    if y > 1:", "        y = 6"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          BinaryOperation: FGreater\n"
+                           "            VariableName: y\n"
+                           "            TypeConversion\n"
+                           "              TypeName: FloatType\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "        BranchRoot:\n"
+                           "          Expression: FloatType\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: y\n"
+                           "              TypeConversion\n"
+                           "                TypeName: FloatType\n"
+                           "                IntegerLiteralValue: 6\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
 TEST(Semantizer, can_throw_exception_in_return_statment) {
     StringVec source = {"def main() -> None:", "    return 1"};
     TokenList token_list = Lexer::process(source);
@@ -613,7 +643,7 @@ TEST(Semantizer, can_throw_exception_in_return_statment) {
 }
 
 TEST(Semantizer, can_declare_variables_with_same_names_in_different_scopes) {
-    StringVec source = {"def main() -> None:", "    x: int", "    if(true):", "        x: float"};
+    StringVec source = {"def main() -> None:", "    x: int", "    if 1:", "        x: float"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     ASSERT_NO_THROW(Semantizer::process(tree));

@@ -279,7 +279,6 @@ static void processBranchRoot(Node::Ptr &node, SemantizerContext &ctx) {
                 auto type = processFunctionCall(expr_root, ctx);
                 if (!std::holds_alternative<TypeId>(node->value))
                     child->value.emplace<TypeId>(type);
-                continue;
             }
             continue;
         }
@@ -287,10 +286,22 @@ static void processBranchRoot(Node::Ptr &node, SemantizerContext &ctx) {
         if (child->type == NodeType::ReturnStatement) {
             if (ctx.currentFunctionType == BuiltInTypes::NoneType && !child->children.empty()) {
                 ctx.errors.push<SemantizerError>(*node,
-                                                     "Return-statement with value, in function returning 'NoneType'");
+                                                 "Return-statement with value, in function returning 'NoneType'");
             } else {
-                processExpression(child->children.front(), ctx.currentFunctionType, ctx);
+                processExpression(child->firstChild(), ctx.currentFunctionType, ctx);
             }
+            continue;
+        }
+
+        if (child->type == NodeType::IfStatement || child->type == NodeType::WhileStatement ||
+            child->type == NodeType::ElifStatement) {
+            Node::Ptr &expr_root = child->firstChild()->firstChild();
+            processPrintFunction(expr_root, expr_root->type, ctx);
+        }
+
+        if (child->type == NodeType::ElseStatement) {
+            processBranchRoot(child->firstChild(), ctx);
+            continue;
         }
 
         processBranchRoot(child, ctx);
