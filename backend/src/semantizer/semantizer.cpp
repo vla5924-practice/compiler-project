@@ -284,6 +284,15 @@ static void processBranchRoot(Node::Ptr &node, SemantizerContext &ctx) {
             continue;
         }
 
+        if (child->type == NodeType::ReturnStatement) {
+            if (ctx.currentFunctionType == BuiltInTypes::NoneType && !child->children.empty()) {
+                ctx.errors.push<SemantizerError>(*node,
+                                                     "Return-statement with value, in function returning 'NoneType'");
+            } else {
+                processExpression(child->children.front(), ctx.currentFunctionType, ctx);
+            }
+        }
+
         processBranchRoot(child, ctx);
     }
     ctx.variables.pop_front();
@@ -309,8 +318,9 @@ static void parseFunctions(const std::list<Node::Ptr> &children, SemantizerConte
     for (auto &node : children) {
         if (node->type == NodeType::FunctionDefinition) {
             auto child = node->children.begin();
-            std::advance(child, 3);
-            processBranchRoot(*child, ctx);
+            std::advance(child, 2);
+            ctx.currentFunctionType = (*child)->typeId();
+            processBranchRoot(*std::next(child), ctx);
         }
     }
 

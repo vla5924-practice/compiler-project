@@ -91,7 +91,7 @@ TEST(Optimizer, can_correct_assign_with_function_call) {
                            "    FunctionReturnType: IntType\n"
                            "    BranchRoot:\n"
                            "      ReturnStatement\n"
-                           "        Expression\n"
+                           "        Expression: IntType\n"
                            "          IntegerLiteralValue: 1\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -572,7 +572,7 @@ TEST(Optimizer, can_join_up_first_elif_with_true_condition_in_sequence) {
 }
 
 TEST(Optimizer, can_remove_inaccessible_code_after_return) {
-    StringVec source = {"def main() -> None:", "    x: int = 1", "    return 1", "    x = 1"};
+    StringVec source = {"def main() -> int:", "    x: int = 1", "    return 1", "    x = 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
@@ -581,7 +581,7 @@ TEST(Optimizer, can_remove_inaccessible_code_after_return) {
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
                            "    FunctionArguments\n"
-                           "    FunctionReturnType: NoneType\n"
+                           "    FunctionReturnType: IntType\n"
                            "    BranchRoot: x:IntType\n"
                            "      VariableDeclaration\n"
                            "        TypeName: IntType\n"
@@ -589,7 +589,7 @@ TEST(Optimizer, can_remove_inaccessible_code_after_return) {
                            "        Expression: IntType\n"
                            "          IntegerLiteralValue: 1\n"
                            "      ReturnStatement\n"
-                           "        Expression\n"
+                           "        Expression: IntType\n"
                            "          IntegerLiteralValue: 1\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
