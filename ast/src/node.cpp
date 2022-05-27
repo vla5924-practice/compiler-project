@@ -43,6 +43,18 @@ const char *const binaryOperationToString(BinaryOperation binOp) {
         return "Or";
     case BinaryOperation::Sub:
         return "Sub";
+    case BinaryOperation::FGreater:
+        return "FGreater";
+    case BinaryOperation::FGreaterEqual:
+        return "FGreaterEqual";
+    case BinaryOperation::FLess:
+        return "FLess";
+    case BinaryOperation::FLessEqual:
+        return "FLessEqual";
+    case BinaryOperation::FNotEqual:
+        return "FNotEqual";
+    case BinaryOperation::FOr:
+        return "FOr";
     case BinaryOperation::Unknown:
         return "Unknown";
     }
