@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cassert>
+#include <iostream>
 
 using namespace ast;
 using namespace ir_generator;
@@ -121,8 +122,27 @@ void IRGenerator::writeToFile(const std::string &filename) {
     file.close();
 }
 
-void IRGenerator::dump() {
-    module->print(llvm::outs(), nullptr);
+void IRGenerator::dump(llvm::raw_ostream &stream) {
+    module->print(stream, nullptr);
+}
+
+void IRGenerator::dump(std::ostream &stream) {
+    if (&stream == &std::cout) {
+        dump(llvm::outs());
+        return;
+    }
+    if (&stream == &std::cerr) {
+        dump(llvm::errs());
+        return;
+    }
+    assert(false && "Only std::cout and std::cerr stream objects are supported.");
+}
+
+std::string IRGenerator::dump() {
+    std::string str;
+    llvm::raw_string_ostream stream(str);
+    dump(stream);
+    return str;
 }
 
 llvm::Type *IRGenerator::createLLVMType(TypeId id) {
