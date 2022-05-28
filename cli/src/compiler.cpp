@@ -1,14 +1,19 @@
 #include "compiler.hpp"
 
+#include <iostream>
+#include <string>
+#include <vector>
+
+#ifdef ENABLE_IR_GENERATOR
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <random>
 #include <sstream>
+#endif
 
 #include <argparse/argparse.hpp>
 #include <backend/lexer/lexer.hpp>
+#include <backend/optimizer/optimizer.hpp>
 #include <backend/parser/parser.hpp>
 #include <backend/preprocessor/preprocessor.hpp>
 #include <backend/semantizer/semantizer.hpp>
@@ -19,13 +24,10 @@
 #endif
 
 #include "dumping.hpp"
-
-#define VERBOSE(EXPR)                                                                                                  \
-    if (verbose) {                                                                                                     \
-        EXPR;                                                                                                          \
-    }
+#include "logger.hpp"
 
 using lexer::Lexer;
+using optimizer::Optimizer;
 using parser::Parser;
 using preprocessor::Preprocessor;
 using semantizer::Semantizer;
@@ -37,24 +39,39 @@ using ir_generator::IRGenerator;
 
 namespace {
 
-argparse::ArgumentParser createArgumentParser() {
-    argparse::ArgumentParser parser("cli", "1.0");
-    parser.add_argument("-h", "--help").help("show help message and exit").default_value(false).implicit_value(true);
-    parser.add_argument("-v", "--verbose").help("print info messages").default_value(false).implicit_value(true);
+const char *const ARG_HELP = "--help";
+const char *const ARG_VERBOSE = "--verbose";
+const char *const ARG_LOG = "--log";
+const char *const ARG_OPTIMIZE = "--optimize";
+const char *const ARG_FILES = "FILES";
+
 #ifdef ENABLE_IR_GENERATOR
-    parser.add_argument("-c", "--compile")
+const char *const ARG_COMPILE = "--compile";
+const char *const ARG_CLANG = "--clang";
+const char *const ARG_LLC = "--llc";
+const char *const ARG_OUTPUT = "--output";
+#endif
+
+argparse::ArgumentParser createArgumentParser() {
+    argparse::ArgumentParser parser("compiler", "1.0", argparse::default_arguments::none);
+    parser.add_argument("-h", ARG_HELP).help("show help message and exit").default_value(false).implicit_value(true);
+    parser.add_argument("-v", ARG_VERBOSE).help("print info messages").default_value(false).implicit_value(true);
+    parser.add_argument("-l", ARG_LOG).help("log file (stages output will be saved if provided)");
+    parser.add_argument("-O", ARG_OPTIMIZE).help("run optimization pass").default_value(false).implicit_value(true);
+#ifdef ENABLE_IR_GENERATOR
+    parser.add_argument("-c", ARG_COMPILE)
         .help("produce an executable instead of LLVM IR code")
         .default_value(false)
         .implicit_value(true);
-    parser.add_argument("--clang")
+    parser.add_argument(ARG_CLANG)
         .help("path to clang executable (required if --compile argument is set)")
         .default_value("clang");
-    parser.add_argument("--llc")
-        .help("path to llc executabe (required if --compile argument is set)")
+    parser.add_argument(ARG_LLC)
+        .help("path to llc executable (required if --compile argument is set)")
         .default_value("llc");
-    parser.add_argument("-o", "--output").help("output file");
+    parser.add_argument("-o", ARG_OUTPUT).help("output file");
 #endif
-    parser.add_argument("FILES").required().remaining();
+    parser.add_argument(ARG_FILES).help("source files (separated by spaces)").required().remaining();
     return parser;
 }
 
@@ -109,18 +126,24 @@ int Compiler::exec(int argc, char *argv[]) {
         return 1;
     }
 
-    if (program.get<bool>("--help")) {
+    if (program.get<bool>(ARG_HELP)) {
         std::cout << program;
         return 0;
     }
 
-    bool verbose = program.get<bool>("--verbose");
+    Logger logger;
+    bool verbose = program.get<bool>(ARG_VERBOSE);
+    if (verbose)
+        logger.setStdoutEnabled(true);
+    if (program.is_used(ARG_LOG))
+        logger.setOutputFile(program.get<std::string>(ARG_LOG));
+
     std::vector<std::string> files;
     try {
-        files = program.get<std::vector<std::string>>("FILES");
-        std::cout << files.size() << " file(s) provided:" << std::endl;
+        files = program.get<std::vector<std::string>>(ARG_FILES);
+        logger << files.size() << " file(s) provided:" << std::endl;
         for (auto &file : files)
-            std::cout << "  " << file << std::endl;
+            logger << "  " << file << std::endl;
     } catch (std::logic_error &e) {
         std::cerr << "No files provided" << std::endl;
         return 2;
@@ -130,48 +153,59 @@ int Compiler::exec(int argc, char *argv[]) {
     for (const std::string &path : files) {
         SourceFile other = utils::readFile(path);
         source.insert(source.end(), std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()));
-        VERBOSE(std::cout << "Read file " << path << std::endl);
+        logger << "Read file " << path << std::endl;
     }
 
     ast::SyntaxTree tree;
 
     try {
-        VERBOSE(std::cout << std::endl << "PREPROCESSOR:" << std::endl);
+        logger << std::endl << "PREPROCESSOR:" << std::endl;
         source = Preprocessor::process(source);
-        VERBOSE(std::cout << dumping::dump(source) << std::endl);
+        logger << dumping::dump(source) << std::endl;
 
-        VERBOSE(std::cout << "LEXER:" << std::endl);
+        logger << "LEXER:" << std::endl;
         auto tokens = Lexer::process(source);
-        VERBOSE(std::cout << dumping::dump(tokens) << std::endl);
+        logger << dumping::dump(tokens) << std::endl;
 
-        VERBOSE(std::cout << "PARSER:" << std::endl);
+        logger << "PARSER:" << std::endl;
         tree = Parser::process(tokens);
-        VERBOSE(tree.dump(std::cout));
+        logger << tree.dump();
 
-        VERBOSE(std::cout << "SEMANTIZER:" << std::endl);
+        logger << "SEMANTIZER:" << std::endl;
         Semantizer::process(tree);
-        VERBOSE(tree.dump(std::cout));
+        logger << tree.dump();
+
+        if (program.get<bool>(ARG_OPTIMIZE)) {
+            logger << "OPTIMIZER:" << std::endl;
+            Optimizer::process(tree);
+            logger << tree.dump();
+        }
     } catch (ErrorBuffer &errors) {
         std::cerr << errors.message();
         return 3;
     }
 
 #ifdef ENABLE_IR_GENERATOR
-    VERBOSE(std::cout << std::endl << "IR GENERATOR:" << std::endl);
+    logger << std::endl << "IR GENERATOR:" << std::endl;
     IRGenerator generator("module");
     generator.process(tree);
-    VERBOSE(generator.dump());
+    if (verbose) {
+        generator.dump();
+    }
 
-    if (!program.is_used("--output"))
+    if (!program.is_used(ARG_OUTPUT))
         return 0;
 
-    bool compile = program.get<bool>("--compile");
-    std::string output = program.get<std::string>("--output");
+    bool compile = program.get<bool>(ARG_COMPILE);
+    std::string output = program.get<std::string>(ARG_OUTPUT);
 
     if (!compile) {
         generator.writeToFile(output);
         return 0;
     }
+
+    std::string llcBin = program.is_used(ARG_LLC) ? program.get<std::string>(ARG_LLC) : "llc";
+    std::string clangBin = program.is_used(ARG_CLANG) ? program.get<std::string>(ARG_CLANG) : "clang";
 
     try {
         std::filesystem::path tempDir = createTemporaryDirectory();
@@ -179,8 +213,9 @@ int Compiler::exec(int argc, char *argv[]) {
         generator.writeToFile(llFile.string());
         const auto objFile = tempDir / "out.obj";
         const auto exeFile = tempDir / "out.exe";
-        std::string llcCmd = generateLlcCommand(program.get<std::string>("--llc"), llFile, objFile);
-        std::string clangCmd = generateClangCommand(program.get<std::string>("--clang"), objFile, exeFile);
+        std::string llcCmd = generateLlcCommand(llcBin, llFile, objFile);
+        std::string clangCmd = generateClangCommand(clangBin, objFile, exeFile);
+        logger << "Executing commands:" << std::endl << "  " << llcCmd << std::endl << "  " << clangCmd << std::endl;
         bool cmdFailed = (std::system(llcCmd.c_str()) || std::system(clangCmd.c_str()));
         if (!cmdFailed)
             std::filesystem::copy_file(exeFile, output);

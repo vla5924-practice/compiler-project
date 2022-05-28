@@ -12,6 +12,8 @@ file(GLOB_RECURSE TARGET_SRC
 
 add_executable(${TARGET_NAME} ${TARGET_SRC} ${TARGET_HEADERS})
 
+set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME compiler)
+
 target_include_directories(${TARGET_NAME}
 PUBLIC
     include
