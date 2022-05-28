@@ -98,12 +98,12 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
 
 static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx);
 
-static TypeId processRightExpression(Node::Ptr &node, NodeType type, SemantizerContext &ctx) {
+static TypeId processUnknownTypeExpression(Node::Ptr &node, NodeType type, SemantizerContext &ctx) {
     if (type == NodeType::BinaryOperation) {
         auto &first = node->firstChild();
         auto &second = node->secondChild();
-        auto firstType = processRightExpression(first, first->type, ctx);
-        auto secondType = processRightExpression(second, second->type, ctx);
+        auto firstType = processUnknownTypeExpression(first, first->type, ctx);
+        auto secondType = processUnknownTypeExpression(second, second->type, ctx);
         if (firstType == BuiltInTypes::FloatType || secondType == BuiltInTypes::FloatType) {
             if (firstType != BuiltInTypes::FloatType)
                 pushTypeConversion(first, BuiltInTypes::FloatType);
@@ -134,7 +134,7 @@ static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
         auto exprNode = node->lastChild()->lastChild();
         auto child = exprNode->firstChild();
         auto type = child->type;
-        exprNode->value = processRightExpression(child, type, ctx);
+        exprNode->value = processUnknownTypeExpression(child, type, ctx);
         return BuiltInTypes::NoneType;
     }
     auto funcIter = ctx.functions.find(funcName);
@@ -299,7 +299,7 @@ static void processBranchRoot(Node::Ptr &node, SemantizerContext &ctx) {
         if (child->type == NodeType::IfStatement || child->type == NodeType::WhileStatement ||
             child->type == NodeType::ElifStatement) {
             Node::Ptr &expr_root = child->firstChild()->firstChild();
-            processRightExpression(expr_root, expr_root->type, ctx);
+            processUnknownTypeExpression(expr_root, expr_root->type, ctx);
         }
 
         if (child->type == NodeType::ElseStatement) {
