@@ -98,12 +98,12 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
 
 static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx);
 
-static TypeId processPrintFunction(Node::Ptr &node, NodeType type, SemantizerContext &ctx) {
+static TypeId processUnknownTypeExpression(Node::Ptr &node, NodeType type, SemantizerContext &ctx) {
     if (type == NodeType::BinaryOperation) {
         auto &first = node->firstChild();
         auto &second = node->secondChild();
-        auto firstType = processPrintFunction(first, first->type, ctx);
-        auto secondType = processPrintFunction(second, second->type, ctx);
+        auto firstType = processUnknownTypeExpression(first, first->type, ctx);
+        auto secondType = processUnknownTypeExpression(second, second->type, ctx);
         if (firstType == BuiltInTypes::FloatType || secondType == BuiltInTypes::FloatType) {
             if (firstType != BuiltInTypes::FloatType)
                 pushTypeConversion(first, BuiltInTypes::FloatType);
@@ -134,7 +134,7 @@ static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
         auto exprNode = node->lastChild()->lastChild();
         auto child = exprNode->firstChild();
         auto type = child->type;
-        exprNode->value = processPrintFunction(child, type, ctx);
+        exprNode->value = processUnknownTypeExpression(child, type, ctx);
         return BuiltInTypes::NoneType;
     }
     auto funcIter = ctx.functions.find(funcName);
@@ -145,6 +145,7 @@ static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
             Node::Ptr returnTypeNode = std::make_shared<Node>(NodeType::FunctionReturnType, node);
             returnTypeNode->value = type;
             node->children.push_back(returnTypeNode);
+            return funcIter->second.returnType;
         } else {
             ctx.errors.push<SemantizerError>(*node, funcName + " was not declared in this scope");
         }
@@ -199,6 +200,8 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
         }
 
         if (child->type == NodeType::FunctionCall) {
+            if (child->firstChild()->str() == "input")
+                continue;
             TypeId retType = processFunctionCall(child, ctx);
             if (retType != var_type) {
                 pushTypeConversion(node, var_type);
@@ -279,8 +282,27 @@ static void processBranchRoot(Node::Ptr &node, SemantizerContext &ctx) {
                 auto type = processFunctionCall(expr_root, ctx);
                 if (!std::holds_alternative<TypeId>(node->value))
                     child->value.emplace<TypeId>(type);
-                continue;
             }
+            continue;
+        }
+
+        if (child->type == NodeType::ReturnStatement) {
+            if (ctx.currentFunctionType == BuiltInTypes::NoneType && !child->children.empty()) {
+                ctx.errors.push<SemantizerError>(*node, "Return statement with a value, in function returning None");
+            } else {
+                processExpression(child->firstChild(), ctx.currentFunctionType, ctx);
+            }
+            continue;
+        }
+
+        if (child->type == NodeType::IfStatement || child->type == NodeType::WhileStatement ||
+            child->type == NodeType::ElifStatement) {
+            Node::Ptr &expr_root = child->firstChild()->firstChild();
+            processUnknownTypeExpression(expr_root, expr_root->type, ctx);
+        }
+
+        if (child->type == NodeType::ElseStatement) {
+            processBranchRoot(child->firstChild(), ctx);
             continue;
         }
 
@@ -309,8 +331,9 @@ static void parseFunctions(const std::list<Node::Ptr> &children, SemantizerConte
     for (auto &node : children) {
         if (node->type == NodeType::FunctionDefinition) {
             auto child = node->children.begin();
-            std::advance(child, 3);
-            processBranchRoot(*child, ctx);
+            std::advance(child, 2);
+            ctx.currentFunctionType = (*child)->typeId();
+            processBranchRoot(*std::next(child), ctx);
         }
     }
 

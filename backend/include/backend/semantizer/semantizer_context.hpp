@@ -15,6 +15,7 @@ struct SemantizerContext {
     std::list<ast::VariablesTable *> variables;
     ast::FunctionsTable &functions;
     ErrorBuffer errors;
+    ast::TypeId currentFunctionType;
 
     SemantizerContext(ast::FunctionsTable &functions_) : variables(), functions(functions_){};
 
