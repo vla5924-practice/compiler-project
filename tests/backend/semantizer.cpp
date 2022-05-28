@@ -550,7 +550,7 @@ TEST(Semantizer, can_insert_float_operation_with_type_conversion) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_insert_type_conversion_in_return_statment) {
+TEST(Semantizer, can_insert_type_conversion_in_return_statement) {
     StringVec source = {"def main() -> float:", "    return 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -569,7 +569,7 @@ TEST(Semantizer, can_insert_type_conversion_in_return_statment) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_work_with_return_statment_different_functions) {
+TEST(Semantizer, can_insert_type_conversion_in_multiple_return_statements) {
     StringVec source = {"def foo() -> int:", "    x: float = 1.0", "    return x",
                         "def main() -> float:", "    return 1"};
     TokenList token_list = Lexer::process(source);
@@ -604,7 +604,7 @@ TEST(Semantizer, can_work_with_return_statment_different_functions) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_insert_type_conversion_in_if_statment) {
+TEST(Semantizer, can_insert_type_conversion_in_if_statement) {
     StringVec source = {"def main() -> None:", "    y: float", "    if y > 1:", "        y = 6"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -635,7 +635,7 @@ TEST(Semantizer, can_insert_type_conversion_in_if_statment) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_work_with_while_statments) {
+TEST(Semantizer, can_insert_type_conversion_in_while_statement) {
     StringVec source = {"def main() -> None:", "    y: float", "    while y > 1:", "        y = 6"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -666,7 +666,7 @@ TEST(Semantizer, can_work_with_while_statments) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_correct_work_with_input) {
+TEST(Semantizer, can_process_assignment_with_input) {
     StringVec source = {"def main() -> None:", "    y: float", "    y = input()", "    x: int", "    x = input()"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
@@ -696,7 +696,7 @@ TEST(Semantizer, can_correct_work_with_input) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_work_with_if_and_elif_statments) {
+TEST(Semantizer, can_insert_type_conversion_in_elif_statement) {
     StringVec source = {"def main() -> None:", "    x: int",      "    y: float", "    if x > 1.0:",
                         "        x = 2",       "    elif y < 1:", "        x = 3"};
     TokenList token_list = Lexer::process(source);
@@ -741,7 +741,7 @@ TEST(Semantizer, can_work_with_if_and_elif_statments) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
-TEST(Semantizer, can_throw_exception_in_return_statment) {
+TEST(Semantizer, can_raise_error_on_return_with_value_in_function_returning_none) {
     StringVec source = {"def main() -> None:", "    return 1"};
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
