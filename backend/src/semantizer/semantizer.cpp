@@ -288,8 +288,7 @@ static void processBranchRoot(Node::Ptr &node, SemantizerContext &ctx) {
 
         if (child->type == NodeType::ReturnStatement) {
             if (ctx.currentFunctionType == BuiltInTypes::NoneType && !child->children.empty()) {
-                ctx.errors.push<SemantizerError>(*node,
-                                                 "Return statement with a value, in function returning None");
+                ctx.errors.push<SemantizerError>(*node, "Return statement with a value, in function returning None");
             } else {
                 processExpression(child->firstChild(), ctx.currentFunctionType, ctx);
             }
