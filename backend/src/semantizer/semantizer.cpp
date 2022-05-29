@@ -12,7 +12,7 @@ static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &func
         children++;
         auto name = (*children)->str();
         result.push_back(type);
-        table[name] = {type};
+        table[name] = {type, true};
     }
 
     return result;

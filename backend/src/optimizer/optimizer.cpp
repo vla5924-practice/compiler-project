@@ -240,48 +240,35 @@ void pushVariableAttribute(Node::Ptr &node, Node::Ptr &child, OptimizerContext &
     }
 }
 
-bool processBinaryOperation(Node::Ptr &node, OptimizerContext &ctx) {
-    auto first = node->firstChild();
-    auto second = node->lastChild();
-    bool haveFunctionCall = false;
-    if (second->type == NodeType::BinaryOperation)
-        haveFunctionCall = processBinaryOperation(second, ctx);
-    if (first->type == NodeType::TypeConversion)
-        processTypeConversion(first, ctx);
-    if (second->type == NodeType::TypeConversion)
-        processTypeConversion(second, ctx);
-    bool isConsExpr = constantFolding(first, second, ctx);
-    bool isNotModifiedExpr = false;
-    if (!isConsExpr)
-        isNotModifiedExpr = constantPropagation(first, second, ctx);
-    if (first->type == NodeType::FunctionCall) {
-        ctx.functions.find(first->firstChild()->str())->second.useCount++;
-        haveFunctionCall = true;
-    }
-    if (second->type == NodeType::FunctionCall) {
-        ctx.functions.find(second->firstChild()->str())->second.useCount++;
-        haveFunctionCall = true;
-    }
-    return haveFunctionCall;
-}
-
 void processExpression(Node::Ptr &node, OptimizerContext &ctx);
 
 void copyExpression(const Node::Ptr &node, Node::Ptr &newExpr, std::unordered_map<std::string, Node::Ptr> &map) {
     for (const auto &child : node->children) {
         auto type = child->type;
-        if (type == NodeType::BinaryOperation) {
+        switch (type) {
+        case NodeType::BinaryOperation:
             newExpr->children.emplace_back(new Node(child->binOp(), newExpr));
-            copyExpression(child, newExpr->children.front(), map);
-        }
-        if (type == NodeType::IntegerLiteralValue)
+            copyExpression(child, newExpr->children.back(), map);
+            break;
+        case NodeType::TypeConversion:
+            newExpr->children.emplace_back(new Node(NodeType::TypeConversion, newExpr));
+            copyExpression(child, newExpr->children.back(), map);
+            break;
+        case NodeType::IntegerLiteralValue:
             newExpr->children.emplace_back(new Node(child->intNum(), newExpr));
-        if (type == NodeType::FloatingPointLiteralValue)
+            break;
+        case NodeType::FloatingPointLiteralValue:
             newExpr->children.emplace_back(new Node(child->fpNum(), newExpr));
-        if (type == NodeType::FloatingPointLiteralValue)
-            newExpr->children.emplace_back(new Node(child->fpNum(), newExpr));
-        if (type == NodeType::VariableName) {
+            break;
+        case NodeType::VariableName:
             newExpr->children.emplace_back(map[child->str()]);
+            newExpr->children.back()->parent = newExpr;
+            break;
+        case NodeType::TypeName:
+            newExpr->children.emplace_back(new Node(child->typeId(), newExpr));
+            break;
+        default:
+            break;
         }
     }
 }
@@ -299,14 +286,60 @@ void processFunctionCall(Node::Ptr &node, Node functionRoot, OptimizerContext &c
         auto nodeArgsIter = node->secondChild()->children.begin();
         for (auto &argsIter : functionRoot.parent->secondChild()->children) {
             map[argsIter->lastChild()->str()] = (*nodeArgsIter)->firstChild();
+            nodeArgsIter++;
         }
         Node::Ptr newExpr = std::make_shared<Node>(NodeType::Expression, node->parent);
         copyExpression(returnExpr, newExpr, map);
-        ////node = std::make_shared<Node>(returnExpr.get());
-        ////processExpression(node, ctx);
         node = newExpr->firstChild();
-        // processExpression(node, ctx);
+        node->parent = newExpr->parent;
     }
+}
+
+bool processBinaryOperation(Node::Ptr &node, OptimizerContext &ctx) {
+    auto first = node->firstChild();
+    auto second = node->lastChild();
+    bool haveFunctionCall = false;
+    if (first->type == NodeType::BinaryOperation)
+        haveFunctionCall = processBinaryOperation(first, ctx);
+    if (second->type == NodeType::BinaryOperation)
+        haveFunctionCall = processBinaryOperation(second, ctx);
+    if (first->type == NodeType::TypeConversion)
+        processTypeConversion(first, ctx);
+    if (second->type == NodeType::TypeConversion)
+        processTypeConversion(second, ctx);
+    bool isConsExpr = constantFolding(first, second, ctx);
+    bool isNotModifiedExpr = false;
+    if (!isConsExpr)
+        isNotModifiedExpr = constantPropagation(first, second, ctx);
+    if (first->type == NodeType::FunctionCall) {
+        haveFunctionCall = true;
+        auto funct = ctx.functions.find(first->firstChild()->str());
+        funct->second.useCount++;
+        if (funct->second.returnType != BuiltInTypes::NoneType) {
+            for (auto &rootIter : ctx.root->children) {
+                if (rootIter->firstChild()->str() == funct->first) {
+                    processFunctionCall(node->firstChild(), *(rootIter->lastChild()), ctx);
+                    break;
+                }
+            }
+        }
+    }
+    if (second->type == NodeType::FunctionCall) {
+        haveFunctionCall = true;
+        auto funct = ctx.functions.find(second->firstChild()->str());
+        funct->second.useCount++;
+        if (funct->second.returnType != BuiltInTypes::NoneType) {
+            for (auto &rootIter : ctx.root->children) {
+                if (rootIter->firstChild()->str() == funct->first) {
+                    processFunctionCall(node->lastChild(), *(rootIter->lastChild()), ctx);
+                    break;
+                }
+            }
+        }
+    }
+    if (haveFunctionCall)
+        processExpression(node, ctx);
+    return haveFunctionCall;
 }
 
 void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
@@ -315,8 +348,12 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
             auto first = child->firstChild();
             auto second = child->lastChild();
             bool haveFunctionCall = false;
+            if (first->type == NodeType::BinaryOperation)
+                haveFunctionCall = processBinaryOperation(first, ctx);
             if (second->type == NodeType::BinaryOperation)
                 haveFunctionCall = processBinaryOperation(second, ctx);
+            if (haveFunctionCall)
+                processExpression(node, ctx);
             if (child->binOp() == BinaryOperation::Assign) {
                 if (isNonModifiedVariable(second, ctx)) {
                     variablePropagation(second, ctx);
@@ -338,12 +375,9 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
                 haveFunctionCall = true;
             }
             if (second->type == NodeType::FunctionCall) {
+                haveFunctionCall = true;
                 auto funct = ctx.functions.find(second->firstChild()->str());
                 funct->second.useCount++;
-                //for (auto &pramIter : second->children) {
-                //    if (pramIter->type == NodeType::Expression)
-                //        processExpression(pramIter, ctx);
-                //}
                 if (funct->second.returnType != BuiltInTypes::NoneType) {
                     for (auto &rootIter : ctx.root->children) {
                         if (rootIter->firstChild()->str() == funct->first) {
@@ -353,7 +387,6 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
                     }
                 }
                 processExpression(node, ctx);
-                haveFunctionCall = true;
             }
             if (isAssignment(child) && haveFunctionCall) {
                 ctx.findVariable(child->firstChild()).attributes.modified = true;
@@ -494,6 +527,7 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
             }
         }
     }
+    ctx.variables.pop_front();
     ctx.values.pop_front();
 }
 
