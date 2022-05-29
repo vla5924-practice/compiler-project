@@ -200,10 +200,9 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
         }
 
         if (child->type == NodeType::FunctionCall) {
-            if (child->firstChild()->str() == "input")
-                continue;
+            const std::string &funcName = child->firstChild()->str();
             TypeId retType = processFunctionCall(child, ctx);
-            if (retType != var_type) {
+            if (retType != var_type && funcName != "input") {
                 pushTypeConversion(node, var_type);
             }
             continue;
