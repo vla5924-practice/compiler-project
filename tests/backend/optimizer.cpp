@@ -111,8 +111,7 @@ TEST(Optimizer, can_correct_assign_with_function_call) {
                            "      Expression: IntType\n"
                            "        BinaryOperation: Assign\n"
                            "          VariableName: x\n"
-                           "          FunctionCall\n"
-                           "            FunctionName: foo\n"
+                           "          IntegerLiteralValue: 1\n"
                            "      Expression: IntType\n"
                            "        BinaryOperation: Assign\n"
                            "          VariableName: y\n"
@@ -601,6 +600,39 @@ TEST(Optimizer, can_remove_inaccessible_code_after_infinite_loop) {
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
     Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      BranchRoot:\n"
+                           "        WhileStatement\n"
+                           "          Expression\n"
+                           "            IntegerLiteralValue: 1\n"
+                           "          BranchRoot:\n"
+                           "            Expression: IntType\n"
+                           "              BinaryOperation: Assign\n"
+                           "                VariableName: x\n"
+                           "                IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, Debug_test) {
+    StringVec source = {
+        "def foo(x: int) -> int:",
+        "    return x",
+        "def main() -> None:", 
+        "    x: int = 2", 
+        "    x = foo(1 + x)"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    tree.dump(std::cout);
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"

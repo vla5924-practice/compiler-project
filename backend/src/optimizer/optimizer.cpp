@@ -265,6 +265,50 @@ bool processBinaryOperation(Node::Ptr &node, OptimizerContext &ctx) {
     return haveFunctionCall;
 }
 
+void processExpression(Node::Ptr &node, OptimizerContext &ctx);
+
+void copyExpression(const Node::Ptr &node, Node::Ptr &newExpr, std::unordered_map<std::string, Node::Ptr> &map) {
+    for (const auto &child : node->children) {
+        auto type = child->type;
+        if (type == NodeType::BinaryOperation) {
+            newExpr->children.emplace_back(new Node(child->binOp(), newExpr));
+            copyExpression(child, newExpr->children.front(), map);
+        }
+        if (type == NodeType::IntegerLiteralValue)
+            newExpr->children.emplace_back(new Node(child->intNum(), newExpr));
+        if (type == NodeType::FloatingPointLiteralValue)
+            newExpr->children.emplace_back(new Node(child->fpNum(), newExpr));
+        if (type == NodeType::FloatingPointLiteralValue)
+            newExpr->children.emplace_back(new Node(child->fpNum(), newExpr));
+        if (type == NodeType::VariableName) {
+            newExpr->children.emplace_back(map[child->str()]);
+        }
+    }
+}
+
+void processFunctionCall(Node::Ptr &node, Node functionRoot, OptimizerContext &ctx) {
+    if (functionRoot.children.size() != 1u)
+        return;
+    auto returnExpr = functionRoot.lastChild()->lastChild();
+    if (isNumericLiteral(returnExpr->firstChild())) {
+        node = returnExpr->firstChild();
+    }
+
+    if (node->children.size() > 1u) {
+        std::unordered_map<std::string, Node::Ptr> map;
+        auto nodeArgsIter = node->secondChild()->children.begin();
+        for (auto &argsIter : functionRoot.parent->secondChild()->children) {
+            map[argsIter->lastChild()->str()] = (*nodeArgsIter)->firstChild();
+        }
+        Node::Ptr newExpr = std::make_shared<Node>(NodeType::Expression, node->parent);
+        copyExpression(returnExpr, newExpr, map);
+        ////node = std::make_shared<Node>(returnExpr.get());
+        ////processExpression(node, ctx);
+        node = newExpr->firstChild();
+        // processExpression(node, ctx);
+    }
+}
+
 void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
     for (auto &child : node->children) {
         if (child->type == NodeType::BinaryOperation) {
@@ -294,7 +338,21 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
                 haveFunctionCall = true;
             }
             if (second->type == NodeType::FunctionCall) {
-                ctx.functions.find(second->firstChild()->str())->second.useCount++;
+                auto funct = ctx.functions.find(second->firstChild()->str());
+                funct->second.useCount++;
+                //for (auto &pramIter : second->children) {
+                //    if (pramIter->type == NodeType::Expression)
+                //        processExpression(pramIter, ctx);
+                //}
+                if (funct->second.returnType != BuiltInTypes::NoneType) {
+                    for (auto &rootIter : ctx.root->children) {
+                        if (rootIter->firstChild()->str() == funct->first) {
+                            processFunctionCall(child->lastChild(), *(rootIter->lastChild()), ctx);
+                            break;
+                        }
+                    }
+                }
+                processExpression(node, ctx);
                 haveFunctionCall = true;
             }
             if (isAssignment(child) && haveFunctionCall) {
@@ -461,11 +519,12 @@ void removeUnusedFunctions(SyntaxTree &tree) {
 }
 
 void Optimizer::process(SyntaxTree &tree) {
+    OptimizerContext ctx(tree.functions);
+    ctx.root = tree.root;
     for (auto &node : tree.root->children) {
         if (node->type == NodeType::FunctionDefinition) {
             auto child = node->children.begin();
             std::advance(child, 3);
-            OptimizerContext ctx(tree.functions);
             processBranchRoot(*child, ctx);
         }
     }
