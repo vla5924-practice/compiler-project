@@ -281,7 +281,7 @@ void processFunctionCall(Node::Ptr &node, Node functionRoot, OptimizerContext &c
         Node::Ptr newExpr;
         auto literal = returnExpr->firstChild();
         if (literal->type == NodeType::IntegerLiteralValue)
-            newExpr= std::make_shared<Node>(literal->intNum(), node->parent);
+            newExpr = std::make_shared<Node>(literal->intNum(), node->parent);
         if (literal->type == NodeType::FloatingPointLiteralValue)
             newExpr = std::make_shared<Node>(literal->fpNum(), node->parent);
         node = newExpr;
