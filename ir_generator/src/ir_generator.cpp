@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cassert>
+#include <iostream>
 
 using namespace ast;
 using namespace ir_generator;
@@ -121,8 +122,27 @@ void IRGenerator::writeToFile(const std::string &filename) {
     file.close();
 }
 
-void IRGenerator::dump() {
-    module->print(llvm::outs(), nullptr);
+void IRGenerator::dump(llvm::raw_ostream &stream) {
+    module->print(stream, nullptr);
+}
+
+void IRGenerator::dump(std::ostream &stream) {
+    if (&stream == &std::cout) {
+        dump(llvm::outs());
+        return;
+    }
+    if (&stream == &std::cerr) {
+        dump(llvm::errs());
+        return;
+    }
+    assert(false && "Only std::cout and std::cerr stream objects are supported.");
+}
+
+std::string IRGenerator::dump() {
+    std::string str;
+    llvm::raw_string_ostream stream(str);
+    dump(stream);
+    return str;
 }
 
 llvm::Type *IRGenerator::createLLVMType(TypeId id) {
@@ -180,7 +200,7 @@ llvm::Value *IRGenerator::declareString(const std::string &str, std::string name
         static size_t counter = 0;
         name = ".str." + std::to_string(counter++);
     }
-    return builder->CreateGlobalStringPtr(str, name, 0, module.get());
+    return builder->CreateGlobalString(str, name, 0, module.get());
 }
 
 void IRGenerator::declareLocalVariable(TypeId type, std::string &name, llvm::Value *initialValue) {
@@ -194,7 +214,7 @@ void IRGenerator::declareLocalVariable(TypeId type, std::string &name, llvm::Val
 }
 
 llvm::Constant *IRGenerator::getGlobalString(const std::string &name) {
-    static llvm::Type *charPointerType = createLLVMType(BuiltInTypes::StrType);
+    llvm::Type *charPointerType = createLLVMType(BuiltInTypes::StrType);
     llvm::GlobalVariable *globalVariable = module->getNamedGlobal(name);
     return llvm::ConstantExpr::getBitCast(globalVariable, charPointerType);
 }

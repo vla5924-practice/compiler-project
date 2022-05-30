@@ -685,6 +685,7 @@ TEST(Semantizer, can_process_assignment_with_input) {
                            "          VariableName: y\n"
                            "          FunctionCall\n"
                            "            FunctionName: input\n"
+                           "            FunctionReturnType: FloatType\n"
                            "      VariableDeclaration\n"
                            "        TypeName: IntType\n"
                            "        VariableName: x\n"

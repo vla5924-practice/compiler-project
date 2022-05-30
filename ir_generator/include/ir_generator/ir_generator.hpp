@@ -2,6 +2,7 @@
 
 #include <list>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <unordered_map>
 
@@ -24,7 +25,10 @@ class IRGenerator {
 
     void process(const ast::SyntaxTree &tree);
     void writeToFile(const std::string &filename);
-    void dump();
+
+    void dump(std::ostream &stream);
+    void dump(llvm::raw_ostream &stream);
+    std::string dump();
 
   private:
     llvm::LLVMContext context;
