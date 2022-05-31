@@ -439,6 +439,18 @@ void changeVariablesAttributes(Node::Ptr &node, OptimizerContext &ctx) {
     }
 }
 
+bool isUnusedVariable(std::list<ast::Node::Ptr>::iterator &nodeIter, std::string name, OptimizerContext &ctx) {
+    Node::Ptr &node = *nodeIter;
+    for (auto childIter = nodeIter; childIter != node->parent->children.end(); childIter++) {
+        Node::Ptr &child = *childIter;
+        if (child->type == NodeType::VariableName && child->str() == name)
+            return false;
+        if (!child->children.empty())
+            return isUnusedVariable(child->children.begin(), name, ctx);
+    }
+    return true;
+}
+
 void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
     ctx.variables.push_front(&node->variables());
     ctx.values.emplace_front();
@@ -446,6 +458,13 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
         Node::Ptr &child = *childIter;
         if (child->type == NodeType::Expression || child->type == NodeType::VariableDeclaration) {
             processExpression(child, ctx);
+        }
+
+        if (child->type == NodeType::VariableDeclaration) {
+            auto name = child->secondChild()->str();
+            if (isUnusedVariable(std::next(childIter), name, ctx)) {
+                child->parent->children.remove(child);
+            }
         }
 
         if (child->type == NodeType::IfStatement) {

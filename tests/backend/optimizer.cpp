@@ -800,3 +800,34 @@ TEST(Optimizer, can_insert_inline_function_without_args) {
                            "          IntegerLiteralValue: 2\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
+
+TEST(Optimizer, rofl) {
+    StringVec source = {"def main() -> None:", "    x: int", "    return"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    tree.dump(std::cout);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: foo\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: IntType\n"
+                           "    BranchRoot:\n"
+                           "      ReturnStatement\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
