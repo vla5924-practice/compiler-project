@@ -1,6 +1,7 @@
 #include "optimizer/optimizer.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <variant>
 
 #include "optimizer/optimizer_context.hpp"
@@ -537,6 +538,117 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
     ctx.values.pop_front();
 }
 
+void findAndExtractSubBranches(NodeIterator ifNodeIter, std::vector<Node::Ptr> &branches,
+                               std::vector<NodeIterator> &branchIterators, int direction) {
+    assert(direction == 1 || direction == -1);
+
+    auto &ifNode = *ifNodeIter;
+    size_t equalNodes = 0;
+    while (true) {
+        bool allEqual = true;
+        auto currBranch = branches.begin();
+        if (branchIterators.front() == branches.front()->children.end())
+            break;
+        Node::Ptr prevNode = *branchIterators.front();
+        for (auto &iter : branchIterators) {
+            Node::Ptr &branch = *currBranch;
+            if (iter == branch->children.end()) {
+                allEqual = false;
+                break;
+            }
+            Node::Ptr &node = *iter;
+            auto dump = node->dump();
+            if (node->type != NodeType::Expression || *node != *prevNode) {
+                allEqual = false;
+            }
+            prevNode = node;
+            if (iter == branch->children.begin() && direction < 0)
+                iter = branch->children.end();
+            else
+                std::advance(iter, direction);
+            if (!allEqual)
+                break;
+            currBranch++;
+        }
+        if (allEqual)
+            equalNodes++;
+        else
+            break;
+    }
+    if (equalNodes > 1) {
+        NodeIterator insertFirst, insertLast;
+        if (direction > 0) {
+            insertFirst = branches.front()->children.begin();
+            insertLast = std::prev(branchIterators.front());
+        } else {
+            insertFirst = branchIterators.front();
+            insertLast = branches.front()->children.begin();
+        }
+        ifNode->parent->children.insert(ifNodeIter, insertFirst, insertLast);
+        auto iter = branchIterators.begin();
+        if (direction > 0) {
+            for (auto &branch : branches) {
+                branch->children.erase(branch->children.begin(), std::prev(*iter++));
+            }
+        } else {
+            for (auto &branch : branches) {
+                branch->children.erase(std::next(*iter++), branch->children.end());
+            }
+        }
+        return;
+    }
+    if (equalNodes == 1) {
+        if (direction > 0) {
+            ifNode->parent->children.insert(ifNodeIter, *branches.front()->children.begin());
+            for (auto &branch : branches) {
+                branch->children.erase(branch->children.begin());
+            }
+        } else {
+            ifNode->parent->children.insert(std::next(ifNodeIter), *branches.front()->children.rbegin());
+            for (auto &branch : branches) {
+                branch->children.erase(std::prev(branch->children.end()));
+            }
+        }
+    }
+}
+
+bool allHasChildren(const std::vector<Node::Ptr> &branches) {
+    return std::all_of(branches.begin(), branches.end(), [](const Node::Ptr &node) { return !node->children.empty(); });
+}
+
+void joinIdenticalSubBranches(NodeIterator ifNodeIter) {
+    auto &ifNode = *ifNodeIter;
+    assert(ifNode->type == NodeType::IfStatement);
+
+    auto &ifChildren = ifNode->children;
+    if (ifChildren.size() < 3u)
+        return;
+    size_t branchesCount = ifChildren.size() - 1u;
+    std::vector<Node::Ptr> branches(branchesCount);
+    branches.front() = ifNode->secondChild();
+    std::transform(std::next(ifChildren.begin(), 2), ifChildren.end(), std::next(branches.begin()),
+                   [](const Node::Ptr &node) { return node->lastChild(); });
+    std::vector<NodeIterator> branchIterators(branchesCount);
+    if (allHasChildren(branches)) {
+        std::transform(branches.begin(), branches.end(), branchIterators.begin(),
+                       [](const Node::Ptr &node) { return node->children.begin(); });
+        findAndExtractSubBranches(ifNodeIter, branches, branchIterators, 1);
+        if (allHasChildren(branches)) {
+            std::transform(branches.begin(), branches.end(), branchIterators.begin(),
+                           [](const Node::Ptr &node) { return std::prev(node->children.end()); });
+            findAndExtractSubBranches(ifNodeIter, branches, branchIterators, -1);
+        }
+    }
+    for (auto &branch : branches) {
+        for (auto iter = branch->children.begin(); iter != branch->children.end(); iter++) {
+            Node::Ptr &child = *iter;
+            if (child->type == NodeType::IfStatement) {
+                joinIdenticalSubBranches(iter);
+            }
+        }
+    }
+}
+
 void removeEmptyBranchRoots(Node::Ptr node) {
     for (auto &child : node->children) {
         if (!child->children.empty())
@@ -559,15 +671,21 @@ void removeUnusedFunctions(SyntaxTree &tree) {
 }
 
 void Optimizer::process(SyntaxTree &tree) {
-    OptimizerContext ctx(tree.functions);
-    ctx.root = tree.root;
+    OptimizerContext ctx(tree);
     for (auto &node : tree.root->children) {
         if (node->type == NodeType::FunctionDefinition) {
-            auto child = node->children.begin();
-            std::advance(child, 3);
-            processBranchRoot(*child, ctx);
+            Node::Ptr &branchRoot = *std::next(node->children.begin(), 3);
+            processBranchRoot(branchRoot, ctx);
+
+            for (auto &nodeIter = branchRoot->children.begin(); nodeIter != branchRoot->children.end(); nodeIter++) {
+                Node::Ptr &node = *nodeIter;
+                if (node->type == NodeType::IfStatement) {
+                    joinIdenticalSubBranches(nodeIter);
+                }
+            }
         }
     }
+
     removeUnusedFunctions(tree);
-    removeEmptyBranchRoots(tree.root);
+    // removeEmptyBranchRoots(tree.root);
 }

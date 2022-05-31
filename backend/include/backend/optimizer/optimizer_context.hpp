@@ -20,7 +20,7 @@ struct OptimizerContext {
     ast::FunctionsTable &functions;
     ast::Node::Ptr root;
 
-    OptimizerContext(ast::FunctionsTable &functions_) : variables(), values(), functions(functions_){};
+    OptimizerContext(ast::SyntaxTree &tree) : variables(), values(), functions(tree.functions), root(tree.root){};
 
     ast::Variable &findVariable(const std::string &name) {
         for (auto &table : variables) {
