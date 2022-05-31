@@ -111,8 +111,7 @@ TEST(Optimizer, can_correct_assign_with_function_call) {
                            "      Expression: IntType\n"
                            "        BinaryOperation: Assign\n"
                            "          VariableName: x\n"
-                           "          FunctionCall\n"
-                           "            FunctionName: foo\n"
+                           "          IntegerLiteralValue: 1\n"
                            "      Expression: IntType\n"
                            "        BinaryOperation: Assign\n"
                            "          VariableName: y\n"
@@ -619,5 +618,185 @@ TEST(Optimizer, can_remove_inaccessible_code_after_infinite_loop) {
                            "              BinaryOperation: Assign\n"
                            "                VariableName: x\n"
                            "                IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, can_insert_inline_function) {
+    StringVec source = {"def foo(x: int, y: int, z: int) -> int:", "    return x + y",
+                        "def main() -> None:", "    x: int = 2", "    x = foo(x + 1, 1, 3) + foo(1, 1, 1)"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: foo\n"
+                           "    FunctionArguments\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: z\n"
+                           "    FunctionReturnType: IntType\n"
+                           "    BranchRoot: x:IntType y:IntType z:IntType\n"
+                           "      ReturnStatement\n"
+                           "        Expression: IntType\n"
+                           "          BinaryOperation: Add\n"
+                           "            VariableName: x\n"
+                           "            VariableName: y\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 2\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          IntegerLiteralValue: 6\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, can_insert_inline_function_with_type_conversion) {
+    StringVec source = {"def foo(x: int, y: int, z: int) -> int:",
+                        "    return x + y",
+                        "def main() -> None:",
+                        "    x: int = 2",
+                        "    y: float = 1.0",
+                        "    x = foo(x + 1, y, 3)"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: foo\n"
+                           "    FunctionArguments\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: z\n"
+                           "    FunctionReturnType: IntType\n"
+                           "    BranchRoot: x:IntType y:IntType z:IntType\n"
+                           "      ReturnStatement\n"
+                           "        Expression: IntType\n"
+                           "          BinaryOperation: Add\n"
+                           "            VariableName: x\n"
+                           "            VariableName: y\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 2\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          IntegerLiteralValue: 4\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, can_insert_inline_function_in_expression) {
+    StringVec source = {"def foo(x: int, y: int, z: int) -> int:",
+                        "    return x + y",
+                        "def main() -> None:",
+                        "    x: int = 2",
+                        "    y: float = 1.0",
+                        "    x = foo(x + 1, y, 3) + 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: foo\n"
+                           "    FunctionArguments\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: z\n"
+                           "    FunctionReturnType: IntType\n"
+                           "    BranchRoot: x:IntType y:IntType z:IntType\n"
+                           "      ReturnStatement\n"
+                           "        Expression: IntType\n"
+                           "          BinaryOperation: Add\n"
+                           "            VariableName: x\n"
+                           "            VariableName: y\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 2\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "        Expression: FloatType\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          IntegerLiteralValue: 5\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, can_insert_inline_function_without_args) {
+    StringVec source = {"def foo() -> int:", "    return 1", "def main() -> None:", "    x: int", "    x = foo() + 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: foo\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: IntType\n"
+                           "    BranchRoot:\n"
+                           "      ReturnStatement\n"
+                           "        Expression: IntType\n"
+                           "          IntegerLiteralValue: 1\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      Expression: IntType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          IntegerLiteralValue: 2\n";
     ASSERT_EQ(tree_str, tree.dump());
 }

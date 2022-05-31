@@ -18,6 +18,7 @@ struct OptimizerContext {
     std::forward_list<ast::VariablesTable *> variables;
     std::forward_list<std::unordered_map<std::string, VariableValue>> values;
     ast::FunctionsTable &functions;
+    ast::Node::Ptr root;
 
     OptimizerContext(ast::FunctionsTable &functions_) : variables(), values(), functions(functions_){};
 
