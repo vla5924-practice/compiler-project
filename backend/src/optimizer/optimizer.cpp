@@ -563,7 +563,6 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
             if (iter == node->children.end() || isUnusedVariable(iter, name)) {
                 child->children.clear();
                 child->type = NodeType::BranchRoot;
-                // ctx.variables.front()->erase(name);
             }
         }
     }
