@@ -439,7 +439,7 @@ void changeVariablesAttributes(Node::Ptr &node, OptimizerContext &ctx) {
     }
 }
 
-bool isUnusedVariable(std::list<ast::Node::Ptr>::iterator &nodeIter, const std::string &name, bool isFirstCall = true) {
+bool isUnusedVariable(const std::list<ast::Node::Ptr>::iterator &nodeIter, const std::string &name, bool isFirstCall = true) {
     Node::Ptr &node = *nodeIter;
     auto &children = node->parent->children;
     auto endIter = children.end();
