@@ -557,7 +557,7 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
             }
         }
 
-        if (child->type == NodeType::VariableDeclaration) {
+        if (child->type == NodeType::VariableDeclaration && ctx.options.has(OptimizerOptions::RemoveUnusedVariables)) {
             auto name = child->secondChild()->str();
             auto iter = std::next(childIter);
             if (iter == node->children.end() || isUnusedVariable(iter, name)) {
@@ -593,8 +593,11 @@ void removeUnusedFunctions(SyntaxTree &tree) {
     });
 }
 
-void Optimizer::process(SyntaxTree &tree) {
-    OptimizerContext ctx(tree.functions);
+void Optimizer::process(SyntaxTree &tree, const OptimizerOptions &options) {
+    if (options == OptimizerOptions::none())
+        return;
+
+    OptimizerContext ctx(tree.functions, options);
     ctx.root = tree.root;
     for (auto &node : tree.root->children) {
         if (node->type == NodeType::FunctionDefinition) {
@@ -603,6 +606,9 @@ void Optimizer::process(SyntaxTree &tree) {
             processBranchRoot(*child, ctx);
         }
     }
-    removeUnusedFunctions(tree);
+
+    if (ctx.options.has(OptimizerOptions::RemoveUnusedFunctions))
+        removeUnusedFunctions(tree);
+
     removeEmptyBranchRoots(tree.root);
 }

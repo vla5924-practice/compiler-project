@@ -17,7 +17,7 @@ TEST(Optimizer, can_convert_float_literal_to_int) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -37,7 +37,7 @@ TEST(Optimizer, can_convert_int_literal_to_float) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -57,7 +57,7 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -124,7 +124,7 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -149,7 +149,7 @@ TEST(Optimizer, can_substitute_int_constant_in_float_variable_declaration) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -174,7 +174,7 @@ TEST(Optimizer, can_substitute_float_constant_in_int_variable_declaration) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -199,7 +199,7 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_int
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -224,7 +224,7 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -249,7 +249,7 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_exp
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -274,7 +274,7 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -339,7 +339,7 @@ TEST(Optimizer, can_remove_unused_function) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
