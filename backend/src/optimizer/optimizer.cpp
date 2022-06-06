@@ -704,7 +704,7 @@ void Optimizer::process(SyntaxTree &tree, const OptimizerOptions &options) {
         if (!ctx.options.has(OptimizerOptions::JoinIdenticalSubBranches))
             continue;
 
-        for (auto &nodeIter = branchRoot->children.begin(); nodeIter != branchRoot->children.end(); nodeIter++) {
+        for (auto nodeIter = branchRoot->children.begin(); nodeIter != branchRoot->children.end(); nodeIter++) {
             Node::Ptr &node = *nodeIter;
             if (node->type == NodeType::IfStatement) {
                 joinIdenticalSubBranches(nodeIter);
