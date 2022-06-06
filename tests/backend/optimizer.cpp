@@ -17,7 +17,7 @@ TEST(Optimizer, can_convert_float_literal_to_int) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -37,7 +37,7 @@ TEST(Optimizer, can_convert_int_literal_to_float) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -57,7 +57,7 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -124,7 +124,7 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -149,7 +149,7 @@ TEST(Optimizer, can_substitute_int_constant_in_float_variable_declaration) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -174,7 +174,7 @@ TEST(Optimizer, can_substitute_float_constant_in_int_variable_declaration) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -199,7 +199,7 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_int
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -224,7 +224,7 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -249,7 +249,7 @@ TEST(Optimizer, can_substitute_int_constant_in_int_variable_declaration_with_exp
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -274,7 +274,7 @@ TEST(Optimizer, can_substitute_float_constant_in_float_variable_declaration_with
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -339,7 +339,7 @@ TEST(Optimizer, can_remove_unused_function) {
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
-    Optimizer::process(tree);
+    Optimizer::process(tree, OptimizerOptions::except(OptimizerOptions::RemoveUnusedVariables));
     std::string tree_str = "ProgramRoot\n"
                            "  FunctionDefinition\n"
                            "    FunctionName: main\n"
@@ -798,5 +798,57 @@ TEST(Optimizer, can_insert_inline_function_without_args) {
                            "        BinaryOperation: Assign\n"
                            "          VariableName: x\n"
                            "          IntegerLiteralValue: 2\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, can_remove_unused_variable_declaration) {
+    StringVec source = {"def main() -> None:", "    x: int", "    y: float", "    y = 1"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "      Expression: FloatType\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: y\n"
+                           "          FloatingPointLiteralValue: 1\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Optimizer, dont_remove_overriden_variable) {
+    StringVec source = {"def main() -> None:", "    x: int",       "    y: float",
+                        "    if x:",           "        y: float", "        y = 2"};
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    Optimizer::process(tree);
+    std::string tree_str = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot: x:IntType y:FloatType\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          VariableName: x\n"
+                           "        BranchRoot: y:FloatType\n"
+                           "          VariableDeclaration\n"
+                           "            TypeName: FloatType\n"
+                           "            VariableName: y\n"
+                           "          Expression: FloatType\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: y\n"
+                           "              FloatingPointLiteralValue: 2\n";
     ASSERT_EQ(tree_str, tree.dump());
 }

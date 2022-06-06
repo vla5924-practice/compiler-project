@@ -440,6 +440,30 @@ void changeVariablesAttributes(Node::Ptr &node, OptimizerContext &ctx) {
     }
 }
 
+bool isUnusedVariable(const std::list<ast::Node::Ptr>::iterator &nodeIter, const std::string &name,
+                      bool isFirstCall = true) {
+    Node::Ptr &node = *nodeIter;
+    auto &children = node->parent->children;
+    auto endIter = children.end();
+    if (node->parent->type == NodeType::BranchRoot && !isFirstCall) {
+        endIter = std::find_if(children.begin(), children.end(), [&name](const Node::Ptr &node) {
+            return node->type == NodeType::VariableDeclaration && node->secondChild()->str() == name;
+        });
+    }
+    for (auto childIter = nodeIter; childIter != endIter; childIter++) {
+        Node::Ptr &child = *childIter;
+        if (child->type != NodeType::VariableDeclaration && !child->children.empty()) {
+            bool unused = isUnusedVariable(child->children.begin(), name, false);
+            if (child->type != NodeType::BranchRoot && unused)
+                continue;
+            return unused;
+        }
+        if (child->type == NodeType::VariableName && child->str() == name)
+            return false;
+    }
+    return true;
+}
+
 void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
     ctx.variables.push_front(&node->variables());
     ctx.values.emplace_front();
@@ -531,6 +555,15 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
             if (node->parent->type == NodeType::FunctionDefinition) {
                 node->children.erase(std::next(childIter), node->children.end());
                 break;
+            }
+        }
+
+        if (child->type == NodeType::VariableDeclaration && ctx.options.has(OptimizerOptions::RemoveUnusedVariables)) {
+            auto name = child->secondChild()->str();
+            auto iter = std::next(childIter);
+            if (iter == node->children.end() || isUnusedVariable(iter, name)) {
+                child->children.clear();
+                child->type = NodeType::BranchRoot;
             }
         }
     }
@@ -638,9 +671,10 @@ void removeEmptyBranchRoots(Node::Ptr node) {
     for (auto &child : node->children) {
         if (!child->children.empty())
             removeEmptyBranchRoots(child);
-        if (child->children.size() == 1u && child->firstChild()->type == NodeType::BranchRoot)
+        if (child->children.size() == 1u && child->firstChild()->type == NodeType::BranchRoot &&
+            child->type != NodeType::ElseStatement && child->type != NodeType::FunctionDefinition)
             child = child->firstChild();
-        child->children.remove_if([](Node::Ptr node) {
+        child->children.remove_if([](const Node::Ptr &node) {
             return node->type == NodeType::BranchRoot && node->children.empty() ||
                    node->type == NodeType::WhileStatement && node->children.size() == 1u ||
                    node->type == NodeType::IfStatement && node->children.size() == 1u;
@@ -655,8 +689,11 @@ void removeUnusedFunctions(SyntaxTree &tree) {
     });
 }
 
-void Optimizer::process(SyntaxTree &tree) {
-    OptimizerContext ctx(tree);
+void Optimizer::process(SyntaxTree &tree, const OptimizerOptions &options) {
+    if (options == OptimizerOptions::none())
+        return;
+
+    OptimizerContext ctx(tree, options);
     for (auto &node : tree.root->children) {
         if (node->type == NodeType::FunctionDefinition) {
             Node::Ptr &branchRoot = *std::next(node->children.begin(), 3);
@@ -671,6 +708,8 @@ void Optimizer::process(SyntaxTree &tree) {
         }
     }
 
-    removeUnusedFunctions(tree);
+    if (ctx.options.has(OptimizerOptions::RemoveUnusedFunctions))
+        removeUnusedFunctions(tree);
+
     removeEmptyBranchRoots(tree.root);
 }
