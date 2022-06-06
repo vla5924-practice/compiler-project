@@ -695,15 +695,19 @@ void Optimizer::process(SyntaxTree &tree, const OptimizerOptions &options) {
 
     OptimizerContext ctx(tree, options);
     for (auto &node : tree.root->children) {
-        if (node->type == NodeType::FunctionDefinition) {
-            Node::Ptr &branchRoot = *std::next(node->children.begin(), 3);
-            processBranchRoot(branchRoot, ctx);
+        if (node->type != NodeType::FunctionDefinition)
+            continue;
 
-            for (auto &nodeIter = branchRoot->children.begin(); nodeIter != branchRoot->children.end(); nodeIter++) {
-                Node::Ptr &node = *nodeIter;
-                if (node->type == NodeType::IfStatement) {
-                    joinIdenticalSubBranches(nodeIter);
-                }
+        Node::Ptr &branchRoot = *std::next(node->children.begin(), 3);
+        processBranchRoot(branchRoot, ctx);
+
+        if (!ctx.options.has(OptimizerOptions::JoinIdenticalSubBranches))
+            continue;
+
+        for (auto &nodeIter = branchRoot->children.begin(); nodeIter != branchRoot->children.end(); nodeIter++) {
+            Node::Ptr &node = *nodeIter;
+            if (node->type == NodeType::IfStatement) {
+                joinIdenticalSubBranches(nodeIter);
             }
         }
     }
