@@ -10,6 +10,8 @@
 #include <ast/node.hpp>
 #include <ast/variables_table.hpp>
 
+#include "backend/optimizer/optimizer_options.hpp"
+
 namespace optimizer {
 
 using VariableValue = std::variant<long int, double>;
@@ -19,8 +21,10 @@ struct OptimizerContext {
     std::forward_list<std::unordered_map<std::string, VariableValue>> values;
     ast::FunctionsTable &functions;
     ast::Node::Ptr root;
+    OptimizerOptions options;
 
-    OptimizerContext(ast::FunctionsTable &functions_) : variables(), values(), functions(functions_){};
+    OptimizerContext(ast::FunctionsTable &functions_, const OptimizerOptions &options_)
+        : variables(), values(), functions(functions_), options(options_){};
 
     ast::Variable &findVariable(const std::string &name) {
         for (auto &table : variables) {
