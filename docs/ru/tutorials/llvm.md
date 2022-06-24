@@ -1,5 +1,3 @@
-[Назад](README.md)
-
 # Сборка и установка LLVM
 
 
@@ -76,3 +74,5 @@ export PATH=$PWD/clang+llvm/bin:$PATH
    ```
 
 После установки необходимо изменить переменные окружения: `LLVM_DIR` должно быть `/path/to/llvm-project/install/lib/cmake/llvm`.
+
+[_Назад_](README.md)
