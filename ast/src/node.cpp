@@ -102,6 +102,9 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::BinaryOperation:
         stream << "BinaryOperation: " << binaryOperationToString(binOp()) << "\n";
         break;
+    case NodeType::BooleanLiteralValue:
+        stream << "BooleanLiteralValue: " << boolean() << "\n";
+        break;
     case NodeType::BranchRoot:
         stream << "BranchRoot";
         if (std::holds_alternative<VariablesTable>(value)) {
