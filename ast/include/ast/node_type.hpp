@@ -39,6 +39,7 @@ enum class UnaryOperation {
 
 enum class NodeType {
     BinaryOperation,
+    BooleanLiteralValue,
     BranchRoot,
     ElifStatement,
     ElseStatement,

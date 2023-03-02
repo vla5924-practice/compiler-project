@@ -94,6 +94,22 @@ static BinaryOperation convertToFloatOperation(BinaryOperation operation) {
     }
 }
 
+static bool isBooleanOperation(BinaryOperation operation) {
+    switch (operation) {
+    case BinaryOperation::And:
+    case BinaryOperation::Or:
+    case BinaryOperation::Equal:
+    case BinaryOperation::NotEqual:
+    case BinaryOperation::Less:
+    case BinaryOperation::Greater:
+    case BinaryOperation::LessEqual:
+    case BinaryOperation::GreaterEqual:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContext &ctx);
 
 static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx);
@@ -104,6 +120,8 @@ static TypeId processUnknownTypeExpression(Node::Ptr &node, NodeType type, Seman
         auto &second = node->secondChild();
         auto firstType = processUnknownTypeExpression(first, first->type, ctx);
         auto secondType = processUnknownTypeExpression(second, second->type, ctx);
+        if (isBooleanOperation(node->binOp()))
+            return BuiltInTypes::BoolType;
         if (firstType == BuiltInTypes::FloatType || secondType == BuiltInTypes::FloatType) {
             if (firstType != BuiltInTypes::FloatType)
                 pushTypeConversion(first, BuiltInTypes::FloatType);
@@ -124,6 +142,8 @@ static TypeId processUnknownTypeExpression(Node::Ptr &node, NodeType type, Seman
         return BuiltInTypes::IntType;
     if (type == NodeType::StringLiteralValue)
         return BuiltInTypes::StrType;
+    if (type == NodeType::BooleanLiteralValue)
+        return BuiltInTypes::BoolType;
     return BuiltInTypes::NoneType;
 }
 
@@ -171,6 +191,8 @@ TypeId literalNodeTypeToTypeId(NodeType type) {
         return BuiltInTypes::FloatType;
     case NodeType::StringLiteralValue:
         return BuiltInTypes::StrType;
+    case NodeType::BooleanLiteralValue:
+        return BuiltInTypes::BoolType;
     }
     return BuiltInTypes::UnknownType;
 }
@@ -182,6 +204,7 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
     case BuiltInTypes::IntType:
     case BuiltInTypes::FloatType:
     case BuiltInTypes::StrType:
+    case BuiltInTypes::BoolType:
         type = var_type;
         break;
 
