@@ -460,3 +460,71 @@ TEST(Parser, can_parse_complex_nested_function_call) {
                            "                VariableName: z\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
+
+TEST(Parser, parse_boolean_variable_declaration) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x: bool = True",
+        "    y: bool = False",
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string syntax_tree =
+    "ProgramRoot\n"
+    "  FunctionDefinition\n"
+    "    FunctionName: main\n"
+    "    FunctionArguments\n"
+    "    FunctionReturnType: NoneType\n"
+    "    BranchRoot\n"
+    "      VariableDeclaration\n"
+    "        TypeName: BoolType\n"
+    "        VariableName: x\n"
+    "        Expression\n"
+    "          BooleanLiteralValue: True\n"
+    "      VariableDeclaration\n"
+    "        TypeName: BoolType\n"
+    "        VariableName: y\n"
+    "        Expression\n"
+    "          BooleanLiteralValue: False\n";
+    ASSERT_EQ(syntax_tree, tree.dump());
+}
+
+TEST(Parser, parse_boolean_if_statment) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x: bool = True",
+        "    y: bool = False",
+        "    if x == True:",
+        "        y = True"
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    std::string syntax_tree =
+    "ProgramRoot\n"
+    "  FunctionDefinition\n"
+    "    FunctionName: main\n"
+    "    FunctionArguments\n"
+    "    FunctionReturnType: NoneType\n"
+    "    BranchRoot\n"
+    "      VariableDeclaration\n"
+    "        TypeName: BoolType\n"
+    "        VariableName: x\n"
+    "        Expression\n"
+    "          BooleanLiteralValue: True\n"
+    "      VariableDeclaration\n"
+    "        TypeName: BoolType\n"
+    "        VariableName: y\n"
+    "        Expression\n"
+    "          BooleanLiteralValue: False\n"
+    "      IfStatement\n"
+    "        Expression\n"
+    "          BinaryOperation: Equal\n"
+    "            VariableName: x\n"
+    "            BooleanLiteralValue: True\n"
+    "        BranchRoot\n"
+    "          Expression\n"
+    "            BinaryOperation: Assign\n"
+    "              VariableName: y\n"
+    "              BooleanLiteralValue: True\n";
+    ASSERT_EQ(syntax_tree, tree.dump());
+}

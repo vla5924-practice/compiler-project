@@ -26,6 +26,10 @@ bool isVariableDeclaration(const TokenIterator &tokenIter, const TokenIterator &
     return varName.type == TokenType::Identifier && colon.is(Special::Colon) || TypeRegistry::isTypename(varType);
 }
 
+bool isBooleanLiteralValue(const Token &token) {
+    return token.is(Keyword::True) || token.is(Keyword::False);
+}
+
 enum class OperationType {
     Unknown,
     Unary,
@@ -87,7 +91,8 @@ OperationType getOperationType(const ast::Node &node) {
 
 ExpressionTokenType getExpressionTokenType(const Token &token) {
     if (token.type == TokenType::Identifier || token.type == TokenType::IntegerLiteral ||
-        token.type == TokenType::FloatingPointLiteral || token.type == TokenType::StringLiteral)
+        token.type == TokenType::FloatingPointLiteral || token.type == TokenType::StringLiteral ||
+        isBooleanLiteralValue(token))
         return ExpressionTokenType::Operand;
     if (token.is(Operator::LeftBrace))
         return ExpressionTokenType::OpeningBrace;
@@ -221,6 +226,13 @@ void buildExpressionSubtree(std::stack<SubExpression> postfixForm, ast::Node::Pt
                     ast::Node::Ptr node =
                         ParserContext::unshiftChildNode(currNode, ast::NodeType::StringLiteralValue, token.ref);
                     node->value = token.literal();
+                } else if (isBooleanLiteralValue(token)) {
+                    ast::Node::Ptr node =
+                        ParserContext::unshiftChildNode(currNode, ast::NodeType::BooleanLiteralValue, token.ref);
+                    if (token.is(Keyword::True))
+                        node->value = true;
+                    else if (token.is(Keyword::False))
+                        node->value = false;
                 }
             }
         } else {
