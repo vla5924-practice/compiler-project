@@ -3,6 +3,22 @@
 using namespace semantizer;
 using namespace ast;
 
+static bool isBooleanOperation(BinaryOperation operation) {
+    switch (operation) {
+    case BinaryOperation::And:
+    case BinaryOperation::Or:
+    case BinaryOperation::Equal:
+    case BinaryOperation::NotEqual:
+    case BinaryOperation::Less:
+    case BinaryOperation::Greater:
+    case BinaryOperation::LessEqual:
+    case BinaryOperation::GreaterEqual:
+        return true;
+    default:
+        return false;
+    }
+}
+
 static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments, VariablesTable &table) {
     std::vector<TypeId> result;
 
@@ -39,58 +55,44 @@ static BinaryOperation convertToFloatOperation(BinaryOperation operation) {
     case BinaryOperation::Add:
     case BinaryOperation::FAdd:
         return BinaryOperation::FAdd;
-        break;
     case BinaryOperation::Sub:
     case BinaryOperation::FSub:
         return BinaryOperation::FSub;
-        break;
     case BinaryOperation::Mult:
     case BinaryOperation::FMult:
         return BinaryOperation::FMult;
-        break;
     case BinaryOperation::Div:
     case BinaryOperation::FDiv:
         return BinaryOperation::FDiv;
-        break;
     case BinaryOperation::And:
     case BinaryOperation::FAnd:
         return BinaryOperation::And;
-        break;
     case BinaryOperation::Or:
     case BinaryOperation::FOr:
         return BinaryOperation::Or;
-        break;
     case BinaryOperation::Equal:
     case BinaryOperation::FEqual:
         return BinaryOperation::FEqual;
-        break;
     case BinaryOperation::NotEqual:
     case BinaryOperation::FNotEqual:
         return BinaryOperation::FNotEqual;
-        break;
     case BinaryOperation::Less:
     case BinaryOperation::FLess:
         return BinaryOperation::FLess;
-        break;
     case BinaryOperation::Greater:
     case BinaryOperation::FGreater:
         return BinaryOperation::FGreater;
-        break;
     case BinaryOperation::LessEqual:
     case BinaryOperation::FLessEqual:
         return BinaryOperation::FLessEqual;
-        break;
     case BinaryOperation::GreaterEqual:
     case BinaryOperation::FGreaterEqual:
         return BinaryOperation::FGreaterEqual;
-        break;
     case BinaryOperation::Assign:
     case BinaryOperation::FAssign:
         return BinaryOperation::Assign;
-        break;
     default:
         return operation;
-        break;
     }
 }
 
@@ -110,6 +112,8 @@ static TypeId processUnknownTypeExpression(Node::Ptr &node, NodeType type, Seman
             if (secondType != BuiltInTypes::FloatType)
                 pushTypeConversion(second, BuiltInTypes::FloatType);
             node->value = convertToFloatOperation(node->binOp());
+            if (isBooleanOperation(node->binOp()))
+                return BuiltInTypes::BoolType;
             return BuiltInTypes::FloatType;
         }
         return BuiltInTypes::IntType;
@@ -124,6 +128,8 @@ static TypeId processUnknownTypeExpression(Node::Ptr &node, NodeType type, Seman
         return BuiltInTypes::IntType;
     if (type == NodeType::StringLiteralValue)
         return BuiltInTypes::StrType;
+    if (type == NodeType::BooleanLiteralValue)
+        return BuiltInTypes::BoolType;
     return BuiltInTypes::NoneType;
 }
 
@@ -171,6 +177,8 @@ TypeId literalNodeTypeToTypeId(NodeType type) {
         return BuiltInTypes::FloatType;
     case NodeType::StringLiteralValue:
         return BuiltInTypes::StrType;
+    case NodeType::BooleanLiteralValue:
+        return BuiltInTypes::BoolType;
     }
     return BuiltInTypes::UnknownType;
 }
@@ -182,9 +190,9 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
     case BuiltInTypes::IntType:
     case BuiltInTypes::FloatType:
     case BuiltInTypes::StrType:
+    case BuiltInTypes::BoolType:
         type = var_type;
         break;
-
     default:
         ctx.errors.push<SemantizerError>(*node, "Invalid conversion from " + std::to_string(var_type));
         break;

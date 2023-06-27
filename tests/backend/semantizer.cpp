@@ -605,7 +605,12 @@ TEST(Semantizer, can_insert_type_conversion_in_multiple_return_statements) {
 }
 
 TEST(Semantizer, can_insert_type_conversion_in_if_statement) {
-    StringVec source = {"def main() -> None:", "    y: float", "    if y > 1:", "        y = 6"};
+    StringVec source = {
+        "def main() -> None:", 
+        "    y: float", 
+        "    if y > 1:", 
+        "        y = 6"
+    };
     TokenList token_list = Lexer::process(source);
     SyntaxTree tree = Parser::process(token_list);
     Semantizer::process(tree);
