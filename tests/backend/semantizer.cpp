@@ -747,6 +747,60 @@ TEST(Semantizer, can_insert_type_conversion_in_elif_statement) {
     ASSERT_EQ(tree_str, tree.dump());
 }
 
+TEST(Semantizer, insert_type_conversion_to_bool_type) {
+     StringVec source = {
+        "def main() -> None:", 
+        "    y: bool = True or 0"
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = 
+    "ProgramRoot\n"
+    "  FunctionDefinition\n"
+    "    FunctionName: main\n"
+    "    FunctionArguments\n"
+    "    FunctionReturnType: NoneType\n"
+    "    BranchRoot: y:BoolType\n"
+    "      VariableDeclaration\n"
+    "        TypeName: BoolType\n"
+    "        VariableName: y\n"
+    "        Expression: BoolType\n"
+    "          BinaryOperation: Or\n"
+    "            BooleanLiteralValue: True\n"
+    "            TypeConversion\n"
+    "              TypeName: BoolType\n"
+    "              IntegerLiteralValue: 0\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
+TEST(Semantizer, insert_type_conversion_from_bool_type) {
+     StringVec source = {
+        "def main() -> None:", 
+        "    y: int = True + 0"
+    };
+    TokenList token_list = Lexer::process(source);
+    SyntaxTree tree = Parser::process(token_list);
+    Semantizer::process(tree);
+    std::string tree_str = 
+    "ProgramRoot\n"
+    "  FunctionDefinition\n"
+    "    FunctionName: main\n"
+    "    FunctionArguments\n"
+    "    FunctionReturnType: NoneType\n"
+    "    BranchRoot: y:IntType\n"
+    "      VariableDeclaration\n"
+    "        TypeName: IntType\n"
+    "        VariableName: y\n"
+    "        Expression: IntType\n"
+    "          BinaryOperation: Add\n"
+    "            TypeConversion\n"
+    "              TypeName: IntType\n"
+    "              BooleanLiteralValue: True\n"
+    "            IntegerLiteralValue: 0\n";
+    ASSERT_EQ(tree_str, tree.dump());
+}
+
 TEST(Semantizer, can_raise_error_on_return_with_value_in_function_returning_none) {
     StringVec source = {"def main() -> None:", "    return 1"};
     TokenList token_list = Lexer::process(source);
