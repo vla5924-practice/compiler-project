@@ -21,6 +21,7 @@ jobs:
         exclude: './thirdparty ./docs'
         extensions: 'hpp,cpp'
         clangFormatVersion: 12
+
   ubuntu-gcc:
     name: Ubuntu GCC build & test
     runs-on: ubuntu-latest
@@ -29,17 +30,26 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
+    - name: Cache LLVM and Clang
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: ./llvm
+        key: llvm-13.0.0
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "13.0.0"
+        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
     - name: Build
-      shell: bash
       run: |
         mkdir build && cd build
         cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
         make
     - name: Run tests
-      shell: bash
       run: |
         cd build
-        ctest
+        ctest --output-on-failure
 
   windows-msvc:
     name: Windows MSVC build & test
@@ -50,13 +60,11 @@ jobs:
       with:
         submodules: true
     - name: Build
-      shell: cmd
       run: |
         md build && cd build
-        cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ..
+        cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DENABLE_IR_GENERATOR=OFF ..
         cmake --build .
     - name: Run tests
-      shell: bash
       run: |
         cd build
-        ctest
+        ctest --output-on-failure

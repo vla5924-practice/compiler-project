@@ -17,4 +17,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
     include
 )
 
-target_link_libraries(${TARGET_NAME} ast)
+target_link_libraries(${TARGET_NAME} PUBLIC
+    ast
+    utils
+)

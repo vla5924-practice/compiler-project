@@ -12,11 +12,20 @@ file(GLOB_RECURSE TARGET_SRC
 
 add_executable(${TARGET_NAME} ${TARGET_SRC} ${TARGET_HEADERS})
 
-target_include_directories(${TARGET_NAME} PUBLIC
+set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME compiler)
+
+target_include_directories(${TARGET_NAME}
+PUBLIC
+    include
+PRIVATE
     include/cli
-    ${CMAKE_SOURCE_DIR}/backend/include
 )
+
 target_link_libraries(${TARGET_NAME} PUBLIC
     argparse
     backend
+    utils
 )
+if (ENABLE_IR_GENERATOR)
+    target_link_libraries(${TARGET_NAME} PUBLIC ir_generator)
+endif()

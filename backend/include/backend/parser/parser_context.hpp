@@ -6,10 +6,11 @@
 
 #include <ast/node.hpp>
 #include <ast/types.hpp>
+#include <utils/source_ref.hpp>
 
 #include "error_buffer.hpp"
+#include "lexer/token.hpp"
 #include "lexer/token_types.hpp"
-#include "lexer/tokenlist.hpp"
 #include "parser/parser_error.hpp"
 
 namespace parser {
@@ -17,8 +18,8 @@ namespace parser {
 struct ParserContext {
     std::unordered_map<ast::NodeType, std::function<void(ParserContext &)>> &subparsers;
     ast::Node::Ptr node;
-    lexer::TokenList::const_iterator tokenIter;
-    lexer::TokenList::const_iterator tokenEnd;
+    lexer::TokenIterator tokenIter;
+    lexer::TokenIterator tokenEnd;
     int nestingLevel;
     ErrorBuffer errors;
 
@@ -26,18 +27,22 @@ struct ParserContext {
         return *tokenIter;
     }
 
-    static ast::Node::Ptr pushChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType) {
-        node->children.emplace_back(new ast::Node(nodeType, node));
-        return node->children.back();
+    static ast::Node::Ptr pushChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType,
+                                        const utils::SourceRef &ref) {
+        auto &childNode = node->children.emplace_back(new ast::Node(nodeType, node));
+        childNode->ref = ref;
+        return childNode;
     }
 
-    static ast::Node::Ptr unshiftChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType) {
-        node->children.emplace_front(new ast::Node(nodeType, node));
-        return node->children.front();
+    static ast::Node::Ptr unshiftChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType,
+                                           const utils::SourceRef &ref) {
+        auto &childNode = node->children.emplace_front(new ast::Node(nodeType, node));
+        childNode->ref = ref;
+        return childNode;
     }
 
     ast::Node::Ptr pushChildNode(const ast::NodeType &nodeType) {
-        return pushChildNode(node, nodeType);
+        return pushChildNode(node, nodeType, tokenIter->ref);
     }
 
     void goNextToken() {

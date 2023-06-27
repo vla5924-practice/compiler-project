@@ -1,5 +1,6 @@
 #include "node.hpp"
 
+#include <iostream>
 #include <sstream>
 
 using namespace ast;
@@ -22,8 +23,8 @@ const char *const binaryOperationToString(BinaryOperation binOp) {
         return "FAdd";
     case BinaryOperation::FDiv:
         return "FDiv";
-    case BinaryOperation::FMul:
-        return "FMul";
+    case BinaryOperation::FMult:
+        return "FMult";
     case BinaryOperation::FSub:
         return "FSub";
     case BinaryOperation::Greater:
@@ -42,6 +43,18 @@ const char *const binaryOperationToString(BinaryOperation binOp) {
         return "Or";
     case BinaryOperation::Sub:
         return "Sub";
+    case BinaryOperation::FGreater:
+        return "FGreater";
+    case BinaryOperation::FGreaterEqual:
+        return "FGreaterEqual";
+    case BinaryOperation::FLess:
+        return "FLess";
+    case BinaryOperation::FLessEqual:
+        return "FLessEqual";
+    case BinaryOperation::FNotEqual:
+        return "FNotEqual";
+    case BinaryOperation::FOr:
+        return "FOr";
     case BinaryOperation::Unknown:
         return "Unknown";
     }
@@ -64,12 +77,19 @@ const char *const typeIdToString(TypeId typeId) {
         return "IntType";
     case FloatType:
         return "FloatType";
+    case BoolType:
+        return "BoolType";
     case StrType:
         return "StrType";
     case NoneType:
         return "NoneType";
     }
     return "";
+}
+
+void dumpVariablesTable(std::ostream &stream, const VariablesTable &table) {
+    for (const auto &[name, variable] : table)
+        stream << " " << name << ":" << typeIdToString(variable.type);
 }
 
 } // namespace
@@ -83,7 +103,12 @@ void Node::dump(std::ostream &stream, int depth) const {
         stream << "BinaryOperation: " << binaryOperationToString(binOp()) << "\n";
         break;
     case NodeType::BranchRoot:
-        stream << "BranchRoot\n";
+        stream << "BranchRoot";
+        if (std::holds_alternative<VariablesTable>(value)) {
+            stream << ':';
+            dumpVariablesTable(stream, variables());
+        }
+        stream << '\n';
         break;
     case NodeType::ElifStatement:
         stream << "ElifStatement\n";
@@ -92,7 +117,11 @@ void Node::dump(std::ostream &stream, int depth) const {
         stream << "ElseStatement\n";
         break;
     case NodeType::Expression:
-        stream << "Expression\n";
+        stream << "Expression";
+        if (std::holds_alternative<TypeId>(value)) {
+            stream << ": " << typeIdToString(typeId());
+        }
+        stream << '\n';
         break;
     case NodeType::FloatingPointLiteralValue:
         stream << "FloatingPointLiteralValue: " << fpNum() << "\n";

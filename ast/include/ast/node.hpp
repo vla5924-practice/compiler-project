@@ -6,6 +6,8 @@
 #include <string>
 #include <variant>
 
+#include <utils/source_ref.hpp>
+
 #include "ast/node_type.hpp"
 #include "ast/variables_table.hpp"
 
@@ -17,6 +19,8 @@ struct Node {
 
     std::list<Ptr> children;
     Ptr parent;
+
+    utils::SourceRef ref;
 
     /**
      * value type      : node type
@@ -57,6 +61,21 @@ struct Node {
         return std::get<VariablesTable>(value);
     }
 
+    bool operator==(const Node &other) const {
+        if (children.size() != other.children.size())
+            return false;
+        if (children.size() > 0) {
+            for (auto i = children.begin(), j = other.children.begin(); i != children.end(); i++, j++)
+                if (**i != **j)
+                    return false;
+        }
+        return type == other.type && value == other.value;
+    }
+
+    bool operator!=(const Node &other) const {
+        return !(*this == other);
+    }
+
     Node() = default;
     ~Node() = default;
 
@@ -75,6 +94,30 @@ struct Node {
 
     std::string dump(int depth = 0) const;
     void dump(std::ostream &stream, int depth = 0) const;
+
+    Node::Ptr &firstChild() {
+        return children.front();
+    }
+
+    const Node::Ptr &firstChild() const {
+        return children.front();
+    }
+
+    Node::Ptr &secondChild() {
+        return *std::next(children.begin());
+    }
+
+    const Node::Ptr &secondChild() const {
+        return *std::next(children.begin());
+    }
+
+    Node::Ptr &lastChild() {
+        return children.back();
+    }
+
+    const Node::Ptr &lastChild() const {
+        return children.back();
+    }
 };
 
 } // namespace ast

@@ -2,23 +2,31 @@
 
 #include "token_types.hpp"
 
+#include <list>
 #include <ostream>
 #include <string>
 #include <variant>
 
+#include <utils/source_ref.hpp>
+
 namespace lexer {
 
 struct Token {
-    size_t line = 0u;
-    size_t column = 0u;
-
     TokenType type;
     std::variant<Keyword, Operator, Special, std::string> value;
+    utils::SourceRef ref;
 
-    explicit Token(Keyword kw) : type(TokenType::Keyword), value(kw){};
-    explicit Token(Operator op) : type(TokenType::Operator), value(op){};
-    explicit Token(Special spec) : type(TokenType::Special), value(spec){};
-    Token(TokenType tokenType, const std::string &literal) : type(tokenType), value(literal){};
+    Token() = default;
+    Token(const Token &) = default;
+    Token(Token &&) = default;
+    ~Token() = default;
+
+    explicit Token(Keyword kw, const utils::SourceRef &ref_ = {}) : type(TokenType::Keyword), value(kw), ref(ref_){};
+    explicit Token(Operator op, const utils::SourceRef &ref_ = {}) : type(TokenType::Operator), value(op), ref(ref_){};
+    explicit Token(Special spec, const utils::SourceRef &ref_ = {})
+        : type(TokenType::Special), value(spec), ref(ref_){};
+    Token(TokenType tokenType, const std::string &literal, const utils::SourceRef &ref_ = {})
+        : type(tokenType), value(literal), ref(ref_){};
 
     const Keyword &kw() const {
         return std::get<Keyword>(value);
@@ -59,5 +67,8 @@ struct Token {
     std::string dump() const;
     void dump(std::ostream &stream) const;
 };
+
+using TokenList = std::list<Token>;
+using TokenIterator = TokenList::const_iterator;
 
 } // namespace lexer
