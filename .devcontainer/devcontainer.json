@@ -12,6 +12,7 @@
                 "twxs.cmake",
                 "ms-vscode.cmake-tools",
                 "eamodio.gitlens",
+                "GitHub.vscode-pull-request-github",
                 "yzhang.markdown-all-in-one"
             ],
             "settings": {
@@ -27,6 +28,8 @@
                 "editor.rulers": [
                     120
                 ],
+                "extensions.ignoreRecommendations": true,
+                "vsicons.dontShowNewVersionMessage": true,
                 "[cpp]": {
                     "editor.defaultFormatter": "xaver.clang-format"
                 }
