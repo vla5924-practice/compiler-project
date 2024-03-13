@@ -22,7 +22,7 @@ USER user
 WORKDIR /home/user
 
 ARG LLVM_ARCHIVE_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
-RUN wget -qL -O llvm.tar.xz "${LLVM_ARCHIVE_URL}" \
+RUN wget -q -O llvm.tar.xz "${LLVM_ARCHIVE_URL}" \
     && tar xzf llvm.tar.xz \
     && rm llvm.tar.xz
 
