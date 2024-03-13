@@ -42,8 +42,7 @@ jobs:
         cached: ${{ steps.cache-llvm.outputs.cache-hit }}
     - name: Build
       run: |
-        mkdir build && cd build
-        cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DENABLE_CODEGEN=ON ..
+        cmake -S compiler -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DENABLE_CODEGEN=ON ..
         make
     - name: Run tests
       run: |
@@ -60,8 +59,7 @@ jobs:
         submodules: true
     - name: Build
       run: |
-        md build && cd build
-        cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DENABLE_CODEGEN=OFF ..
+        cmake -S compiler -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DENABLE_CODEGEN=OFF ..
         cmake --build .
     - name: Run tests
       run: |
