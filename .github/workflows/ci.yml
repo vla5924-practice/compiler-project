@@ -15,12 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: DoozyX/clang-format-lint-action@v0.13
+    - uses: DoozyX/clang-format-lint-action@v0.17
       with:
-        source: '.'
-        exclude: './thirdparty ./docs'
+        source: './compiler'
         extensions: 'hpp,cpp'
-        clangFormatVersion: 12
+        clangFormatVersion: 15
 
   ubuntu-gcc:
     name: Ubuntu GCC build & test
@@ -44,7 +43,7 @@ jobs:
     - name: Build
       run: |
         mkdir build && cd build
-        cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
+        cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DENABLE_CODEGEN=ON ..
         make
     - name: Run tests
       run: |
@@ -62,7 +61,7 @@ jobs:
     - name: Build
       run: |
         md build && cd build
-        cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DENABLE_IR_GENERATOR=OFF ..
+        cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DENABLE_CODEGEN=OFF ..
         cmake --build .
     - name: Run tests
       run: |
