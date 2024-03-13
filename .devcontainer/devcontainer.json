@@ -3,6 +3,7 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
+    "containerUser": "user",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -23,6 +24,7 @@
                 "cmake.ctestArgs": [
                     "--output-on-failure"
                 ],
+                "cmake.options.statusBarVisibility": "compact",
                 "files.insertFinalNewline": true,
                 "files.trimFinalNewlines": true,
                 "editor.rulers": [
@@ -30,6 +32,8 @@
                 ],
                 "extensions.ignoreRecommendations": true,
                 "vsicons.dontShowNewVersionMessage": true,
+                "workbench.colorTheme": "Default Dark+",
+                "workbench.iconTheme": "vscode-icons",
                 "[cpp]": {
                     "editor.defaultFormatter": "xaver.clang-format"
                 }
