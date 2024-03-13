@@ -1,0 +1,19 @@
+{
+    "name": "Compiler Dev",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "vscode-icons-team.vscode-icons",
+                "ms-vscode.cpptools",
+                "xaver.clang-format",
+                "twxs.cmake",
+                "ms-vscode.cmake-tools",
+                "eamodio.gitlens",
+                "yzhang.markdown-all-in-one"
+            ]
+        }
+    }
+}
