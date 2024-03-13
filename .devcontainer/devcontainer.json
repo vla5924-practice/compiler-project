@@ -4,6 +4,10 @@
         "dockerfile": "Dockerfile"
     },
     "containerUser": "user",
+    "remoteEnv": {
+        "PATH": "${HOME}/llvm/bin:${PATH}",
+        "LD_LIBRARY_PATH": "${HOME}/llvm/lib:${LD_LIBRARY_PATH}"
+    },
     "customizations": {
         "vscode": {
             "extensions": [
@@ -18,9 +22,11 @@
             ],
             "settings": {
                 "cmake.sourceDirectory": "${workspaceFolder}/compiler",
-                "cmake.buildArgs": [
-                    "-DENABLE_CODEGEN=ON"
+                "cmake.configureArgs": [
+                    "-DENABLE_CODEGEN=ON",
+                    "-DCMAKE_PREFIX_PATH=/home/user/llvm"
                 ],
+                "cmake.generator": "Ninja",
                 "cmake.ctestArgs": [
                     "--output-on-failure"
                 ],
