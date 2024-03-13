@@ -13,7 +13,24 @@
                 "ms-vscode.cmake-tools",
                 "eamodio.gitlens",
                 "yzhang.markdown-all-in-one"
-            ]
+            ],
+            "settings": {
+                "cmake.sourceDirectory": "${workspaceFolder}/compiler",
+                "cmake.buildArgs": [
+                    "-DENABLE_CODEGEN=ON"
+                ],
+                "cmake.ctestArgs": [
+                    "--output-on-failure"
+                ],
+                "files.insertFinalNewline": true,
+                "files.trimFinalNewlines": true,
+                "editor.rulers": [
+                    120
+                ],
+                "[cpp]": {
+                    "editor.defaultFormatter": "xaver.clang-format"
+                }
+            }
         }
     }
 }
