@@ -11,6 +11,7 @@ RUN apt-get update \
         wget \
         unzip \
         ca-certificates \
+        zlib1g-dev \
     && apt-get clean autoclean \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* \
@@ -29,8 +30,8 @@ RUN wget -qL -O llvm.tar.xz "${LLVM_ARCHIVE_URL}" \
     && rm llvm.tar.xz \
     && mv clang+llvm-* llvm
 
-ENV PATH="/opt/llvm/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/opt/llvm/lib:${LD_LIBRARY_PATH}"
-ENV LLVM_DIR="/opt/llvm/cmake/llvm"
+ENV PATH="${HOME}/llvm/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${HOME}/llvm/lib:${LD_LIBRARY_PATH}"
+ENV LLVM_DIR="${HOME}/llvm/cmake/llvm"
 
 ENTRYPOINT [ "/bin/bash" ]

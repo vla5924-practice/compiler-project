@@ -31,9 +31,14 @@
                     120
                 ],
                 "extensions.ignoreRecommendations": true,
+                "gitlens.showWelcomeOnInstall": false,
+                "gitlens.showWhatsNewAfterUpgrades": false,
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "update.showReleaseNotes": false,
                 "vsicons.dontShowNewVersionMessage": true,
                 "workbench.colorTheme": "Default Dark+",
                 "workbench.iconTheme": "vscode-icons",
+                "workbench.welcomePage.walkthroughs.openOnInstall": false,
                 "[cpp]": {
                     "editor.defaultFormatter": "xaver.clang-format"
                 }
