@@ -13,7 +13,7 @@
 #include <llvm/IR/Module.h>
 #pragma warning(pop)
 
-#include <ast/syntax_tree.hpp>
+#include "compiler/ast/syntax_tree.hpp"
 
 namespace ir_generator {
 

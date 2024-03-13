@@ -12,6 +12,7 @@
 #endif
 
 #include <argparse/argparse.hpp>
+
 #include "compiler/backend/lexer/lexer.hpp"
 #include "compiler/backend/optimizer/optimizer.hpp"
 #include "compiler/backend/parser/parser.hpp"
