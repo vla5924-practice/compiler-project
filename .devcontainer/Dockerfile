@@ -7,7 +7,6 @@ RUN apt-get update \
         git \
         build-essential \
         ninja-build \
-        clang-format-15 \
         wget \
         unzip \
         ca-certificates \
@@ -23,10 +22,13 @@ RUN apt-get update \
 WORKDIR /root
 
 ARG LLVM_ARCHIVE_URL="https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
-RUN wget -qL -O llvm.tar.xz "${LLVM_ARCHIVE_URL}" \
+RUN mkdir llvm_install \
+    && cd llvm_install \
+    && wget -qL -O llvm.tar.xz "${LLVM_ARCHIVE_URL}" \
     && tar xf llvm.tar.xz \
     && rm llvm.tar.xz \
-    && mv clang+llvm-*/* /usr/
+    && cp -r clang+llvm-*/* /usr/ \
+    && rm -r .
 
 RUN useradd -m user \
     && usermod -aG sudo user \
