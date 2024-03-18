@@ -1,13 +1,13 @@
 {
     "name": "Compiler Dev",
     "build": {
-        "dockerfile": "Dockerfile"
+        "dockerfile": "Dockerfile",
+        "args": {
+            "HTTP_PROXY": "${localEnv:HTTP_PROXY}",
+            "HTTPS_PROXY": "${localEnv:HTTPS_PROXY}"
+        }
     },
     "containerUser": "user",
-    "remoteEnv": {
-        "PATH": "${HOME}/llvm/bin:${PATH}",
-        "LD_LIBRARY_PATH": "${HOME}/llvm/lib:${LD_LIBRARY_PATH}"
-    },
     "customizations": {
         "vscode": {
             "extensions": [
@@ -23,8 +23,7 @@
             "settings": {
                 "cmake.sourceDirectory": "${workspaceFolder}/compiler",
                 "cmake.configureArgs": [
-                    "-DENABLE_CODEGEN=ON",
-                    "-DCMAKE_PREFIX_PATH=/home/user/llvm"
+                    "-DENABLE_CODEGEN=ON"
                 ],
                 "cmake.generator": "Ninja",
                 "cmake.ctestArgs": [
