@@ -29,7 +29,7 @@ jobs:
         id: vars
         run: |
           tag=`date +%s`
-          image_name="ghcr.io/$GITHUB_REPOSITORY_OWNER/devcontainer"
+          image_name="ghcr.io/$GITHUB_REPOSITORY_OWNER/compiler-project/devcontainer"
           echo "image-name=$image_name" >> $GITHUB_OUTPUT
           echo "image-name-tag=$image_name:$tag" >> $GITHUB_OUTPUT
       - name: Build image
