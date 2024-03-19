@@ -1,0 +1,47 @@
+name: Dev Container
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer.yml'
+
+jobs:
+  publish-devcontainer:
+    name: Publish Dev Container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Initialize repository
+        uses: actions/checkout@v4
+      - name: Define variables
+        id: vars
+        run: |
+          tag=`date +%s`
+          image_name="ghcr.io/$GITHUB_REPOSITORY_OWNER/devcontainer"
+          echo "image-name=$image_name" >> $GITHUB_OUTPUT
+          echo "image-name-tag=$image_name:$tag" >> $GITHUB_OUTPUT
+      - name: Build image
+        run: docker build -t ${{ steps.vars.outputs.image-name-tag }} -f .devcontainer/Dockerfile .
+      - name: Login to registry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker login -u ${{ github.actor }} -p $GITHUB_TOKEN ghcr.io
+      - name: Push image
+        run: docker push ${{ steps.vars.outputs.container-name-tag }}
+      - name: Push image as latest
+        if: github.event_name == 'push'
+        run: |
+          docker tag ${{ steps.vars.outputs.image-name-tag }} ${{ steps.vars.outputs.image-name }}:latest
+          docker push ${{ steps.vars.outputs.container-name }}:latest
