@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace ast {
 
 using TypeId = size_t;

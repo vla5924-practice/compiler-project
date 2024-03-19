@@ -2,12 +2,21 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ci.yml'
+      - '**/*.cpp'
+      - '**/*.hpp'
+      - '**/CMakeLists.txt'
   pull_request:
-    branches: [ main ]
-
-env:
-  BUILD_TYPE: Release
+    branches:
+      - main
+    paths:
+      - '.github/workflows/ci.yml'
+      - '**/*.cpp'
+      - '**/*.hpp'
+      - '**/CMakeLists.txt'
 
 jobs:
   code-style-check:
@@ -22,49 +31,45 @@ jobs:
         extensions: 'hpp,cpp'
         clangFormatVersion: 12
 
-  ubuntu-gcc:
-    name: Ubuntu GCC build & test
+  build-gcc:
+    name: Build on Ubuntu GCC
     runs-on: ubuntu-latest
     needs: code-style-check
+    container:
+      image: ghcr.io/$GITHUB_REPOSITORY_OWNER/compiler-project/devcontainer:1710845516
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - name: Cache LLVM and Clang
-      id: cache-llvm
-      uses: actions/cache@v2
-      with:
-        path: ./llvm
-        key: llvm-13.0.0
-    - name: Install LLVM and Clang
-      uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: "13.0.0"
-        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
-    - name: Build
-      run: |
-        mkdir build && cd build
-        cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=$BUILD_TYPE ..
-        make
-    - name: Run tests
-      run: |
-        cd build
-        ctest --output-on-failure
+      - name: Initialize repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Build
+        run: |
+          cmake -S . -D build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_IR_GENERATOR=OFF
+          ninja -C build
+      - name: Archive binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-ubuntu-latest-gcc
+          path: build/bin
 
-  windows-msvc:
-    name: Windows MSVC build & test
-    runs-on: windows-2022
-    needs: code-style-check
+  unit-test:
+    name: Unit test
+    runs-on: ubuntu-latest
+    needs: build-gcc
+    container:
+      image: ghcr.io/$GITHUB_REPOSITORY_OWNER/compiler-project/devcontainer:1710845516
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - name: Build
-      run: |
-        md build && cd build
-        cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DENABLE_IR_GENERATOR=OFF ..
-        cmake --build .
-    - name: Run tests
-      run: |
-        cd build
-        ctest --output-on-failure
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries-ubuntu-latest-gcc
+      - name: Run ast_test
+        run: ./bin/ast_test
+      - name: Run backend_test
+        run: ./bin/backend_test
