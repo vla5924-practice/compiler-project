@@ -15,9 +15,12 @@ RUN apt-get update \
         wget \
         unzip \
         ca-certificates \
+        python3 \
+        python3-pip \
         zlib1g-dev \
         libzstd-dev \
         libxml2-dev \
+        libtinfo-dev \
         sudo \
     && apt-get clean autoclean \
     && apt-get autoremove -y \

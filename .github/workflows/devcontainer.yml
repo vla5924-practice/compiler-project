@@ -25,6 +25,9 @@ jobs:
     steps:
       - name: Initialize repository
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: '.devcontainer/Dockerfile'
+          submodules: false
       - name: Define variables
         id: vars
         run: |
