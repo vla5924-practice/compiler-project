@@ -48,7 +48,7 @@ jobs:
           submodules: true
       - name: Build
         run: |
-          cmake -S . -D build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_IR_GENERATOR=OFF
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_IR_GENERATOR=OFF
           ninja -C build
       - name: Archive binaries
         uses: actions/upload-artifact@v4
@@ -62,7 +62,6 @@ jobs:
     needs: build-gcc
     container:
       image: ghcr.io/vla5924-practice/compiler-project/devcontainer:1710845516
-      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
