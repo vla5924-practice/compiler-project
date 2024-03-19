@@ -51,10 +51,12 @@ jobs:
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_IR_GENERATOR=OFF
           ninja -C build
       - name: Archive binaries
+        run: tar cf binaries.tar -C build bin
+      - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
           name: binaries-ubuntu-latest-gcc
-          path: build/bin
+          path: binaries.tar
 
   unit-test:
     name: Unit test
@@ -71,7 +73,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: binaries-ubuntu-latest-gcc
+      - name: Extract binaries
+        run: tar xf binaries.tar
       - name: Run ast_test
-        run: ./ast_test
+        run: ./bin/ast_test
       - name: Run backend_test
-        run: ./backend_test
+        run: ./bin/backend_test
