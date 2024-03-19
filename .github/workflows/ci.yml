@@ -62,6 +62,7 @@ jobs:
     needs: build-gcc
     container:
       image: ghcr.io/vla5924-practice/compiler-project/devcontainer:1710845516
+      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
