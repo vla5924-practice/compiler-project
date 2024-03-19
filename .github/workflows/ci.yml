@@ -72,6 +72,6 @@ jobs:
         with:
           name: binaries-ubuntu-latest-gcc
       - name: Run ast_test
-        run: ./bin/ast_test
+        run: ./ast_test
       - name: Run backend_test
-        run: ./bin/backend_test
+        run: ./backend_test

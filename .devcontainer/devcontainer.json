@@ -1,0 +1,47 @@
+{
+    "name": "Compiler Dev",
+    "image": "ghcr.io/vla5924-practice/compiler-project/devcontainer:latest",
+    "containerUser": "user",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "vscode-icons-team.vscode-icons",
+                "ms-vscode.cpptools",
+                "xaver.clang-format",
+                "twxs.cmake",
+                "ms-vscode.cmake-tools",
+                "eamodio.gitlens",
+                "GitHub.vscode-pull-request-github",
+                "yzhang.markdown-all-in-one"
+            ],
+            "settings": {
+                "cmake.sourceDirectory": "${workspaceFolder}/compiler",
+                "cmake.configureArgs": [
+                    "-DENABLE_CODEGEN=ON"
+                ],
+                "cmake.generator": "Ninja",
+                "cmake.ctestArgs": [
+                    "--output-on-failure"
+                ],
+                "cmake.options.statusBarVisibility": "compact",
+                "files.insertFinalNewline": true,
+                "files.trimFinalNewlines": true,
+                "editor.rulers": [
+                    120
+                ],
+                "extensions.ignoreRecommendations": true,
+                "gitlens.showWelcomeOnInstall": false,
+                "gitlens.showWhatsNewAfterUpgrades": false,
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "update.showReleaseNotes": false,
+                "vsicons.dontShowNewVersionMessage": true,
+                "workbench.colorTheme": "Default Dark+",
+                "workbench.iconTheme": "vscode-icons",
+                "workbench.welcomePage.walkthroughs.openOnInstall": false,
+                "[cpp]": {
+                    "editor.defaultFormatter": "xaver.clang-format"
+                }
+            }
+        }
+    }
+}
