@@ -42,7 +42,7 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
       - name: Initialize repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3.0.2
         with:
           submodules: true
       - name: Build
