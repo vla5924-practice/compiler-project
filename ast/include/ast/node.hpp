@@ -34,13 +34,16 @@ struct Node {
      * nothing         : other types
      */
     NodeType type;
-    std::variant<long int, double, std::string, TypeId, BinaryOperation, UnaryOperation, VariablesTable> value;
+    std::variant<long int, double, bool, std::string, TypeId, BinaryOperation, UnaryOperation, VariablesTable> value;
 
     const long int &intNum() const {
         return std::get<long int>(value);
     }
     const double &fpNum() const {
         return std::get<double>(value);
+    }
+    const bool &boolean() const {
+        return std::get<bool>(value);
     }
     const std::string &str() const {
         return std::get<std::string>(value);
