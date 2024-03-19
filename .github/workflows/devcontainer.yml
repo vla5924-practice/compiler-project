@@ -39,9 +39,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: docker login -u ${{ github.actor }} -p $GITHUB_TOKEN ghcr.io
       - name: Push image
-        run: docker push ${{ steps.vars.outputs.container-name-tag }}
+        run: docker push ${{ steps.vars.outputs.image-name-tag }}
       - name: Push image as latest
         if: github.event_name == 'push'
         run: |
           docker tag ${{ steps.vars.outputs.image-name-tag }} ${{ steps.vars.outputs.image-name }}:latest
-          docker push ${{ steps.vars.outputs.container-name }}:latest
+          docker push ${{ steps.vars.outputs.image-name }}:latest
