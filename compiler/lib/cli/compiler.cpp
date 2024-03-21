@@ -13,11 +13,11 @@
 
 #include <argparse/argparse.hpp>
 
-#include "compiler/frontend/lexer/lexer.hpp"
 #include "compiler/backend/ast/optimizer/optimizer.hpp"
+#include "compiler/backend/ast/semantizer/semantizer.hpp"
+#include "compiler/frontend/lexer/lexer.hpp"
 #include "compiler/frontend/parser/parser.hpp"
 #include "compiler/frontend/preprocessor/preprocessor.hpp"
-#include "compiler/backend/ast/semantizer/semantizer.hpp"
 #include "compiler/utils/source_files.hpp"
 
 #ifdef ENABLE_CODEGEN
