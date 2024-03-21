@@ -12,6 +12,7 @@ class OptimizerOptions {
         Miscellaneous = 1 << 0,
         RemoveUnusedFunctions = 1 << 1,
         RemoveUnusedVariables = 1 << 2,
+        JoinIdenticalSubBranches = 1 << 3,
         All = std::numeric_limits<OptionsMask>::max(),
     };
 

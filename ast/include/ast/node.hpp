@@ -120,4 +120,7 @@ struct Node {
     }
 };
 
+using NodeList = std::list<Node::Ptr>;
+using NodeIterator = NodeList::iterator;
+
 } // namespace ast
