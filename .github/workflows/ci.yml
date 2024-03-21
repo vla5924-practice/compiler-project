@@ -24,19 +24,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: DoozyX/clang-format-lint-action@v0.13
+    - uses: DoozyX/clang-format-lint-action@v0.17
       with:
-        source: '.'
-        exclude: './thirdparty ./docs'
+        source: './compiler'
         extensions: 'hpp,cpp'
-        clangFormatVersion: 12
+        clangFormatVersion: 17
 
   build-gcc:
     name: Build on Ubuntu GCC
     runs-on: ubuntu-latest
     needs: code-style-check
     container:
-      image: ghcr.io/vla5924-practice/compiler-project/devcontainer:1710845516
+      image: ghcr.io/vla5924-practice/compiler-project/devcontainer:latest
       options: --user root
       credentials:
         username: ${{ github.actor }}
@@ -48,7 +47,7 @@ jobs:
           submodules: true
       - name: Build
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_IR_GENERATOR=OFF
+          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_IR_GENERATOR=OFF
           ninja -C build
       - name: Archive binaries
         run: tar cf binaries.tar -C build bin
@@ -63,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-gcc
     container:
-      image: ghcr.io/vla5924-practice/compiler-project/devcontainer:1710845516
+      image: ghcr.io/vla5924-practice/compiler-project/devcontainer:latest
       options: --user root
       credentials:
         username: ${{ github.actor }}
