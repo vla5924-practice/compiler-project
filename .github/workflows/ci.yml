@@ -74,7 +74,9 @@ jobs:
           name: binaries-ubuntu-latest-gcc
       - name: Extract binaries
         run: tar xf binaries.tar
-      - name: Run ast_test
+      - name: Run AST interface tests
         run: ./bin/ast_test
-      - name: Run backend_test
-        run: ./bin/backend_test
+      - name: Run frontend tests
+        run: ./bin/frontend_test
+      - name: Run AST-based backend tests
+        run: ./bin/backend_ast_test
