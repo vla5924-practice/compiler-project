@@ -38,6 +38,26 @@ struct Adaptor {
     }
 };
 
+struct ModuleOp : Adaptor {
+    OPTREE_ADAPTOR_HELPER(specId)
+
+    static bool verify(const Operation *op);
+};
+
+struct FunctionOp : Adaptor {
+    OPTREE_ADAPTOR_HELPER(specId)
+
+    const std::string &name() const {
+        return op->attr(0).as<std::string>();
+    }
+
+    FunctionType type() const {
+        return op->attr(1).as<Type>().as<FunctionType>();
+    }
+
+    static bool verify(const Operation *op);
+};
+
 struct ArithBinaryOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(specId)
 
@@ -57,10 +77,7 @@ struct ArithBinaryOp : Adaptor {
         return op->attr(0).as<ArithBinOpKind>();
     }
 
-    static bool verify(const Operation *op) {
-        using namespace trait;
-        return Adaptor::verify(op) && numOperands<2U>(op) && numResults<2U>(op) && oneAttrOfType<ArithBinOpKind>(op);
-    }
+    static bool verify(const Operation *op);
 };
 
 } // namespace optree

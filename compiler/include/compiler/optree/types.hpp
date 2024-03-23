@@ -26,6 +26,11 @@ struct Type {
         return id == DerivedType::getClassId();
     }
 
+    template <typename DerivedType>
+    DerivedType as() const {
+        return DerivedType(*reinterpret_cast<const DerivedType *>(this));
+    }
+
     operator bool() const {
         return id != getClassId();
     }

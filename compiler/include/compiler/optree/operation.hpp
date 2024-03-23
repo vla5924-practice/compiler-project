@@ -86,6 +86,10 @@ struct Operation {
         operands.erase(operands.begin() + operandNumber);
     }
 
+    void addToBody(Operation::Ptr op) {
+        body.emplace_back(op);
+    }
+
     bool verify() const {
         return verifier(this);
     }
@@ -128,7 +132,7 @@ struct Operation {
 
     template <typename AdaptorType>
     static Ptr make(Ptr parent = Ptr()) {
-        return std::make_shared<Operation>(parent, AdaptorType::getSpecId(), AdaptorType::verify);
+        return std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::verify, parent);
     }
 };
 

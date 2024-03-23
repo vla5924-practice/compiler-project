@@ -6,11 +6,12 @@
 #include <variant>
 
 #include "compiler/optree/definitions.hpp"
+#include "compiler/optree/types.hpp"
 
 namespace optree {
 
 struct Attribute {
-    std::variant<int64_t, double, bool, std::string, ArithBinOpKind, LogicBinOpKind> storage;
+    std::variant<int64_t, double, bool, std::string, Type, ArithBinOpKind, LogicBinOpKind> storage;
 
     Attribute() = default;
     Attribute(const Attribute &) = default;
@@ -18,8 +19,7 @@ struct Attribute {
     ~Attribute() = default;
 
     template <typename VariantType>
-    explicit Attribute(const VariantType &value) : storage(value) {
-    }
+    explicit Attribute(const VariantType &value) : storage(value){};
 
     template <typename VariantType>
     bool is() const noexcept {

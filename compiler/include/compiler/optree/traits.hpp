@@ -23,6 +23,12 @@ bool oneAttrOfType(const Operation *op) {
     return op->numAttrs() == 1U && op->attributes.front().is<VariantType>();
 }
 
+template <typename AdaptorType>
+bool bodyContainsOnly(const Operation *op) {
+    return std::all_of(op->body.begin(), op->body.end(),
+                       [](const Operation::Ptr &op) { return op->is<AdaptorType>(); });
+}
+
 } // namespace trait
 
 } // namespace optree
