@@ -10,10 +10,12 @@ struct ConverterContext {
     Operation::Ptr op;
 
     template <typename AdaptorType>
-    Operation::Ptr addToBody() {
+    std::pair<Operation::Ptr, AdaptorType> addToBody() {
         auto newOp = Operation::make<AdaptorType>(op);
         op->addToBody(newOp);
-        return newOp;
+        AdaptorType adaptor(newOp);
+        adaptor.init();
+        return std::make_pair(newOp, adaptor);
     }
 
     void goParent() {

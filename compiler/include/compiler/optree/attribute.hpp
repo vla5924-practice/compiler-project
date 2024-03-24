@@ -11,7 +11,7 @@
 namespace optree {
 
 struct Attribute {
-    std::variant<int64_t, double, bool, std::string, Type, ArithBinOpKind, LogicBinOpKind> storage;
+    std::variant<std::monostate, int64_t, double, bool, std::string, Type, ArithBinOpKind, LogicBinOpKind> storage;
 
     Attribute() = default;
     Attribute(const Attribute &) = default;
@@ -34,6 +34,25 @@ struct Attribute {
     template <typename VariantType>
     VariantType &as() {
         return std::get<VariantType>(storage);
+    }
+
+    template <typename VariantType>
+    void set(const VariantType &value) {
+        storage = value;
+    }
+
+    template <typename VariantType>
+        requires std::is_base_of_v<Type, VariantType>
+    void set(const VariantType &value) {
+        storage = dynamic_cast<const Type &>(value);
+    }
+
+    operator bool() const {
+        return is<std::monostate>();
+    }
+
+    void clear() {
+        storage = std::monostate();
     }
 };
 

@@ -3,6 +3,8 @@
 #include <forward_list>
 #include <memory>
 
+#include "compiler/utils/source_ref.hpp"
+
 #include "compiler/optree/types.hpp"
 
 namespace optree {
@@ -39,6 +41,8 @@ struct Value {
     operator bool() const {
         return type.operator bool();
     }
+
+    const utils::SourceRef &ref() const;
 
     template <typename... Args>
     static Ptr make(Args... args) {

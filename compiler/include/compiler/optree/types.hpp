@@ -1,12 +1,15 @@
 #pragma once
 
+#include <concepts>
 #include <type_traits>
 #include <vector>
 
 #define OPTREE_TYPE_HELPER(CLASSID_MEMBER_NAME)                                                                        \
   protected:                                                                                                           \
     friend struct Type;                                                                                                \
-    static TypeId getClassId() { return &CLASSID_MEMBER_NAME; }                                                        \
+    static TypeId getClassId() {                                                                                       \
+        return &CLASSID_MEMBER_NAME;                                                                                   \
+    }                                                                                                                  \
                                                                                                                        \
   private:                                                                                                             \
     static inline char CLASSID_MEMBER_NAME = 0;                                                                        \
@@ -19,16 +22,27 @@ struct Type {
     Type() : id(nullptr){};
     Type(const Type &) = default;
     Type(Type &&) = default;
-    ~Type() = default;
+    virtual ~Type() = default;
+
+    Type &operator=(const Type &) = default;
+    Type &operator=(Type &&) = default;
 
     template <typename DerivedType>
-    std::enable_if_t<std::is_base_of_v<Type, DerivedType>, bool> is() const {
+        requires std::derived_from<DerivedType, Type>
+    bool is() const {
         return id == DerivedType::getClassId();
     }
 
     template <typename DerivedType>
-    DerivedType as() const {
-        return DerivedType(*reinterpret_cast<const DerivedType *>(this));
+        requires std::derived_from<DerivedType, Type>
+    const std::remove_cvref_t<DerivedType> &as() const {
+        return *dynamic_cast<const DerivedType *>(this);
+    }
+
+    template <typename DerivedType>
+        requires std::derived_from<DerivedType, Type>
+    DerivedType &as() {
+        return *dynamic_cast<DerivedType *>(this);
     }
 
     operator bool() const {

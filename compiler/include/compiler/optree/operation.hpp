@@ -4,8 +4,12 @@
 #include <functional>
 #include <list>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
+
+#include "compiler/utils/source_ref.hpp"
 
 #include "compiler/optree/attribute.hpp"
 #include "compiler/optree/types.hpp"
@@ -20,8 +24,10 @@ struct Operation {
     using SpecId = void *;
 
     Ptr parent;
+    Body::iterator position;
     SpecId specId;
     Verifier verifier;
+    utils::SourceRef ref;
 
     std::vector<Value::Ptr> operands;
     std::vector<Value::Ptr> results;
@@ -32,10 +38,10 @@ struct Operation {
     Operation(Operation &&) = default;
     ~Operation() = default;
 
-    explicit Operation(Ptr parent = Ptr())
-        : parent(parent), specId(nullptr), verifier([](const Operation *) { return true; }){};
-    Operation(SpecId specId, const Verifier &verifier, Ptr parent = Ptr())
-        : parent(parent), specId(specId), verifier(verifier){};
+    explicit Operation(Ptr parent = {}, Body::iterator position = {})
+        : parent(parent), position(position), specId(nullptr), verifier([](const Operation *) { return true; }){};
+    Operation(SpecId specId, const Verifier &verifier, Ptr parent = Ptr(), Body::iterator position = {})
+        : parent(parent), position(position), specId(specId), verifier(verifier){};
 
     const Value::Ptr &operand(size_t index) const {
         return operands[index];
@@ -124,15 +130,33 @@ struct Operation {
     }
 
     template <typename AdaptorType>
-    AdaptorType as() const {
+    const AdaptorType as() const {
         if (is<AdaptorType>())
             return AdaptorType(this);
         return {};
     }
 
     template <typename AdaptorType>
-    static Ptr make(Ptr parent = Ptr()) {
-        return std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::verify, parent);
+    AdaptorType as() {
+        if (is<AdaptorType>())
+            return AdaptorType(this);
+        return {};
+    }
+
+    void erase() {
+        for (const auto &result : results) {
+            if (!result->uses.empty())
+                throw std::logic_error("Operation cannot be erased since its results still have uses");
+        }
+        results.clear();
+        if (!parent || position == Body::iterator())
+            return;
+        parent->body.erase(position);
+    }
+
+    template <typename AdaptorType>
+    static Ptr make(Ptr parent = {}, Body::iterator position = {}) {
+        return std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::verify, parent, position);
     }
 };
 

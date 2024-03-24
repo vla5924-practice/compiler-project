@@ -34,20 +34,24 @@ void visitProgramRoot(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 void visitFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
-    auto op = ctx.addToBody<FunctionOp>();
+    auto [op, funcOp] = ctx.addToBody<FunctionOp>();
     auto it = node->children.begin();
-    op->addAttr<std::string>((*it)->str());
+    funcOp.setName((*it)->str());
     ++it;
     std::vector<Type> arguments;
     for (const auto &typeNode : (*it)->children)
         arguments.push_back(convertType(typeNode->typeId()));
     ++it;
-    op->addAttr<Type>(FunctionType(arguments, convertType((*it)->typeId())));
+    funcOp.setType(FunctionType(arguments, convertType((*it)->typeId())));
     ctx.op = op;
     ++it;
+    visitNode(*it, ctx);
+    ctx.goParent();
+}
+
+void visitBranchRoot(const Node::Ptr &node, ConverterContext &ctx) {
     for (const auto &child : node->children)
         visitNode(child, ctx);
-    ctx.goParent();
 }
 
 void visitNode(const Node::Ptr &node, ConverterContext &ctx) {
@@ -57,6 +61,9 @@ void visitNode(const Node::Ptr &node, ConverterContext &ctx) {
         return;
     case NodeType::FunctionDefinition:
         visitFunctionDefinition(node, ctx);
+        return;
+    case NodeType::BranchRoot:
+        visitBranchRoot(node, ctx);
         return;
     }
 }
