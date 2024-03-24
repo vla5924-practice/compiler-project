@@ -3,9 +3,9 @@
 #include "compiler/optree/operation.hpp"
 #include "compiler/optree/traits.hpp"
 
-#define OPTREE_ADAPTOR_HELPER(SPECID_MEMBER_NAME)                                                                      \
+#define OPTREE_ADAPTOR_HELPER(BASE_ADAPTOR_CLASS, SPECID_MEMBER_NAME)                                                  \
   public:                                                                                                              \
-    using Adaptor::Adaptor;                                                                                            \
+    using BASE_ADAPTOR_CLASS::BASE_ADAPTOR_CLASS;                                                                      \
     static Operation::SpecId getSpecId() {                                                                             \
         return &SPECID_MEMBER_NAME;                                                                                    \
     }                                                                                                                  \
@@ -53,13 +53,13 @@ struct Adaptor {
 };
 
 struct ModuleOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, specId)
 
     static bool verify(const Operation *op);
 };
 
 struct FunctionOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, specId)
 
     void init() {
         op->attributes.resize(2U);
@@ -85,7 +85,7 @@ struct FunctionOp : Adaptor {
 };
 
 struct AllocateOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, specId)
 
     void init(const Type &type = {}) {
         op->results.emplace_back(Value::make(type, op));
@@ -99,7 +99,7 @@ struct AllocateOp : Adaptor {
 };
 
 struct ConstantOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, specId)
 
     template <typename VariantType>
     void init(const Type &type = {}, const VariantType &value = {}) {
@@ -118,13 +118,13 @@ struct ConstantOp : Adaptor {
     static bool verify(const Operation *op);
 };
 
-struct ArithBinaryOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(specId)
+struct BinaryOp : Adaptor {
+    OPTREE_ADAPTOR_HELPER(Adaptor, specId)
 
-    void init() {
-        op->attributes.resize(1U);
-        op->operands.resize(2U);
-        op->results.resize(1U);
+    void init(const Type &resultType, Value::Ptr lhs, Value::Ptr rhs) {
+        op->addResult(resultType);
+        op->addOperand(lhs);
+        op->addOperand(rhs);
     }
 
     Value::Ptr lhs() const {
@@ -147,8 +147,134 @@ struct ArithBinaryOp : Adaptor {
         return op->result(0);
     }
 
+    static bool verify(const Operation *op);
+};
+
+struct ArithBinaryOp : BinaryOp {
+    OPTREE_ADAPTOR_HELPER(BinaryOp, specId)
+
+    void init(ArithBinOpKind kind, const Type &resultType, Value::Ptr lhs, Value::Ptr rhs) {
+        BinaryOp::init(resultType, lhs, rhs);
+        op->addAttr(kind);
+    }
+
+    void init(ArithBinOpKind kind, Value::Ptr lhs, Value::Ptr rhs) {
+        init(kind, lhs->type, lhs, rhs);
+    }
+
     ArithBinOpKind kind() const {
         return op->attr(0).as<ArithBinOpKind>();
+    }
+
+    static bool verify(const Operation *op);
+};
+
+struct LogicBinaryOp : BinaryOp {
+    OPTREE_ADAPTOR_HELPER(BinaryOp, specId)
+
+    void init(LogicBinOpKind kind, Value::Ptr lhs, Value::Ptr rhs) {
+        BinaryOp::init(IntegerType(), lhs, rhs);
+        op->addAttr(kind);
+    }
+
+    LogicBinOpKind kind() const {
+        return op->attr(0).as<LogicBinOpKind>();
+    }
+
+    static bool verify(const Operation *op);
+};
+
+struct UnaryOp : Adaptor {
+    OPTREE_ADAPTOR_HELPER(Adaptor, specId)
+
+    void init(const Type &resultType, Value::Ptr value) {
+        op->addResult(resultType);
+        op->addOperand(value);
+    }
+
+    Value::Ptr value() const {
+        return op->operand(0);
+    }
+
+    void setValue(Value::Ptr value) {
+        op->operand(0) = value;
+    }
+
+    Value::Ptr result() const {
+        return op->result(0);
+    }
+
+    static bool verify(const Operation *op);
+};
+
+struct ArithCastOp : UnaryOp {
+    OPTREE_ADAPTOR_HELPER(UnaryOp, specId)
+
+    void init(ArithCastOpKind kind, const Type &resultType, Value::Ptr value) {
+        UnaryOp::init(resultType, value);
+        op->addAttr(kind);
+    }
+
+    ArithCastOpKind kind() const {
+        return op->attr(0).as<ArithCastOpKind>();
+    }
+
+    static bool verify(const Operation *op);
+};
+
+struct LogicUnaryOp : UnaryOp {
+    OPTREE_ADAPTOR_HELPER(UnaryOp, specId)
+
+    void init(LogicUnaryOpKind kind, const Type &resultType, Value::Ptr value) {
+        UnaryOp::init(resultType, value);
+        op->addAttr(kind);
+    }
+
+    LogicUnaryOpKind kind() const {
+        return op->attr(0).as<LogicUnaryOpKind>();
+    }
+
+    static bool verify(const Operation *op);
+};
+
+struct LoadOp : Adaptor {
+    OPTREE_ADAPTOR_HELPER(Adaptor, specId)
+
+    void init(const Type &resultType, Value::Ptr src) {
+        op->addOperand(src);
+        op->results.emplace_back(Value::make(resultType, op));
+    }
+
+    void init(Value::Ptr src) {
+        auto resultType = src->type.as<PointerType>().pointee;
+        init(resultType, src);
+    }
+
+    Value::Ptr src() const {
+        return op->operand(0);
+    }
+
+    Value::Ptr result() const {
+        return op->result(0);
+    }
+
+    static bool verify(const Operation *op);
+};
+
+struct StoreOp : Adaptor {
+    OPTREE_ADAPTOR_HELPER(Adaptor, specId)
+
+    void init(Value::Ptr dst, Value::Ptr valueToStore) {
+        op->addOperand(dst);
+        op->addOperand(valueToStore);
+    }
+
+    Value::Ptr dst() const {
+        return op->operand(0);
+    }
+
+    Value::Ptr valueToStore() const {
+        return op->operand(1);
     }
 
     static bool verify(const Operation *op);

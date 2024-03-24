@@ -34,6 +34,22 @@ bool bodyContainsOnly(const Operation *op) {
                        [](const Operation::Ptr &op) { return op->is<AdaptorType>(); });
 }
 
+bool operandsHaveSameType(const Operation *op) {
+    if (op->operands.empty())
+        return true;
+    const Type &type = op->operand(0)->type;
+    return std::all_of(op->operands.begin(), op->operands.end(),
+                       [&type](const Value::Ptr &value) { return value->type == type; });
+}
+
+bool operandsAndResultsHaveSameType(const Operation *op) {
+    if (!operandsHaveSameType(op))
+        return false;
+    const Type &type = op->operand(0)->type;
+    return std::all_of(op->results.begin(), op->results.end(),
+                       [&type](const Value::Ptr &value) { return value->type == type; });
+}
+
 } // namespace trait
 
 } // namespace optree

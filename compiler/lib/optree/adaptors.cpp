@@ -22,6 +22,38 @@ bool ConstantOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<0U>(op) && numResults<1U>(op) && numAttrs<1U>(op);
 }
 
+bool BinaryOp::verify(const Operation *op) {
+    return Adaptor::verify(op) && numOperands<2U>(op) && numResults<1U>(op);
+}
+
 bool ArithBinaryOp::verify(const Operation *op) {
-    return Adaptor::verify(op) && numOperands<2U>(op) && numResults<2U>(op) && oneAttrOfType<ArithBinOpKind>(op);
+    return BinaryOp::verify(op) && oneAttrOfType<ArithBinOpKind>(op) && operandsAndResultsHaveSameType(op);
+}
+
+bool LogicBinaryOp::verify(const Operation *op) {
+    return BinaryOp::verify(op) && oneAttrOfType<LogicBinOpKind>(op) && operandsHaveSameType(op) &&
+           op->result(0)->type.is<IntegerType>();
+}
+
+bool UnaryOp::verify(const Operation *op) {
+    return Adaptor::verify(op) && numOperands<1U>(op) && numResults<1U>(op);
+}
+
+bool ArithCastOp::verify(const Operation *op) {
+    return UnaryOp::verify(op) && oneAttrOfType<ArithCastOpKind>(op);
+}
+
+bool LogicUnaryOp::verify(const Operation *op) {
+    return UnaryOp::verify(op) && oneAttrOfType<LogicUnaryOpKind>(op) && operandsAndResultsHaveSameType(op) &&
+           op->result(0)->type.is<IntegerType>();
+}
+
+bool LoadOp::verify(const Operation *op) {
+    return Adaptor::verify(op) && numOperands<1U>(op) && numResults<1U>(op) && op->operand(0)->type.is<PointerType>() &&
+           op->operand(0)->type.as<PointerType>() == op->result(0)->type;
+}
+
+bool StoreOp::verify(const Operation *op) {
+    return Adaptor::verify(op) && numOperands<2U>(op) && numResults<0U>(op) && op->operand(0)->type.is<PointerType>() &&
+           op->operand(0)->type.as<PointerType>() == op->result(1)->type;
 }

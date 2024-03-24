@@ -4,25 +4,41 @@ namespace optree {
 
 enum class ArithBinOpKind {
     Unknown,
-    Add,
-    Sub,
-    Mult,
-    Div,
-    FAdd,
-    FSub,
-    FMult,
-    FDiv,
+    AddI,
+    SubI,
+    MulI,
+    DivI,
+    AddF,
+    SubF,
+    MulF,
+    DivF,
+};
+
+enum class ArithCastOpKind {
+    Unknown,
+    IntToFloat,
+    FloatToInt,
 };
 
 enum class LogicBinOpKind {
-    And,
-    Or,
+    Unknown,
     Equal,
     NotEqual,
-    Less,
-    Greater,
-    LessEqual,
-    GreaterEqual,
+    AndI,
+    OrI,
+    LessI,
+    GreaterI,
+    LessEqualI,
+    GreaterEqualI,
+    LessF,
+    GreaterF,
+    LessEqualF,
+    GreaterEqualF,
+};
+
+enum class LogicUnaryOpKind {
+    Unknown,
+    Not,
 };
 
 } // namespace optree

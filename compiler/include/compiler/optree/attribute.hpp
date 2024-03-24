@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+#include <concepts>
 #include <cstddef>
 #include <string>
 #include <variant>
@@ -11,7 +11,9 @@
 namespace optree {
 
 struct Attribute {
-    std::variant<std::monostate, int64_t, double, bool, std::string, Type, ArithBinOpKind, LogicBinOpKind> storage;
+    std::variant<std::monostate, int64_t, double, bool, std::string, Type, ArithBinOpKind, ArithCastOpKind,
+                 LogicBinOpKind, LogicUnaryOpKind>
+        storage;
 
     Attribute() = default;
     Attribute(const Attribute &) = default;
@@ -42,7 +44,7 @@ struct Attribute {
     }
 
     template <typename VariantType>
-        requires std::is_base_of_v<Type, VariantType>
+        requires std::derived_from<VariantType, Type>
     void set(const VariantType &value) {
         storage = dynamic_cast<const Type &>(value);
     }

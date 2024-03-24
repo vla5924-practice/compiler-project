@@ -92,6 +92,10 @@ struct Operation {
         operands.erase(operands.begin() + operandNumber);
     }
 
+    Value::Ptr addResult(const Type &type) {
+        return results.emplace_back(Value::make(type, this));
+    }
+
     void addToBody(Operation::Ptr op) {
         body.emplace_back(op);
     }

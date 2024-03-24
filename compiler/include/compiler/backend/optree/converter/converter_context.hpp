@@ -23,6 +23,16 @@ struct ConverterContext {
         return std::make_pair(newOp, adaptor);
     }
 
+    template <typename AdaptorType, typename... Args>
+    Operation::Ptr addToBodyPtr(Args... args) {
+        return addToBody<AdaptorType>(std::forward<Args>(args)...).first;
+    }
+
+    template <typename AdaptorType, typename... Args>
+    AdaptorType addToBodyWrap(Args... args) {
+        return addToBody<AdaptorType>(std::forward<Args>(args)...).second;
+    }
+
     void goParent() {
         op = op->parent;
     }
