@@ -84,6 +84,40 @@ struct FunctionOp : Adaptor {
     static bool verify(const Operation *op);
 };
 
+struct AllocateOp : Adaptor {
+    OPTREE_ADAPTOR_HELPER(specId)
+
+    void init(const Type &type = {}) {
+        op->results.emplace_back(Value::make(type, op));
+    }
+
+    Value::Ptr result() const {
+        return op->result(0);
+    }
+
+    static bool verify(const Operation *op);
+};
+
+struct ConstantOp : Adaptor {
+    OPTREE_ADAPTOR_HELPER(specId)
+
+    template <typename VariantType>
+    void init(const Type &type = {}, const VariantType &value = {}) {
+        op->results.emplace_back(Value::make(type, op));
+        op->addAttr(value);
+    }
+
+    const Attribute &value() {
+        return op->attr(0);
+    }
+
+    Value::Ptr result() const {
+        return op->result(0);
+    }
+
+    static bool verify(const Operation *op);
+};
+
 struct ArithBinaryOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(specId)
 

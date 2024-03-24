@@ -107,4 +107,12 @@ struct FunctionType : public Type {
         : Type(&classId), arguments(arguments), result(result){};
 };
 
+struct PointerType : public Type {
+    OPTREE_TYPE_HELPER(classId)
+
+    const Type pointee;
+
+    PointerType(const Type &pointee) : Type(&classId), pointee(pointee){};
+};
+
 } // namespace optree

@@ -25,15 +25,16 @@ Type convertType(ast::TypeId typeId) {
     return {};
 }
 
-void visitNode(const Node::Ptr &node, ConverterContext &ctx);
+void processNode(const Node::Ptr &node, ConverterContext &ctx);
+Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx);
 
-void visitProgramRoot(const Node::Ptr &node, ConverterContext &ctx) {
+void processProgramRoot(const Node::Ptr &node, ConverterContext &ctx) {
     ctx.op = Operation::make<ModuleOp>();
     for (const auto &child : node->children)
-        visitNode(child, ctx);
+        processNode(child, ctx);
 }
 
-void visitFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
+void processFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
     auto [op, funcOp] = ctx.addToBody<FunctionOp>();
     auto it = node->children.begin();
     funcOp.setName((*it)->str());
@@ -49,23 +50,71 @@ void visitFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
     ctx.goParent();
 }
 
-void visitBranchRoot(const Node::Ptr &node, ConverterContext &ctx) {
+void processBranchRoot(const Node::Ptr &node, ConverterContext &ctx) {
+    ctx.enterScope();
     for (const auto &child : node->children)
         visitNode(child, ctx);
 }
 
-void visitNode(const Node::Ptr &node, ConverterContext &ctx) {
+void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
+    auto type = convertType(node->firstChild()->typeId());
+    auto [op, allocOp] = ctx.addToBody<AllocateOp>(PointerType(type));
+    const auto &name = node->secondChild()->str();
+    ctx.saveVariable(name, allocOp.result());
+    if (node->children.size() == 3U)
+        visitNode(node->lastChild(), ctx);
+}
+
+Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
+    return visitNode(node->firstChild(), ctx);
+}
+
+Value::Ptr visitIntegerLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
+    auto [op, constOp] = ctx.addToBody<ConstantOp>(IntegerType(), node->intNum());
+    return constOp.result();
+}
+
+Value::Ptr visitFloatingPointLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
+    auto [op, constOp] = ctx.addToBody<ConstantOp>(FloatType(), node->fpNum());
+    return constOp.result();
+}
+
+Value::Ptr visitStringLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
+    auto [op, constOp] = ctx.addToBody<ConstantOp>(StrType(), node->str());
+    return constOp.result();
+}
+
+void processNode(const Node::Ptr &node, ConverterContext &ctx) {
     switch (node->type) {
     case NodeType::ProgramRoot:
-        visitProgramRoot(node, ctx);
+        processProgramRoot(node, ctx);
         return;
     case NodeType::FunctionDefinition:
-        visitFunctionDefinition(node, ctx);
+        processFunctionDefinition(node, ctx);
         return;
     case NodeType::BranchRoot:
-        visitBranchRoot(node, ctx);
+        processBranchRoot(node, ctx);
         return;
+    case NodeType::VariableDeclaration:
+        processVariableDeclaration(node, ctx);
+        return;
+    case NodeType::Expression:
+        visitExpression(node, ctx);
     }
+}
+
+Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
+    switch (node->type) {
+    case NodeType::Expression:
+        return visitExpression(node, ctx);
+    case NodeType::IntegerLiteralValue:
+        return visitIntegerLiteralValue(node, ctx);
+    case NodeType::FloatingPointLiteralValue:
+        return visitFloatingPointLiteralValue(node, ctx);
+    case NodeType::StringLiteralValue:
+        return visitStringLiteralValue(node, ctx);
+    }
+    return {};
 }
 
 Program Converter::process(const SyntaxTree &syntaxTree) {

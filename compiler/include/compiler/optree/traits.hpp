@@ -18,9 +18,14 @@ bool numResults(const Operation *op) {
     return op->numResults() == N;
 }
 
+template <size_t N>
+bool numAttrs(const Operation *op) {
+    return op->numAttrs() == N;
+}
+
 template <typename VariantType>
 bool oneAttrOfType(const Operation *op) {
-    return op->numAttrs() == 1U && op->attributes.front().is<VariantType>();
+    return numAttrs<1U>(op) && op->attributes.front().is<VariantType>();
 }
 
 template <typename AdaptorType>

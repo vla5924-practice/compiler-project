@@ -14,6 +14,14 @@ bool FunctionOp::verify(const Operation *op) {
            op->attr(1).is<Type>() && op->attr(1).as<Type>().is<FunctionType>();
 }
 
+bool AllocateOp::verify(const Operation *op) {
+    return Adaptor::verify(op) && numOperands<0U>(op) && numResults<1U>(op);
+}
+
+bool ConstantOp::verify(const Operation *op) {
+    return Adaptor::verify(op) && numOperands<0U>(op) && numResults<1U>(op) && numAttrs<1U>(op);
+}
+
 bool ArithBinaryOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<2U>(op) && numResults<2U>(op) && oneAttrOfType<ArithBinOpKind>(op);
 }
