@@ -55,6 +55,10 @@ struct ConverterContext {
                 return scope[name];
         return {};
     }
+
+    bool wouldBeRedeclaration(const std::string &name) {
+        return variables.front().contains(name);
+    }
 };
 
 } // namespace converter

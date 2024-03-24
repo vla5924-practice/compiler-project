@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -28,6 +29,7 @@ struct Operation {
     SpecId specId;
     Verifier verifier;
     utils::SourceRef ref;
+    std::string_view name;
 
     std::vector<Value::Ptr> operands;
     std::vector<Value::Ptr> results;
@@ -40,8 +42,9 @@ struct Operation {
 
     explicit Operation(Ptr parent = {}, Body::iterator position = {})
         : parent(parent), position(position), specId(nullptr), verifier([](const Operation *) { return true; }){};
-    Operation(SpecId specId, const Verifier &verifier, Ptr parent = Ptr(), Body::iterator position = {})
-        : parent(parent), position(position), specId(specId), verifier(verifier){};
+    Operation(SpecId specId, const Verifier &verifier, std::string_view name = "Unknown", Ptr parent = Ptr(),
+              Body::iterator position = {})
+        : parent(parent), position(position), specId(specId), verifier(verifier), name(name){};
 
     const Value::Ptr &operand(size_t index) const {
         return operands[index];
@@ -73,35 +76,6 @@ struct Operation {
             if (a.is<VariantType>())
                 return a.as<VariantType>();
         throw std::exception("There are no attributes with a given type");
-    }
-
-    template <typename VariantType>
-    Attribute &addAttr(const VariantType &value) {
-        return attributes.emplace_back(value);
-    }
-
-    void addOperand(Value::Ptr value) {
-        size_t operandNumber = operands.size();
-        operands.emplace_back(value);
-        value->uses.emplace_front(this, operandNumber);
-    }
-
-    void eraseOperand(size_t operandNumber) {
-        auto &uses = operands[operandNumber]->uses;
-        uses.remove_if([&](const Value::Use &use) { return use.user == this && use.operandNumber == operandNumber; });
-        operands.erase(operands.begin() + operandNumber);
-    }
-
-    Value::Ptr addResult(const Type &type) {
-        return results.emplace_back(Value::make(type, this));
-    }
-
-    void addToBody(Operation::Ptr op) {
-        body.emplace_back(op);
-    }
-
-    bool verify() const {
-        return verifier(this);
     }
 
     operator bool() const {
@@ -147,20 +121,26 @@ struct Operation {
         return {};
     }
 
-    void erase() {
-        for (const auto &result : results) {
-            if (!result->uses.empty())
-                throw std::logic_error("Operation cannot be erased since its results still have uses");
-        }
-        results.clear();
-        if (!parent || position == Body::iterator())
-            return;
-        parent->body.erase(position);
+    template <typename VariantType>
+    Attribute &addAttr(const VariantType &value) {
+        return attributes.emplace_back(value);
     }
+
+    void addOperand(Value::Ptr value);
+    void eraseOperand(size_t operandNumber);
+    Value::Ptr addResult(const Type &type);
+    void addToBody(Operation::Ptr op);
+    void erase();
+
+    bool verify() const;
+
+    std::string dump(int depth = 0) const;
+    void dump(std::ostream &stream, int depth = 0) const;
 
     template <typename AdaptorType>
     static Ptr make(Ptr parent = {}, Body::iterator position = {}) {
-        return std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::verify, parent, position);
+        return std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::verify,
+                                           AdaptorType::getOperationName(), parent, position);
     }
 };
 

@@ -65,9 +65,11 @@ void processBranchRoot(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
+    const auto &name = node->secondChild()->str();
+    if (ctx.wouldBeRedeclaration(name))
+        return; // TODO: error
     auto type = convertType(node->firstChild()->typeId());
     auto [op, allocOp] = ctx.addToBody<AllocateOp>(PointerType(type));
-    const auto &name = node->secondChild()->str();
     ctx.saveVariable(name, allocOp.result());
     if (node->children.size() == 3U)
         visitNode(node->lastChild(), ctx);

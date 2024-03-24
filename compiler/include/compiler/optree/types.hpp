@@ -1,6 +1,7 @@
 #pragma once
 
 #include <concepts>
+#include <ostream>
 #include <type_traits>
 #include <vector>
 
@@ -49,6 +50,8 @@ struct Type {
         return id != getClassId();
     }
 
+    virtual void dump(std::ostream &stream) const;
+
   protected:
     using TypeId = void *;
 
@@ -66,6 +69,8 @@ struct NoneType : public Type {
 
     using Type::Type;
     NoneType() : Type(&classId){};
+
+    void dump(std::ostream &stream) const override;
 };
 
 struct IntegerType : public Type {
@@ -75,6 +80,8 @@ struct IntegerType : public Type {
 
     using Type::Type;
     explicit IntegerType(unsigned width = 64U) : Type(&classId), width(width){};
+
+    void dump(std::ostream &stream) const override;
 };
 
 struct FloatType : public Type {
@@ -84,6 +91,8 @@ struct FloatType : public Type {
 
     using Type::Type;
     explicit FloatType(unsigned width = 64U) : Type(&classId), width(width){};
+
+    void dump(std::ostream &stream) const override;
 };
 
 struct StrType : public Type {
@@ -93,6 +102,8 @@ struct StrType : public Type {
 
     using Type::Type;
     explicit StrType(unsigned charWidth = 8U) : Type(&classId), charWidth(charWidth){};
+
+    void dump(std::ostream &stream) const override;
 };
 
 struct FunctionType : public Type {
@@ -105,6 +116,8 @@ struct FunctionType : public Type {
 
     FunctionType(const std::vector<Type> &arguments, const Type &result)
         : Type(&classId), arguments(arguments), result(result){};
+
+    void dump(std::ostream &stream) const override;
 };
 
 struct PointerType : public Type {
@@ -113,6 +126,8 @@ struct PointerType : public Type {
     const Type pointee;
 
     PointerType(const Type &pointee) : Type(&classId), pointee(pointee){};
+
+    void dump(std::ostream &stream) const override;
 };
 
 } // namespace optree
