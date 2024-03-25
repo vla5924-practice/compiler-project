@@ -6,7 +6,7 @@ using namespace lexer;
 using namespace utils;
 
 // clang-format off
-std::map<std::string_view, Keyword> Lexer::keywords = {
+std::unordered_map<std::string_view, Keyword> Lexer::keywords = {
     {"bool", Keyword::Bool},         {"False", Keyword::False},
     {"int", Keyword::Int},           {"float", Keyword::Float},
     {"str", Keyword::Str},           {"if", Keyword::If},
@@ -19,7 +19,7 @@ std::map<std::string_view, Keyword> Lexer::keywords = {
     {"not", Keyword::Not},           {"in", Keyword::In},
     {"True", Keyword::True},         {"None", Keyword::None}};
 
-std::map<std::string_view, Operator> Lexer::operators = {
+std::unordered_map<std::string_view, Operator> Lexer::operators = {
     {"%", Operator::Mod},            {".", Operator::Dot},        {"]", Operator::RectRightBrace},
     {",", Operator::Comma},          {"=", Operator::Assign},     {"+", Operator::Add},
     {"-", Operator::Sub},            {"*", Operator::Mult},       {"/", Operator::Div},

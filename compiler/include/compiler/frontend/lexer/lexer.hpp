@@ -2,6 +2,7 @@
 
 #include <list>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <string_view>
 
@@ -13,8 +14,8 @@
 namespace lexer {
 
 class Lexer {
-    static std::map<std::string_view, Keyword> keywords;
-    static std::map<std::string_view, Operator> operators;
+    static std::unordered_map<std::string_view, Keyword> keywords;
+    static std::unordered_map<std::string_view, Operator> operators;
 
     static TokenList processString(const utils::SourceLine &source, ErrorBuffer &errors);
 

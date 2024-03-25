@@ -1,8 +1,11 @@
 #include "compiler.hpp"
 
+#include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <vector>
+
 
 #ifdef ENABLE_CODEGEN
 #include <cstdlib>
@@ -19,6 +22,7 @@
 #include "compiler/frontend/parser/parser.hpp"
 #include "compiler/frontend/preprocessor/preprocessor.hpp"
 #include "compiler/utils/source_files.hpp"
+#include "compiler/utils/timer.hpp"
 
 #ifdef ENABLE_CODEGEN
 #include "compiler/codegen/ir_generator.hpp"
@@ -44,6 +48,10 @@ const char *const ARG_HELP = "--help";
 const char *const ARG_VERBOSE = "--verbose";
 const char *const ARG_LOG = "--log";
 const char *const ARG_OPTIMIZE = "--optimize";
+
+const char *const ARG_TIMES = "--times";
+const char *const ARG_DISABLE_LOG = "--dissable-log";
+const char *const ARG_LAST_MODULE = "--last-module";
 const char *const ARG_FILES = "FILES";
 
 #ifdef ENABLE_CODEGEN
@@ -53,12 +61,35 @@ const char *const ARG_LLC = "--llc";
 const char *const ARG_OUTPUT = "--output";
 #endif
 
+std::vector<std::string> possible_last_modules = {
+    "preprocessor", "lexer",       "parser", "semantizer",
+    "optimizer",    "ir_generator"}; // our version of argparser does not support "choises" parameter for arguments
+
 argparse::ArgumentParser createArgumentParser() {
     argparse::ArgumentParser parser("compiler", "1.0", argparse::default_arguments::none);
     parser.add_argument("-h", ARG_HELP).help("show help message and exit").default_value(false).implicit_value(true);
     parser.add_argument("-v", ARG_VERBOSE).help("print info messages").default_value(false).implicit_value(true);
     parser.add_argument("-l", ARG_LOG).help("log file (stages output will be saved if provided)");
     parser.add_argument("-O", ARG_OPTIMIZE).help("run optimization pass").default_value(false).implicit_value(true);
+
+    parser.add_argument("--times", ARG_TIMES)
+        .help("measure executions times of modules")
+        .default_value(false)
+        .implicit_value(true);
+    parser.add_argument("--dissable-log", ARG_DISABLE_LOG)
+        .help("disable dump logging")
+        .default_value(false)
+        .implicit_value(true);
+    parser.add_argument("--last-module", ARG_LAST_MODULE)
+        .help("Breaks after module. ")
+        .default_value(
+#ifdef ENABLE_CODEGEN
+            std::string("ir_generator")
+#else
+            std::string("optimizer")
+#endif
+        ); // .choises(possible_last_modules)
+
 #ifdef ENABLE_CODEGEN
     parser.add_argument("-c", ARG_COMPILE)
         .help("produce an executable instead of LLVM IR code")
@@ -157,29 +188,107 @@ int Compiler::exec(int argc, char *argv[]) {
         logger << "Read file " << path << std::endl;
     }
 
+    std::string last_module = program.get<std::string>(ARG_LAST_MODULE);
+    bool is_module_exists = possible_last_modules.cend() !=
+                            std::find(possible_last_modules.cbegin(), possible_last_modules.cend(), last_module);
+    if (!is_module_exists) {
+        std::cerr << "Unexepted module name " << last_module << std::endl;
+        std::cerr << "Exepted values: [ ";
+        for (auto value : possible_last_modules) {
+            std::cerr << value << ' ';
+        }
+        std::cerr << "]" << std::endl;
+        return 2;
+    }
+
+    bool times = program.get<bool>(ARG_TIMES);
+    bool disable_logging = program.get<bool>(ARG_DISABLE_LOG);
     ast::SyntaxTree tree;
+
+    utils::Timer module_timer;
+
+    std::vector<double> measured_times;
 
     try {
         logger << std::endl << "PREPROCESSOR:" << std::endl;
+        module_timer.start();
         source = Preprocessor::process(source);
-        logger << dumping::dump(source) << std::endl;
+        module_timer.end();
+        measured_times.push_back(module_timer.elapsed());
+        if (times) {
+            logger << "Elapsed time: " << std::to_string(measured_times.back()) << std::endl;
+        }
+        if (disable_logging) {
+            logger << dumping::dump(source) << std::endl;
+        }
+        if (last_module == possible_last_modules[0]) {
+            return 0;
+        }
 
         logger << "LEXER:" << std::endl;
+        module_timer.start();
         auto tokens = Lexer::process(source);
-        logger << dumping::dump(tokens) << std::endl;
+        module_timer.end();
+        measured_times.push_back(module_timer.elapsed());
+        if (times) {
+            logger << "Elapsed time: " << std::to_string(measured_times.back()) << std::endl;
+        }
+        if (disable_logging) {
+            logger << dumping::dump(tokens) << std::endl;
+        }
+        if (last_module == possible_last_modules[1]) {
+            return 0;
+        }
 
         logger << "PARSER:" << std::endl;
+        module_timer.start();
         tree = Parser::process(tokens);
-        logger << tree.dump();
+        module_timer.end();
+        measured_times.push_back(module_timer.elapsed());
+        if (times) {
+            logger << "Elapsed time: " << std::to_string(measured_times.back()) << std::endl;
+        }
+        if (disable_logging) {
+            logger << tree.dump();
+        }
+        if (last_module == possible_last_modules[2]) {
+            return 0;
+        }
 
         logger << "SEMANTIZER:" << std::endl;
+        module_timer.start();
         Semantizer::process(tree);
-        logger << tree.dump();
+        module_timer.end();
+        measured_times.push_back(module_timer.elapsed());
+        if (times) {
+            logger << "Elapsed time: " << std::to_string(measured_times.back()) << std::endl;
+        }
+        if (disable_logging) {
+            logger << tree.dump();
+        }
+        if (last_module == possible_last_modules[3]) {
+            return 0;
+        }
 
         if (program.get<bool>(ARG_OPTIMIZE)) {
             logger << "OPTIMIZER:" << std::endl;
+            module_timer.start();
             Optimizer::process(tree);
-            logger << tree.dump();
+            module_timer.end();
+            measured_times.push_back(module_timer.elapsed());
+            if (times) {
+                logger << "Elapsed time: " << std::to_string(measured_times.back()) << std::endl;
+            }
+            if (disable_logging) {
+                logger << tree.dump();
+            }
+            if (last_module == possible_last_modules[4]) {
+                return 0;
+            }
+        }
+        if (times) {
+            logger << "Compile time: "
+                   << std::to_string(std::accumulate(measured_times.begin(), measured_times.end(), 0.0)) << std::endl;
         }
     } catch (ErrorBuffer &errors) {
         std::cerr << errors.message();
