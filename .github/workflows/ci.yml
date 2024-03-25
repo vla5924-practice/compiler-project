@@ -115,6 +115,6 @@ jobs:
         uses: coverallsapp/github-action@v2.2.3
         with:
           github-token: ${{ secrets.github_token }}
-          file: ${{ github.workspace }}/build/coverage.info
+          file: ./build/coverage.info
           format: lcov
           fail-on-error: false
