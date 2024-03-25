@@ -95,7 +95,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y -q --no-install-recommends lcov
+          apt-get install -y -q --no-install-recommends lcov curl
       - name: Initialize repository
         uses: actions/checkout@v4
         with:
