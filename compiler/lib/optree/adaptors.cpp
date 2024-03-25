@@ -11,7 +11,7 @@ bool ModuleOp::verify(const Operation *op) {
 
 bool FunctionOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<0U>(op) && numResults<0U>(op) && op->attr(0).is<std::string>() &&
-           op->attr(1).is<Type>() && op->attr(1).as<Type>().is<FunctionType>();
+           op->attr(1).isType<FunctionType>();
 }
 
 bool AllocateOp::verify(const Operation *op) {
@@ -32,7 +32,7 @@ bool ArithBinaryOp::verify(const Operation *op) {
 
 bool LogicBinaryOp::verify(const Operation *op) {
     return BinaryOp::verify(op) && oneAttrOfType<LogicBinOpKind>(op) && operandsHaveSameType(op) &&
-           op->result(0)->type.is<IntegerType>();
+           op->result(0)->type->is<IntegerType>();
 }
 
 bool UnaryOp::verify(const Operation *op) {
@@ -45,15 +45,15 @@ bool ArithCastOp::verify(const Operation *op) {
 
 bool LogicUnaryOp::verify(const Operation *op) {
     return UnaryOp::verify(op) && oneAttrOfType<LogicUnaryOpKind>(op) && operandsAndResultsHaveSameType(op) &&
-           op->result(0)->type.is<IntegerType>();
+           op->result(0)->type->is<IntegerType>();
 }
 
 bool LoadOp::verify(const Operation *op) {
-    return Adaptor::verify(op) && numOperands<1U>(op) && numResults<1U>(op) && op->operand(0)->type.is<PointerType>() &&
-           op->operand(0)->type.as<PointerType>() == op->result(0)->type;
+    return Adaptor::verify(op) && numOperands<1U>(op) && numResults<1U>(op) &&
+           op->operand(0)->canPointTo(op->result(0));
 }
 
 bool StoreOp::verify(const Operation *op) {
-    return Adaptor::verify(op) && numOperands<2U>(op) && numResults<0U>(op) && op->operand(0)->type.is<PointerType>() &&
-           op->operand(0)->type.as<PointerType>() == op->result(1)->type;
+    return Adaptor::verify(op) && numOperands<2U>(op) && numResults<0U>(op) &&
+           op->operand(0)->canPointTo(op->result(1));
 }

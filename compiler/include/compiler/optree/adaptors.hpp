@@ -83,10 +83,10 @@ struct FunctionOp : Adaptor {
     }
 
     const FunctionType &type() const {
-        return op->attr(1).as<Type>().as<FunctionType>();
+        return op->attr(1).asType<FunctionType>();
     }
 
-    void setType(const FunctionType &value) {
+    void setType(FunctionType::Ptr value) {
         op->attr(1).set(value);
     }
 
@@ -96,7 +96,7 @@ struct FunctionOp : Adaptor {
 struct AllocateOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Allocate", specId)
 
-    void init(const Type &type) {
+    void init(Type::Ptr type) {
         op->results.emplace_back(Value::make(type, op));
     }
 
@@ -111,7 +111,7 @@ struct ConstantOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Constant", specId)
 
     template <typename VariantType>
-    void init(const Type &type = {}, const VariantType &value = {}) {
+    void init(Type::Ptr type, const VariantType &value) {
         op->results.emplace_back(Value::make(type, op));
         op->addAttr(value);
     }
@@ -130,7 +130,7 @@ struct ConstantOp : Adaptor {
 struct BinaryOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Binary", specId)
 
-    void init(const Type &resultType, Value::Ptr lhs, Value::Ptr rhs) {
+    void init(Type::Ptr resultType, Value::Ptr lhs, Value::Ptr rhs) {
         op->addResult(resultType);
         op->addOperand(lhs);
         op->addOperand(rhs);
@@ -162,7 +162,7 @@ struct BinaryOp : Adaptor {
 struct ArithBinaryOp : BinaryOp {
     OPTREE_ADAPTOR_HELPER(BinaryOp, "ArithBinary", specId)
 
-    void init(ArithBinOpKind kind, const Type &resultType, Value::Ptr lhs, Value::Ptr rhs) {
+    void init(ArithBinOpKind kind, Type::Ptr resultType, Value::Ptr lhs, Value::Ptr rhs) {
         BinaryOp::init(resultType, lhs, rhs);
         op->addAttr(kind);
     }
@@ -182,7 +182,7 @@ struct LogicBinaryOp : BinaryOp {
     OPTREE_ADAPTOR_HELPER(BinaryOp, "LogicBinary", specId)
 
     void init(LogicBinOpKind kind, Value::Ptr lhs, Value::Ptr rhs) {
-        BinaryOp::init(IntegerType(), lhs, rhs);
+        BinaryOp::init(TypeStorage::integerType(), lhs, rhs);
         op->addAttr(kind);
     }
 
@@ -196,7 +196,7 @@ struct LogicBinaryOp : BinaryOp {
 struct UnaryOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Unary", specId)
 
-    void init(const Type &resultType, Value::Ptr value) {
+    void init(Type::Ptr resultType, Value::Ptr value) {
         op->addResult(resultType);
         op->addOperand(value);
     }
@@ -219,7 +219,7 @@ struct UnaryOp : Adaptor {
 struct ArithCastOp : UnaryOp {
     OPTREE_ADAPTOR_HELPER(UnaryOp, "ArithCast", specId)
 
-    void init(ArithCastOpKind kind, const Type &resultType, Value::Ptr value) {
+    void init(ArithCastOpKind kind, Type::Ptr resultType, Value::Ptr value) {
         UnaryOp::init(resultType, value);
         op->addAttr(kind);
     }
@@ -234,7 +234,7 @@ struct ArithCastOp : UnaryOp {
 struct LogicUnaryOp : UnaryOp {
     OPTREE_ADAPTOR_HELPER(UnaryOp, "LogicUnary", specId)
 
-    void init(LogicUnaryOpKind kind, const Type &resultType, Value::Ptr value) {
+    void init(LogicUnaryOpKind kind, Type::Ptr resultType, Value::Ptr value) {
         UnaryOp::init(resultType, value);
         op->addAttr(kind);
     }
@@ -249,13 +249,13 @@ struct LogicUnaryOp : UnaryOp {
 struct LoadOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Load", specId)
 
-    void init(const Type &resultType, Value::Ptr src) {
+    void init(Type::Ptr resultType, Value::Ptr src) {
         op->addOperand(src);
         op->results.emplace_back(Value::make(resultType, op));
     }
 
     void init(Value::Ptr src) {
-        auto resultType = src->type.as<PointerType>().pointee;
+        auto resultType = src->type->as<PointerType>().pointee;
         init(resultType, src);
     }
 

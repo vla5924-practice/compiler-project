@@ -128,14 +128,14 @@ struct Operation {
 
     void addOperand(Value::Ptr value);
     void eraseOperand(size_t operandNumber);
-    Value::Ptr addResult(const Type &type);
+    Value::Ptr addResult(Type::Ptr type);
     void addToBody(Operation::Ptr op);
     void erase();
 
     bool verify() const;
 
-    std::string dump(int depth = 0) const;
-    void dump(std::ostream &stream, int depth = 0) const;
+    std::string dump() const;
+    void dump(std::ostream &stream) const;
 
     template <typename AdaptorType>
     static Ptr make(Ptr parent = {}, Body::iterator position = {}) {

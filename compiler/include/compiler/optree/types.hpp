@@ -1,26 +1,19 @@
 #pragma once
 
 #include <concepts>
+#include <functional>
+#include <memory>
 #include <ostream>
 #include <type_traits>
 #include <vector>
 
-#define OPTREE_TYPE_HELPER(CLASSID_MEMBER_NAME)                                                                        \
-  protected:                                                                                                           \
-    friend struct Type;                                                                                                \
-    static TypeId getClassId() {                                                                                       \
-        return &CLASSID_MEMBER_NAME;                                                                                   \
-    }                                                                                                                  \
-                                                                                                                       \
-  private:                                                                                                             \
-    static inline char CLASSID_MEMBER_NAME = 0;                                                                        \
-                                                                                                                       \
-  public:
-
 namespace optree {
 
 struct Type {
-    Type() : id(nullptr){};
+    using Ptr = std::shared_ptr<const Type>;
+    using PtrVector = std::vector<Type::Ptr>;
+
+    Type() = default;
     Type(const Type &) = default;
     Type(Type &&) = default;
     virtual ~Type() = default;
@@ -31,103 +24,120 @@ struct Type {
     template <typename DerivedType>
         requires std::derived_from<DerivedType, Type>
     bool is() const {
-        return id == DerivedType::getClassId();
+        return dynamic_cast<const std::remove_cvref_t<DerivedType> *>(this) != nullptr;
     }
 
     template <typename DerivedType>
         requires std::derived_from<DerivedType, Type>
     const std::remove_cvref_t<DerivedType> &as() const {
-        return *dynamic_cast<const DerivedType *>(this);
-    }
-
-    template <typename DerivedType>
-        requires std::derived_from<DerivedType, Type>
-    DerivedType &as() {
-        return *dynamic_cast<DerivedType *>(this);
+        return dynamic_cast<const std::remove_cvref_t<DerivedType> &>(*this);
     }
 
     operator bool() const {
-        return id != getClassId();
+        return !is<Type>();
+    }
+
+    virtual bool operator==(const Type &) const {
+        return false;
+    }
+
+    virtual bool operator!=(const Type &other) const {
+        return !(*this == other);
     }
 
     virtual void dump(std::ostream &stream) const;
 
-  protected:
-    using TypeId = void *;
-
-    TypeId id;
-
-    Type(TypeId id) : id(id){};
-
-    static TypeId getClassId() {
-        return nullptr;
+    template <typename ConcreteType, typename... Args>
+    static auto make(Args... args) {
+        return std::make_shared<const std::remove_cvref_t<ConcreteType>>(std::forward<Args>(args)...);
     }
 };
 
 struct NoneType : public Type {
-    OPTREE_TYPE_HELPER(classId)
+    using Ptr = std::shared_ptr<const NoneType>;
 
-    using Type::Type;
-    NoneType() : Type(&classId){};
+    NoneType() = default;
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
 
     void dump(std::ostream &stream) const override;
 };
 
 struct IntegerType : public Type {
-    OPTREE_TYPE_HELPER(classId)
+    using Ptr = std::shared_ptr<const IntegerType>;
 
     const unsigned width;
 
-    using Type::Type;
-    explicit IntegerType(unsigned width = 64U) : Type(&classId), width(width){};
+    explicit IntegerType(unsigned width) : width(width){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
 
     void dump(std::ostream &stream) const override;
 };
 
 struct FloatType : public Type {
-    OPTREE_TYPE_HELPER(classId)
+    using Ptr = std::shared_ptr<const FloatType>;
 
     const unsigned width;
 
-    using Type::Type;
-    explicit FloatType(unsigned width = 64U) : Type(&classId), width(width){};
+    explicit FloatType(unsigned width) : width(width){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
 
     void dump(std::ostream &stream) const override;
 };
 
 struct StrType : public Type {
-    OPTREE_TYPE_HELPER(classId)
+    using Ptr = std::shared_ptr<const StrType>;
 
     const unsigned charWidth;
 
-    using Type::Type;
-    explicit StrType(unsigned charWidth = 8U) : Type(&classId), charWidth(charWidth){};
+    explicit StrType(unsigned charWidth) : charWidth(charWidth){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
 
     void dump(std::ostream &stream) const override;
 };
 
 struct FunctionType : public Type {
-    OPTREE_TYPE_HELPER(classId)
+    using Ptr = std::shared_ptr<const FunctionType>;
 
-    const std::vector<Type> arguments;
-    const Type result;
+    const PtrVector arguments;
+    const Type::Ptr result;
 
-    using Type::Type;
+    FunctionType(const PtrVector &arguments, Type::Ptr result) : arguments(arguments), result(result){};
 
-    FunctionType(const std::vector<Type> &arguments, const Type &result)
-        : Type(&classId), arguments(arguments), result(result){};
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
 
     void dump(std::ostream &stream) const override;
 };
 
 struct PointerType : public Type {
-    OPTREE_TYPE_HELPER(classId)
+    using Ptr = std::shared_ptr<const PointerType>;
 
-    const Type pointee;
+    const Type::Ptr pointee;
 
-    PointerType(const Type &pointee) : Type(&classId), pointee(pointee){};
+    PointerType(Type::Ptr pointee) : pointee(pointee){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
 
     void dump(std::ostream &stream) const override;
+};
+
+struct TypeStorage {
+    TypeStorage() = delete;
+    ~TypeStorage() = delete;
+
+    static NoneType::Ptr noneType();
+    static IntegerType::Ptr integerType(unsigned width = 64U);
+    static FloatType::Ptr floatType(unsigned width = 64U);
+    static StrType::Ptr strType(unsigned charWidth = 8U);
 };
 
 } // namespace optree

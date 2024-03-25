@@ -26,7 +26,7 @@ struct Value {
         Use(Operation *user, size_t operandNumber) : user(user), operandNumber(operandNumber){};
     };
 
-    Type type;
+    Type::Ptr type;
     Operation *owner;
     std::forward_list<Use> uses;
 
@@ -35,11 +35,23 @@ struct Value {
     Value(Value &&) = default;
     ~Value() = default;
 
-    Value(Type type, Operation *owner) : type(type), owner(owner){};
-    Value(Type type, std::shared_ptr<Operation> owner) : Value(type, owner.get()){};
+    Value(Type::Ptr type, Operation *owner) : type(type), owner(owner){};
+    Value(Type::Ptr type, std::shared_ptr<Operation> owner) : Value(type, owner.get()){};
 
     operator bool() const {
         return type.operator bool();
+    }
+
+    bool hasType(const Type::Ptr &other) const {
+        return *type == *other;
+    }
+
+    bool sameType(const Value::Ptr &other) const {
+        return *type == *other->type;
+    }
+
+    bool canPointTo(const Value::Ptr &other) const {
+        return type->is<PointerType>() && *type->as<PointerType>().pointee == *other->type;
     }
 
     const utils::SourceRef &ref() const;

@@ -11,7 +11,7 @@
 namespace optree {
 
 struct Attribute {
-    std::variant<std::monostate, int64_t, double, bool, std::string, Type, ArithBinOpKind, ArithCastOpKind,
+    std::variant<std::monostate, int64_t, double, bool, std::string, Type::Ptr, ArithBinOpKind, ArithCastOpKind,
                  LogicBinOpKind, LogicUnaryOpKind>
         storage;
 
@@ -28,6 +28,11 @@ struct Attribute {
         return std::holds_alternative<VariantType>(storage);
     }
 
+    template <typename ConcreteType>
+    bool isType() const {
+        return is<Type::Ptr>() && as<Type::Ptr>()->is<ConcreteType>();
+    }
+
     template <typename VariantType>
     const VariantType &as() const {
         return std::get<VariantType>(storage);
@@ -38,6 +43,11 @@ struct Attribute {
         return std::get<VariantType>(storage);
     }
 
+    template <typename ConcreteType>
+    const ConcreteType &asType() const {
+        return as<Type::Ptr>()->as<ConcreteType>();
+    }
+
     template <typename VariantType>
     void set(const VariantType &value) {
         storage = value;
@@ -45,8 +55,8 @@ struct Attribute {
 
     template <typename VariantType>
         requires std::derived_from<VariantType, Type>
-    void set(const VariantType &value) {
-        storage = dynamic_cast<const Type &>(value);
+    void set(const std::shared_ptr<const VariantType> &value) {
+        storage = std::dynamic_pointer_cast<const Type>(value);
     }
 
     operator bool() const {
@@ -56,6 +66,8 @@ struct Attribute {
     void clear() {
         storage = std::monostate();
     }
+
+    void dump(std::ostream &stream) const;
 };
 
 } // namespace optree

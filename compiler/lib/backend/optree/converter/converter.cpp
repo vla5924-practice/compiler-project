@@ -1,5 +1,7 @@
 #include "converter/converter.hpp"
 
+#include <cassert>
+
 #include "compiler/optree/adaptors.hpp"
 
 #include "converter/converter_context.hpp"
@@ -11,16 +13,16 @@ using ast::Node;
 using ast::NodeType;
 using ast::SyntaxTree;
 
-Type convertType(ast::TypeId typeId) {
+Type::Ptr convertType(ast::TypeId typeId) {
     switch (typeId) {
     case ast::NoneType:
-        return NoneType();
+        return TypeStorage::noneType();
     case ast::IntType:
-        return IntegerType(64U);
+        return TypeStorage::integerType();
     case ast::FloatType:
-        return FloatType(64U);
+        return TypeStorage::floatType();
     case ast::StrType:
-        return StrType(8U);
+        return TypeStorage::strType();
     }
     return {};
 }
@@ -46,21 +48,21 @@ void processFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
     auto it = node->children.begin();
     funcOp.setName((*it)->str());
     ++it;
-    std::vector<Type> arguments;
+    Type::PtrVector arguments;
     for (const auto &typeNode : (*it)->children)
         arguments.push_back(convertType(typeNode->typeId()));
     ++it;
-    funcOp.setType(FunctionType(arguments, convertType((*it)->typeId())));
+    funcOp.setType(Type::make<FunctionType>(arguments, convertType((*it)->typeId())));
     ctx.op = op;
     ++it;
-    visitNode(*it, ctx);
+    processNode(*it, ctx);
     ctx.goParent();
 }
 
 void processBranchRoot(const Node::Ptr &node, ConverterContext &ctx) {
     ctx.enterScope();
     for (const auto &child : node->children)
-        visitNode(child, ctx);
+        processNode(child, ctx);
     ctx.exitScope();
 }
 
@@ -69,10 +71,12 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
     if (ctx.wouldBeRedeclaration(name))
         return; // TODO: error
     auto type = convertType(node->firstChild()->typeId());
-    auto [op, allocOp] = ctx.addToBody<AllocateOp>(PointerType(type));
+    auto [op, allocOp] = ctx.addToBody<AllocateOp>(Type::make<PointerType>(type));
     ctx.saveVariable(name, allocOp.result());
-    if (node->children.size() == 3U)
-        visitNode(node->lastChild(), ctx);
+    if (node->children.size() == 3U) {
+        auto definition = visitNode(node->lastChild(), ctx);
+        ctx.addToBody<StoreOp>(allocOp.result(), definition);
+    }
 }
 
 Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
@@ -80,30 +84,30 @@ Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 Value::Ptr visitIntegerLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.addToBodyWrap<ConstantOp>(IntegerType(), node->intNum()).result();
+    return ctx.addToBodyWrap<ConstantOp>(TypeStorage::integerType(), node->intNum()).result();
 }
 
 Value::Ptr visitFloatingPointLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.addToBodyWrap<ConstantOp>(FloatType(), node->fpNum()).result();
+    return ctx.addToBodyWrap<ConstantOp>(TypeStorage::floatType(), node->fpNum()).result();
 }
 
 Value::Ptr visitStringLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.addToBodyWrap<ConstantOp>(StrType(), node->str()).result();
+    return ctx.addToBodyWrap<ConstantOp>(TypeStorage::strType(), node->str()).result();
 }
 
 Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
     auto lhs = visitNode(node->firstChild(), ctx);
     auto rhs = visitNode(node->lastChild(), ctx);
-    const Type &lhsType = lhs->type;
-    const Type &rhsType = rhs->type;
+    const Type::Ptr &lhsType = lhs->type;
+    const Type::Ptr &rhsType = rhs->type;
     auto binOp = node->binOp();
     if (lhsType != rhsType) {
-        if (lhsType.is<IntegerType>() && rhsType.is<FloatType>()) {
+        if (lhsType->is<IntegerType>() && rhsType->is<FloatType>()) {
             if (binOp == ast::BinaryOperation::Assign || binOp == ast::BinaryOperation::FAssign)
                 rhs = ctx.addToBodyWrap<ArithCastOp>(ArithCastOpKind::FloatToInt, lhsType, rhs).result();
             else
                 lhs = ctx.addToBodyWrap<ArithCastOp>(ArithCastOpKind::IntToFloat, rhsType, lhs).result();
-        } else if (lhsType.is<FloatType>() && rhsType.is<IntegerType>()) {
+        } else if (lhsType->is<FloatType>() && rhsType->is<IntegerType>()) {
             rhs = ctx.addToBodyWrap<ArithCastOp>(ArithCastOpKind::IntToFloat, lhsType, rhs).result();
         }
     }
@@ -187,6 +191,7 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
     case NodeType::Expression:
         visitExpression(node, ctx);
     }
+    assert(false && "unexpected NodeType in processNode");
 }
 
 Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
@@ -202,12 +207,12 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
     case NodeType::BinaryOperation:
         return visitBinaryOperation(node, ctx);
     }
-    return {};
+    assert(false && "unexpected NodeType in visitNode");
 }
 
 Program Converter::process(const SyntaxTree &syntaxTree) {
     ConverterContext ctx;
-    visitNode(syntaxTree.root, ctx);
+    processNode(syntaxTree.root, ctx);
     Program program;
     program.root = ctx.op;
     return program;

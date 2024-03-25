@@ -2,6 +2,9 @@
 
 #include <ostream>
 #include <sstream>
+#include <unordered_map>
+
+#include "compiler/utils/utils.hpp"
 
 using namespace optree;
 
@@ -17,7 +20,7 @@ void Operation::eraseOperand(size_t operandNumber) {
     operands.erase(operands.begin() + operandNumber);
 }
 
-Value::Ptr Operation::addResult(const Type &type) {
+Value::Ptr Operation::addResult(Type::Ptr type) {
     return results.emplace_back(Value::make(type, this));
 }
 
@@ -40,28 +43,42 @@ bool Operation::verify() const {
     return verifier(this);
 }
 
-std::string Operation::dump(int depth) const {
+std::string Operation::dump() const {
     std::stringstream str;
-    dump(str, depth);
+    dump(str);
     return str.str();
 }
 
-void Operation::dump(std::ostream &stream, int depth) const {
+static void dumpValue(const Value::Ptr &value, std::ostream &stream, int valueId) {
+    stream << '#' << valueId << " : ";
+    value->type->dump(stream);
+}
+
+static void dumpOperation(const Operation *op, std::ostream &stream, int depth,
+                          std::unordered_map<const Value *, int> &valueIds, int &nextValueId) {
     for (int i = 0; i < depth; i++)
         stream << "  ";
-    stream << name << " ( ";
-    for (const auto &operand : operands) {
-        stream << operand.get() << ':';
-        operand->type.dump(stream);
-        stream << ' ';
+    stream << op->name;
+    if (!op->attributes.empty()) {
+        stream << " {";
+        utils::interleaveComma(stream, op->attributes, [&](const Attribute &attr) { attr.dump(stream); });
+        stream << "}";
     }
-    stream << ") -> ";
-    for (const auto &result : results) {
-        stream << result.get() << ':';
-        result->type.dump(stream);
-        stream << ' ';
-    }
-    stream << '\n';
-    for (const auto &op : body)
-        op->dump(stream, depth + 1);
+    stream << " (";
+    utils::interleaveComma(stream, op->operands,
+                           [&](const Value::Ptr &operand) { dumpValue(operand, stream, valueIds[operand.get()]); });
+    stream << ") -> (";
+    utils::interleaveComma(stream, op->results, [&](const Value::Ptr &result) {
+        dumpValue(result, stream, nextValueId);
+        valueIds[result.get()] = nextValueId++;
+    });
+    stream << ")\n";
+    for (const auto &op : op->body)
+        dumpOperation(op.get(), stream, depth + 1, valueIds, nextValueId);
+}
+
+void Operation::dump(std::ostream &stream) const {
+    std::unordered_map<const Value *, int> valueIds;
+    int valueId = 0;
+    dumpOperation(this, stream, 0, valueIds, valueId);
 }
