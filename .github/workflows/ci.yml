@@ -47,7 +47,7 @@ jobs:
           submodules: true
       - name: Build
         run: |
-          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_IR_GENERATOR=OFF
+          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN=OFF
           ninja -C build
       - name: Archive binaries
         run: tar cf binaries.tar -C build bin
@@ -80,3 +80,5 @@ jobs:
         run: ./bin/frontend_test
       - name: Run AST-based backend tests
         run: ./bin/backend_ast_test
+      - name: Run operation tree based backend tests
+        run: ./bin/backend_optree_test
