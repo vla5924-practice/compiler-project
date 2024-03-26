@@ -1,6 +1,5 @@
 %{
 #include <math.h>
-#include "token_types.hpp"
 #include <stdio.h>
 
 #define WRITE_TO_FILE
@@ -104,8 +103,6 @@ STRINGS     {QUOTE1}|{QUOTE2}
 
 [ ]               printf( "Space: %s\n", yytext );
 "{"[^}\n]*"}"     printf( "Unrecognized character: %s\n", yytext );/* eat up one-line comments */
-
-
 
 .           printf( "Unrecognized character: %s\n", yytext );
 
