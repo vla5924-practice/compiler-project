@@ -1,0 +1,44 @@
+name: CodeQL
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/codeql.yml'
+      - 'compiler/**/*.cpp'
+      - 'compiler/**/*.hpp'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/codeql.yml'
+      - 'compiler/**/*.cpp'
+      - 'compiler/**/*.hpp'
+
+jobs:
+  codeql-analyze:
+    name: CodeQL analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+    - name: Initialize repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: c-cpp
+        build-mode: manual
+    - name: Build
+      run: |
+        cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_CODEGEN=OFF
+        cmake --build build --parallel
+    - name: Perform analysis
+      uses: github/codeql-action/analyze@v3
