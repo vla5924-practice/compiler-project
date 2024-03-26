@@ -1,5 +1,3 @@
-import random
-from argparse import ArgumentParser
 from enum import Enum
 
 class Keyword(Enum):
@@ -26,9 +24,7 @@ class Keyword(Enum):
     TRUE = "True",
     NONE = "None"
 
-
-
-keywords = {
+KEYWODRS = {
     "bool": Keyword.BOOL,
     "False": Keyword.FALSE,
     "int": Keyword.INT,
@@ -73,7 +69,7 @@ class Operator(Enum):
     RightBrace = ")"
     RectLeftBrace = "["
 
-operators = {
+OPERATORS = {
     "%": Operator.Mod, 
     ".": Operator.Dot,
     # "]": Operator.RectRightBrace,
@@ -94,23 +90,37 @@ operators = {
     # "[": Operator.RectLeftBrace
 }
 
-def parse_args():
-
-    parser = ArgumentParser()
-
-    parser.add_argument('-o', '--output', type=str, required=True)
-    parser.add_argument('--word-count', type=int, required=True)
-
-    return parser.parse_args()
-
-def main():
-    args = parse_args()
-
-    words = list(operators.keys()) + list(keywords.keys())
-
-    with open(args.output, "w") as py_file:
-        for i in range(args.word_count):
-            py_file.writelines(str(words[random.randint(0, len(words) - 1)]) + ' ')
+class TokenType(Enum):
+    Keyword = "keyword"
+    Identifier = "identifier"
+    Operator = "operator"
+    Special = "special"
+    IntegerLiteral = "integer_literal"
+    FloatingPointLiteral = "floating_point_literal"
+    StringLiteral = "string_literal"
 
 
-main()
+INDETIFICATORS = {
+    "Z": TokenType.Identifier,
+    "V": TokenType.Identifier,
+    "Za_Pobedy": TokenType.Identifier,
+    "x": TokenType.Identifier,
+    "y": TokenType.Identifier,
+    "i": TokenType.Identifier,
+    "foo": TokenType.Identifier,
+    "bar": TokenType.Identifier,
+}
+
+LITERALS = {
+    "0": TokenType.IntegerLiteral,
+    "1": TokenType.IntegerLiteral,
+    "23122": TokenType.IntegerLiteral,
+    "42.24": TokenType.FloatingPointLiteral,
+    "1.0": TokenType.FloatingPointLiteral,
+    "0.0": TokenType.FloatingPointLiteral,
+    "0.3232": TokenType.FloatingPointLiteral,
+    "232.0": TokenType.FloatingPointLiteral,
+    "\"Hello\"": TokenType.StringLiteral,
+    "\'Quote1\'": TokenType.StringLiteral,
+    "\"Quote2\"": TokenType.StringLiteral,
+}
