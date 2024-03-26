@@ -21,6 +21,7 @@ set(COMPILER_LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 option(ENABLE_CODEGEN "Enables LLVM IR generation backend" OFF)
 option(ENABLE_CLI "Enables command-line interface application" ON)
 option(ENABLE_TESTS "Enables tests for components" ON)
+option(ENABLE_COVERAGE "Enables code coverage instrumentation" OFF)
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Z7 /Od")
