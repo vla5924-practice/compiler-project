@@ -26,6 +26,12 @@ jobs:
     name: CodeQL analyze
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    container:
+      image: ghcr.io/vla5924-practice/compiler-project/devcontainer:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
     - name: Initialize repository
       uses: actions/checkout@v4
