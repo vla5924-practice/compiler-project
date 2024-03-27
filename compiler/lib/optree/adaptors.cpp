@@ -14,6 +14,19 @@ bool FunctionOp::verify(const Operation *op) {
            op->attr(1).isType<FunctionType>();
 }
 
+bool FunctionCallOp::verify(const Operation *op) {
+    bool staticCheck = Adaptor::verify(op) && numResults<1U>(op) && op->attr(0).is<std::string>();
+    if (!staticCheck)
+        return false;
+    if (auto moduleOp = op->findParent<ModuleOp>()) {
+        if (auto funcOp = moduleOp.lookup<FunctionOp>(op->attr(0).as<std::string>())) {
+            const auto &type = funcOp.type();
+            return op->numOperands() == type.arguments.size() && op->result(0)->hasType(type.result);
+        }
+    }
+    return false;
+}
+
 bool AllocateOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<0U>(op) && numResults<1U>(op);
 }

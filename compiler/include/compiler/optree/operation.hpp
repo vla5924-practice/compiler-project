@@ -33,6 +33,7 @@ struct Operation {
 
     std::vector<Value::Ptr> operands;
     std::vector<Value::Ptr> results;
+    std::vector<Value::Ptr> inwards;
     std::vector<Attribute> attributes;
     Body body;
 
@@ -60,6 +61,14 @@ struct Operation {
 
     Value::Ptr &result(size_t index) {
         return results[index];
+    }
+
+    const Value::Ptr &inward(size_t index) const {
+        return inwards[index];
+    }
+
+    Value::Ptr &inward(size_t index) {
+        return inwards[index];
     }
 
     const Attribute &attr(size_t index) const {
@@ -90,6 +99,10 @@ struct Operation {
         return results.size();
     }
 
+    size_t numInwards() const {
+        return inwards.size();
+    }
+
     size_t numAttrs() const {
         return attributes.size();
     }
@@ -108,17 +121,11 @@ struct Operation {
     }
 
     template <typename AdaptorType>
-    const AdaptorType as() const {
-        if (is<AdaptorType>())
-            return AdaptorType(this);
-        return {};
-    }
-
-    template <typename AdaptorType>
-    AdaptorType as() {
-        if (is<AdaptorType>())
-            return AdaptorType(this);
-        return {};
+    AdaptorType findParent() const {
+        Ptr upperParent = parent;
+        while (upperParent && !upperParent->is<AdaptorType>())
+            upperParent = upperParent->parent;
+        return AdaptorType(upperParent);
     }
 
     template <typename VariantType>
@@ -129,7 +136,8 @@ struct Operation {
     void addOperand(Value::Ptr value);
     void eraseOperand(size_t operandNumber);
     Value::Ptr addResult(Type::Ptr type);
-    void addToBody(Operation::Ptr op);
+    Value::Ptr addInward(Type::Ptr type);
+    Body::iterator addToBody(Operation::Ptr op);
     void erase();
 
     bool verify() const;
@@ -138,9 +146,17 @@ struct Operation {
     void dump(std::ostream &stream) const;
 
     template <typename AdaptorType>
-    static Ptr make(Ptr parent = {}, Body::iterator position = {}) {
-        return std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::verify,
-                                           AdaptorType::getOperationName(), parent, position);
+    static AdaptorType make(Ptr parent = {}, Body::iterator position = {}) {
+        auto op = std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::verify,
+                                              AdaptorType::getOperationName(), parent, position);
+        return {op};
+    }
+
+    template <typename AdaptorType>
+    static AdaptorType as(const Operation::Ptr &op) {
+        if (op->is<AdaptorType>())
+            return AdaptorType(op);
+        return {};
     }
 };
 

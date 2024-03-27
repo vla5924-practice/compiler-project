@@ -10,11 +10,22 @@ using namespace parser;
 using namespace optree::converter;
 
 int main() {
-    StringVec source = {"def main() -> None:", "    x: float = 1 + 1.0"};
-    auto token_list = Lexer::process(source);
-    auto tree = Parser::process(token_list);
-    tree.dump(std::cout);
-    auto program = Converter::process(tree);
-    program.root->dump(std::cout);
+    StringVec source = {
+        "def myfunc(z: int, u: float) -> None:",
+        "    x: float = z * u",
+        "def main() -> None:",
+        "    x: float = 1 + 1.0",
+    };
+    try {
+        auto token_list = Lexer::process(source);
+        auto tree = Parser::process(token_list);
+        tree.dump(std::cout);
+        auto program = Converter::process(tree);
+        program.root->dump(std::cout);
+    } catch (ErrorBuffer &buf) {
+        std::cout << buf.message();
+    } catch (std::exception &e) {
+        std::cout << e.what();
+    }
     return 0;
 }

@@ -24,8 +24,14 @@ Value::Ptr Operation::addResult(Type::Ptr type) {
     return results.emplace_back(Value::make(type, this));
 }
 
-void Operation::addToBody(Operation::Ptr op) {
-    body.emplace_back(op);
+Value::Ptr Operation::addInward(Type::Ptr type) {
+    return inwards.emplace_back(Value::make(type, this));
+}
+
+Operation::Body::iterator Operation::addToBody(Operation::Ptr op) {
+    auto it = body.emplace(body.end(), op);
+    op->position = it;
+    return it;
 }
 
 void Operation::erase() {
@@ -68,11 +74,18 @@ static void dumpOperation(const Operation *op, std::ostream &stream, int depth,
     utils::interleaveComma(stream, op->operands,
                            [&](const Value::Ptr &operand) { dumpValue(operand, stream, valueIds[operand.get()]); });
     stream << ") -> (";
-    utils::interleaveComma(stream, op->results, [&](const Value::Ptr &result) {
-        dumpValue(result, stream, nextValueId);
-        valueIds[result.get()] = nextValueId++;
-    });
-    stream << ")\n";
+    auto printOwnValue = [&](const Value::Ptr &value) {
+        dumpValue(value, stream, nextValueId);
+        valueIds[value.get()] = nextValueId++;
+    };
+    utils::interleaveComma(stream, op->results, printOwnValue);
+    stream << ")";
+    if (!op->inwards.empty()) {
+        stream << " [";
+        utils::interleaveComma(stream, op->inwards, printOwnValue);
+        stream << "]";
+    }
+    stream << "\n";
     for (const auto &op : op->body)
         dumpOperation(op.get(), stream, depth + 1, valueIds, nextValueId);
 }

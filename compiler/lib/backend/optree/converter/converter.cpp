@@ -6,6 +6,14 @@
 
 #include "converter/converter_context.hpp"
 
+#if __has_builtin(__builtin_unreachable)
+#define UNREACHABLE(MSG)                                                                                               \
+    assert(false && (MSG));                                                                                            \
+    __builtin_unreachable()
+#else
+#define UNREACHABLE(msg) assert(false && (MSG))
+#endif
+
 using namespace optree;
 using namespace converter;
 
@@ -38,24 +46,33 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx);
 Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx);
 
 void processProgramRoot(const Node::Ptr &node, ConverterContext &ctx) {
-    ctx.op = Operation::make<ModuleOp>();
+    ctx.op = Operation::make<ModuleOp>().op;
+    ctx.builder.setInsertPointAtBodyBegin(ctx.op);
     for (const auto &child : node->children)
         processNode(child, ctx);
 }
 
 void processFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
-    auto [op, funcOp] = ctx.addToBody<FunctionOp>();
     auto it = node->children.begin();
-    funcOp.setName((*it)->str());
+    const std::string &name = (*it)->str();
     ++it;
     Type::PtrVector arguments;
-    for (const auto &typeNode : (*it)->children)
-        arguments.push_back(convertType(typeNode->typeId()));
+    std::vector<std::string> argNames;
+    for (const auto &argNode : (*it)->children) {
+        arguments.push_back(convertType(argNode->firstChild()->typeId()));
+        argNames.push_back(argNode->lastChild()->str());
+    }
     ++it;
-    funcOp.setType(Type::make<FunctionType>(arguments, convertType((*it)->typeId())));
-    ctx.op = op;
+    auto funcType = Type::make<FunctionType>(arguments, convertType((*it)->typeId()));
+    auto funcOp = ctx.insert<FunctionOp>(name, funcType);
+    ctx.op = funcOp.op;
+    ctx.builder.setInsertPointAtBodyBegin(funcOp.op);
+    ctx.enterScope();
+    for (size_t i = 0; i < argNames.size(); i++)
+        ctx.saveVariable(argNames[i], funcOp.op->inward(i));
     ++it;
     processNode(*it, ctx);
+    ctx.exitScope();
     ctx.goParent();
 }
 
@@ -71,11 +88,11 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
     if (ctx.wouldBeRedeclaration(name))
         return; // TODO: error
     auto type = convertType(node->firstChild()->typeId());
-    auto [op, allocOp] = ctx.addToBody<AllocateOp>(Type::make<PointerType>(type));
+    auto allocOp = ctx.insert<AllocateOp>(Type::make<PointerType>(type));
     ctx.saveVariable(name, allocOp.result());
     if (node->children.size() == 3U) {
         auto definition = visitNode(node->lastChild(), ctx);
-        ctx.addToBody<StoreOp>(allocOp.result(), definition);
+        ctx.insert<StoreOp>(allocOp.result(), definition);
     }
 }
 
@@ -84,15 +101,15 @@ Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 Value::Ptr visitIntegerLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.addToBodyWrap<ConstantOp>(TypeStorage::integerType(), node->intNum()).result();
+    return ctx.insert<ConstantOp>(TypeStorage::integerType(), node->intNum()).result();
 }
 
 Value::Ptr visitFloatingPointLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.addToBodyWrap<ConstantOp>(TypeStorage::floatType(), node->fpNum()).result();
+    return ctx.insert<ConstantOp>(TypeStorage::floatType(), node->fpNum()).result();
 }
 
 Value::Ptr visitStringLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.addToBodyWrap<ConstantOp>(TypeStorage::strType(), node->str()).result();
+    return ctx.insert<ConstantOp>(TypeStorage::strType(), node->str()).result();
 }
 
 Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
@@ -104,19 +121,15 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
     if (lhsType != rhsType) {
         if (lhsType->is<IntegerType>() && rhsType->is<FloatType>()) {
             if (binOp == ast::BinaryOperation::Assign || binOp == ast::BinaryOperation::FAssign)
-                rhs = ctx.addToBodyWrap<ArithCastOp>(ArithCastOpKind::FloatToInt, lhsType, rhs).result();
+                rhs = ctx.insert<ArithCastOp>(ArithCastOpKind::FloatToInt, lhsType, rhs).result();
             else
-                lhs = ctx.addToBodyWrap<ArithCastOp>(ArithCastOpKind::IntToFloat, rhsType, lhs).result();
+                lhs = ctx.insert<ArithCastOp>(ArithCastOpKind::IntToFloat, rhsType, lhs).result();
         } else if (lhsType->is<FloatType>() && rhsType->is<IntegerType>()) {
-            rhs = ctx.addToBodyWrap<ArithCastOp>(ArithCastOpKind::IntToFloat, lhsType, rhs).result();
+            rhs = ctx.insert<ArithCastOp>(ArithCastOpKind::IntToFloat, lhsType, rhs).result();
         }
     }
-    auto makeArithBinaryOp = [&](ArithBinOpKind kind) {
-        return ctx.addToBodyWrap<ArithBinaryOp>(kind, lhs, rhs).result();
-    };
-    auto makeLogicBinaryOp = [&](LogicBinOpKind kind) {
-        return ctx.addToBodyWrap<LogicBinaryOp>(kind, lhs, rhs).result();
-    };
+    auto makeArithBinaryOp = [&](ArithBinOpKind kind) { return ctx.insert<ArithBinaryOp>(kind, lhs, rhs).result(); };
+    auto makeLogicBinaryOp = [&](LogicBinOpKind kind) { return ctx.insert<LogicBinaryOp>(kind, lhs, rhs).result(); };
     switch (binOp) {
     case ast::BinaryOperation::Add:
         return makeArithBinaryOp(ArithBinOpKind::AddI);
@@ -160,10 +173,10 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         return makeLogicBinaryOp(LogicBinOpKind::OrI);
     case ast::BinaryOperation::Assign:
     case ast::BinaryOperation::FAssign:
-        ctx.addToBody<StoreOp>(lhs, rhs);
+        ctx.insert<StoreOp>(lhs, rhs);
         return rhs;
     }
-    return {};
+    UNREACHABLE("Unexpected ast::BinaryOperation value in visitBinaryOperation");
 }
 
 Value::Ptr visitVariableName(const Node::Ptr &node, ConverterContext &ctx) {
@@ -171,7 +184,7 @@ Value::Ptr visitVariableName(const Node::Ptr &node, ConverterContext &ctx) {
     // TODO: error if var == nullptr
     if (isLhsInAssignment(node))
         return value;
-    return ctx.addToBodyWrap<LoadOp>(value).result();
+    return ctx.insert<LoadOp>(value).result();
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx) {
@@ -191,7 +204,7 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
     case NodeType::Expression:
         visitExpression(node, ctx);
     }
-    assert(false && "unexpected NodeType in processNode");
+    UNREACHABLE("Unexpected ast::NodeType value in processNode");
 }
 
 Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
@@ -207,7 +220,7 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
     case NodeType::BinaryOperation:
         return visitBinaryOperation(node, ctx);
     }
-    assert(false && "unexpected NodeType in visitNode");
+    UNREACHABLE("Unexpected ast::NodeType value in visitNode");
 }
 
 Program Converter::process(const SyntaxTree &syntaxTree) {

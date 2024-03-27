@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 
+#include "compiler/optree/builder.hpp"
 #include "compiler/optree/operation.hpp"
 
 namespace optree {
@@ -13,28 +14,16 @@ namespace converter {
 struct ConverterContext {
     Operation::Ptr op;
     std::forward_list<std::map<std::string, Value::Ptr>> variables;
+    Builder builder;
 
     template <typename AdaptorType, typename... Args>
-    std::pair<Operation::Ptr, AdaptorType> addToBody(Args... args) {
-        auto newOp = Operation::make<AdaptorType>(op);
-        op->addToBody(newOp);
-        AdaptorType adaptor(newOp);
-        adaptor.init(std::forward<Args>(args)...);
-        return std::make_pair(newOp, adaptor);
-    }
-
-    template <typename AdaptorType, typename... Args>
-    Operation::Ptr addToBodyPtr(Args... args) {
-        return addToBody<AdaptorType>(std::forward<Args>(args)...).first;
-    }
-
-    template <typename AdaptorType, typename... Args>
-    AdaptorType addToBodyWrap(Args... args) {
-        return addToBody<AdaptorType>(std::forward<Args>(args)...).second;
+    AdaptorType insert(Args... args) {
+        return builder.insert<AdaptorType>(std::forward<Args>(args)...);
     }
 
     void goParent() {
         op = op->parent;
+        builder.setInsertPointAtBodyEnd(op);
     }
 
     void enterScope() {

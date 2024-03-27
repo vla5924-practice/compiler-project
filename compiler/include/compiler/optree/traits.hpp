@@ -19,6 +19,11 @@ inline bool numResults(const Operation *op) {
 }
 
 template <size_t N>
+inline bool numInwards(const Operation *op) {
+    return op->numInwards() == N;
+}
+
+template <size_t N>
 inline bool numAttrs(const Operation *op) {
     return op->numAttrs() == N;
 }
