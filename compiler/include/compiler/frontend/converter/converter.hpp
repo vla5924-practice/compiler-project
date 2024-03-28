@@ -3,8 +3,6 @@
 #include "compiler/ast/syntax_tree.hpp"
 #include "compiler/optree/program.hpp"
 
-namespace optree {
-
 namespace converter {
 
 class Converter {
@@ -14,9 +12,7 @@ class Converter {
     Converter(Converter &&) = delete;
     ~Converter() = delete;
 
-    static Program process(const ast::SyntaxTree &syntaxTree);
+    static optree::Program process(const ast::SyntaxTree &syntaxTree);
 };
 
 } // namespace converter
-
-} // namespace optree

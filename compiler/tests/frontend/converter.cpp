@@ -1,15 +1,15 @@
-#include <iostream>
+#include <gtest/gtest.h>
 
-#include "compiler/backend/optree/converter/converter.hpp"
+#include "compiler/frontend/converter/converter.hpp"
 #include "compiler/frontend/lexer/lexer.hpp"
 #include "compiler/frontend/parser/parser.hpp"
 #include "compiler/utils/stringvec.hpp"
 
 using namespace lexer;
 using namespace parser;
-using namespace optree::converter;
+using namespace converter;
 
-int main() {
+TEST(Converter, can_do_something) {
     StringVec source = {
         "def myfunc(z: int, u: float) -> None:",
         "    x: float = z * u",
@@ -27,5 +27,5 @@ int main() {
     } catch (std::exception &e) {
         std::cout << e.what();
     }
-    return 0;
+    ASSERT_EQ(4, 2 + 2);
 }

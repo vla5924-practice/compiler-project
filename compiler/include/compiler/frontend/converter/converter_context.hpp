@@ -7,14 +7,12 @@
 #include "compiler/optree/builder.hpp"
 #include "compiler/optree/operation.hpp"
 
-namespace optree {
-
 namespace converter {
 
 struct ConverterContext {
-    Operation::Ptr op;
-    std::forward_list<std::map<std::string, Value::Ptr>> variables;
-    Builder builder;
+    optree::Operation::Ptr op;
+    std::forward_list<std::map<std::string, optree::Value::Ptr>> variables;
+    optree::Builder builder;
 
     template <typename AdaptorType, typename... Args>
     AdaptorType insert(Args... args) {
@@ -34,11 +32,11 @@ struct ConverterContext {
         variables.pop_front();
     }
 
-    void saveVariable(const std::string &name, Value::Ptr value) {
+    void saveVariable(const std::string &name, optree::Value::Ptr value) {
         variables.front()[name] = value;
     }
 
-    Value::Ptr findVariable(const std::string &name) {
+    optree::Value::Ptr findVariable(const std::string &name) {
         for (auto &scope : variables)
             if (scope.contains(name))
                 return scope[name];
@@ -51,5 +49,3 @@ struct ConverterContext {
 };
 
 } // namespace converter
-
-} // namespace optree

@@ -80,8 +80,6 @@ jobs:
         run: ./bin/frontend_test
       - name: Run AST-based backend tests
         run: ./bin/backend_ast_test
-      - name: Run operation tree based backend tests
-        run: ./bin/backend_optree_test
 
   code-coverage:
     name: Code coverage
