@@ -1,22 +1,37 @@
 #pragma once
 
 #include <forward_list>
-#include <map>
 #include <string>
+#include <unordered_map>
 
+#include "compiler/ast/node.hpp"
+#include "compiler/frontend/converter/converter_error.hpp"
 #include "compiler/optree/builder.hpp"
 #include "compiler/optree/operation.hpp"
+#include "compiler/utils/error_buffer.hpp"
 
 namespace converter {
 
 struct ConverterContext {
+    struct LocalVariable {
+        optree::Value::Ptr value = {};
+        bool needsLoad = true;
+    };
+
     optree::Operation::Ptr op;
-    std::forward_list<std::map<std::string, optree::Value::Ptr>> variables;
+    std::unordered_map<std::string, optree::Type::Ptr> functions;
+    std::forward_list<std::unordered_map<std::string, LocalVariable>> variables;
     optree::Builder builder;
+    ErrorBuffer errors;
 
     template <typename AdaptorType, typename... Args>
     AdaptorType insert(Args... args) {
         return builder.insert<AdaptorType>(std::forward<Args>(args)...);
+    }
+
+    void goInto(optree::Operation::Ptr rootOp) {
+        op = rootOp;
+        builder.setInsertPointAtBodyEnd(op);
     }
 
     void goParent() {
@@ -32,11 +47,12 @@ struct ConverterContext {
         variables.pop_front();
     }
 
-    void saveVariable(const std::string &name, optree::Value::Ptr value) {
-        variables.front()[name] = value;
+    void saveVariable(const std::string &name, optree::Value::Ptr value, bool needsLoad = true) {
+        variables.front().emplace(std::piecewise_construct, std::forward_as_tuple(name),
+                                  std::forward_as_tuple(value, needsLoad));
     }
 
-    optree::Value::Ptr findVariable(const std::string &name) {
+    LocalVariable findVariable(const std::string &name) {
         for (auto &scope : variables)
             if (scope.contains(name))
                 return scope[name];
@@ -45,6 +61,10 @@ struct ConverterContext {
 
     bool wouldBeRedeclaration(const std::string &name) {
         return variables.front().contains(name);
+    }
+
+    void pushError(const ast::Node::Ptr &node, const std::string &message) {
+        errors.push<ConverterError>(node, message);
     }
 };
 

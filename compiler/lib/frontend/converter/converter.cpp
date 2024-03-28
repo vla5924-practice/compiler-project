@@ -5,6 +5,7 @@
 #include "compiler/optree/adaptors.hpp"
 
 #include "converter/converter_context.hpp"
+#include "converter/converter_error.hpp"
 
 #if __has_builtin(__builtin_unreachable)
 #define UNREACHABLE(MSG)                                                                                               \
@@ -46,8 +47,13 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx);
 Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx);
 
 void processProgramRoot(const Node::Ptr &node, ConverterContext &ctx) {
-    ctx.op = Operation::make<ModuleOp>().op;
-    ctx.builder.setInsertPointAtBodyBegin(ctx.op);
+    for (const auto &child : node->children) {
+        const auto &name = child->firstChild()->str();
+        const auto &typeNode = *std::next(child->children.begin(), 2);
+        ctx.functions[name] = convertType(typeNode->typeId());
+    }
+    auto moduleOp = Operation::make<ModuleOp>();
+    ctx.goInto(moduleOp.op);
     for (const auto &child : node->children)
         processNode(child, ctx);
 }
@@ -64,12 +70,11 @@ void processFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
     }
     ++it;
     auto funcType = Type::make<FunctionType>(arguments, convertType((*it)->typeId()));
-    auto funcOp = ctx.insert<FunctionOp>(name, funcType);
-    ctx.op = funcOp.op;
-    ctx.builder.setInsertPointAtBodyBegin(funcOp.op);
+    auto funcOp = ctx.insert<FunctionOp>(node->ref, name, funcType);
+    ctx.goInto(funcOp.op);
     ctx.enterScope();
     for (size_t i = 0; i < argNames.size(); i++)
-        ctx.saveVariable(argNames[i], funcOp.op->inward(i));
+        ctx.saveVariable(argNames[i], funcOp.op->inward(i), false);
     ++it;
     processNode(*it, ctx);
     ctx.exitScope();
@@ -85,15 +90,38 @@ void processBranchRoot(const Node::Ptr &node, ConverterContext &ctx) {
 
 void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
     const auto &name = node->secondChild()->str();
-    if (ctx.wouldBeRedeclaration(name))
-        return; // TODO: error
-    auto type = convertType(node->firstChild()->typeId());
-    auto allocOp = ctx.insert<AllocateOp>(Type::make<PointerType>(type));
-    ctx.saveVariable(name, allocOp.result());
-    if (node->children.size() == 3U) {
-        auto definition = visitNode(node->lastChild(), ctx);
-        ctx.insert<StoreOp>(allocOp.result(), definition);
+    if (ctx.wouldBeRedeclaration(name)) {
+        ctx.pushError(node, "variable is already declared:" + name);
+        return;
     }
+    auto type = convertType(node->firstChild()->typeId());
+    auto allocOp = ctx.insert<AllocateOp>(node->ref, Type::make<PointerType>(type));
+    ctx.saveVariable(name, allocOp.result(), true);
+    if (node->children.size() == 3U) {
+        auto intitializer = node->lastChild();
+        auto definition = visitNode(intitializer, ctx);
+        ctx.insert<StoreOp>(intitializer->ref, allocOp.result(), definition);
+    }
+}
+
+void processReturnStatement(const Node::Ptr &node, ConverterContext &ctx) {
+    if (node->children.empty())
+        ctx.insert<ReturnOp>(node->ref);
+    else
+        ctx.insert<ReturnOp>(node->ref, visitNode(node->firstChild(), ctx));
+}
+
+void processWhileStatement(const Node::Ptr &node, ConverterContext &ctx) {
+    auto whileOp = ctx.insert<WhileOp>(node->ref);
+    ctx.enterScope();
+    ctx.goInto(whileOp.conditionOp().op);
+    processNode(node->firstChild(), ctx);
+    ctx.goParent();
+    ctx.exitScope();
+    ctx.enterScope();
+    processNode(node->lastChild(), ctx);
+    ctx.goParent();
+    ctx.exitScope();
 }
 
 Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
@@ -101,15 +129,15 @@ Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 Value::Ptr visitIntegerLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(TypeStorage::integerType(), node->intNum()).result();
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), node->intNum()).result();
 }
 
 Value::Ptr visitFloatingPointLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(TypeStorage::floatType(), node->fpNum()).result();
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::floatType(), node->fpNum()).result();
 }
 
 Value::Ptr visitStringLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(TypeStorage::strType(), node->str()).result();
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::strType(), node->str()).result();
 }
 
 Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
@@ -128,8 +156,12 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
             rhs = ctx.insert<ArithCastOp>(ArithCastOpKind::IntToFloat, lhsType, rhs).result();
         }
     }
-    auto makeArithBinaryOp = [&](ArithBinOpKind kind) { return ctx.insert<ArithBinaryOp>(kind, lhs, rhs).result(); };
-    auto makeLogicBinaryOp = [&](LogicBinOpKind kind) { return ctx.insert<LogicBinaryOp>(kind, lhs, rhs).result(); };
+    auto makeArithBinaryOp = [&](ArithBinOpKind kind) {
+        return ctx.insert<ArithBinaryOp>(node->ref, kind, lhs, rhs).result();
+    };
+    auto makeLogicBinaryOp = [&](LogicBinOpKind kind) {
+        return ctx.insert<LogicBinaryOp>(node->ref, kind, lhs, rhs).result();
+    };
     switch (binOp) {
     case ast::BinaryOperation::Add:
         return makeArithBinaryOp(ArithBinOpKind::AddI);
@@ -173,18 +205,34 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         return makeLogicBinaryOp(LogicBinOpKind::OrI);
     case ast::BinaryOperation::Assign:
     case ast::BinaryOperation::FAssign:
-        ctx.insert<StoreOp>(lhs, rhs);
+        ctx.insert<StoreOp>(node->ref, lhs, rhs);
         return rhs;
     }
     UNREACHABLE("Unexpected ast::BinaryOperation value in visitBinaryOperation");
 }
 
 Value::Ptr visitVariableName(const Node::Ptr &node, ConverterContext &ctx) {
-    auto value = ctx.findVariable(node->str());
-    // TODO: error if var == nullptr
-    if (isLhsInAssignment(node))
-        return value;
-    return ctx.insert<LoadOp>(value).result();
+    auto var = ctx.findVariable(node->str());
+    if (!var.value) {
+        ctx.pushError(node, "variable was not declared in this scope: " + node->str());
+        throw ctx.errors;
+    }
+    if (isLhsInAssignment(node) || !var.needsLoad)
+        return var.value;
+    return ctx.insert<LoadOp>(node->ref, var.value).result();
+}
+
+Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
+    const std::string &name = node->firstChild()->str();
+    if (!ctx.functions.contains(name)) {
+        ctx.pushError(node, "call to undefined function: " + name);
+        throw ctx.errors;
+    }
+    std::vector<Value::Ptr> arguments;
+    for (auto &argNode : node->lastChild()->children) {
+        arguments.emplace_back(visitNode(argNode, ctx));
+    }
+    return ctx.insert<FunctionCallOp>(node->ref, name, ctx.functions[name], arguments).result();
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx) {
@@ -203,6 +251,13 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
         return;
     case NodeType::Expression:
         visitExpression(node, ctx);
+        return;
+    case NodeType::ReturnStatement:
+        processReturnStatement(node, ctx);
+        return;
+    case NodeType::WhileStatement:
+        processWhileStatement(node, ctx);
+        return;
     }
     UNREACHABLE("Unexpected ast::NodeType value in processNode");
 }
@@ -221,6 +276,8 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
         return visitBinaryOperation(node, ctx);
     case NodeType::VariableName:
         return visitVariableName(node, ctx);
+    case NodeType::FunctionCall:
+        return visitFunctionCall(node, ctx);
     }
     UNREACHABLE("Unexpected ast::NodeType value in visitNode");
 }
@@ -228,6 +285,8 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
 Program Converter::process(const SyntaxTree &syntaxTree) {
     ConverterContext ctx;
     processNode(syntaxTree.root, ctx);
+    if (!ctx.errors.empty())
+        throw ctx.errors;
     Program program;
     program.root = ctx.op;
     return program;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compiler/optree/operation.hpp"
+#include "compiler/utils/source_ref.hpp"
 
 namespace optree {
 
@@ -35,6 +36,13 @@ class Builder {
         auto adaptor = Operation::make<AdaptorType>(currentOp);
         insert(adaptor.op);
         adaptor.init(std::forward<Args>(args)...);
+        return adaptor;
+    }
+
+    template <typename AdaptorType, typename... Args>
+    AdaptorType insert(const utils::SourceRef &ref, Args... args) {
+        auto adaptor = insert<AdaptorType>(std::forward<Args>(args)...);
+        adaptor.op->ref = ref;
         return adaptor;
     }
 };

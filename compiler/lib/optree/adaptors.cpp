@@ -27,6 +27,10 @@ bool FunctionCallOp::verify(const Operation *op) {
     return false;
 }
 
+bool ReturnOp::verify(const Operation *op) {
+    return Adaptor::verify(op) && numResults<0U>(op) && op->numOperands() <= 1U;
+}
+
 bool AllocateOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<0U>(op) && numResults<1U>(op);
 }
@@ -69,4 +73,14 @@ bool LoadOp::verify(const Operation *op) {
 bool StoreOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<2U>(op) && numResults<0U>(op) &&
            op->operand(0)->canPointTo(op->result(1));
+}
+
+bool ConditionOp::verify(const Operation *op) {
+    return Adaptor::verify(op) && numOperands<0U>(op) && numResults<0U>(op) && !op->body.empty() &&
+           numResults<1U>(op->body.back().get());
+}
+
+bool WhileOp::verify(const Operation *op) {
+    return Adaptor::verify(op) && numOperands<0U>(op) && numResults<0U>(op) && !op->body.empty() &&
+           op->body.front()->is<ConditionOp>();
 }

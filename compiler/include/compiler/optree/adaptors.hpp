@@ -77,9 +77,6 @@ struct Adaptor {
         op->ref = ref;
     }
 
-    void init() {
-    }
-
     static bool verify(const Operation *op) {
         return op != nullptr;
     }
@@ -130,23 +127,18 @@ struct FunctionOp : Adaptor {
 struct FunctionCallOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "FunctionCall", specId)
 
-    void init(const FunctionOp &callee, const std::vector<Value::Ptr> &arguments) {
+    void init(const std::string &name, Type::Ptr resultType, const std::vector<Value::Ptr> &arguments) {
         op->operands = arguments;
-        op->results.emplace_back(Value::make(callee.type().result, op));
-        op->addAttr(callee.name());
+        op->results.emplace_back(Value::make(resultType, op));
+        op->addAttr(name);
     }
 
-    const std::string &name() const {
-        return op->attr(0).as<std::string>();
+    void init(const FunctionOp &callee, const std::vector<Value::Ptr> &arguments) {
+        init(callee.name(), callee.type().result, arguments);
     }
 
-    void setName(const std::string &value) {
-        op->attr(0).set(value);
-    }
-
-    Value::Ptr result() const {
-        return op->result(0);
-    }
+    OPTREE_ADAPTOR_ATTRIBUTE(name, setName, std::string, 0)
+    OPTREE_ADAPTOR_RESULT(result, 0)
 
     static bool verify(const Operation *op);
 };
@@ -156,6 +148,12 @@ struct ReturnOp : Adaptor {
 
     void init() {
     }
+
+    void init(Value::Ptr value) {
+        op->addOperand(value);
+    }
+
+    OPTREE_ADAPTOR_OPERAND(value, setValue, 0)
 
     static bool verify(const Operation *op);
 };
@@ -386,12 +384,12 @@ struct IfOp : Adaptor {
 
     OPTREE_ADAPTOR_OPERAND(cond, setCond, 0);
 
-    Operation::Ptr thenOp() const {
-        return op->body.front();
+    ThenOp thenOp() const {
+        return {op->body.front()};
     }
 
-    Operation::Ptr elseOp() const {
-        return op->body.size() == 2 ? op->body.back() : nullptr;
+    ElseOp elseOp() const {
+        return {op->body.size() == 2 ? op->body.back() : nullptr};
     }
 
     static bool verify(const Operation *op);
@@ -410,6 +408,11 @@ struct WhileOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "While", specId)
 
     void init() {
+        op->addToBody(Operation::make<ConditionOp>(op).op);
+    }
+
+    ConditionOp conditionOp() const {
+        return {op->body.front()};
     }
 
     static bool verify(const Operation *op);

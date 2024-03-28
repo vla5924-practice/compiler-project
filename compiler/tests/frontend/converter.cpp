@@ -13,6 +13,7 @@ TEST(Converter, can_do_something) {
     StringVec source = {
         "def myfunc(z: int, u: float) -> None:",
         "    x: float = z * u",
+        "    return x",
         "def main() -> None:",
         "    x: float = 1 + 1.0",
     };
