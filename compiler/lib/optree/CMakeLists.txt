@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-set(TARGET_NAME frontend)
+set(TARGET_NAME optree)
 set_target_include_dir(${TARGET_NAME})
 
 file(GLOB_RECURSE TARGET_HEADERS ${TARGET_INCLUDE_DIR}/*.hpp)
@@ -14,7 +14,5 @@ target_include_directories(${TARGET_NAME}
 )
 
 target_link_libraries(${TARGET_NAME} PUBLIC
-    ast
-    optree
     utils
 )
