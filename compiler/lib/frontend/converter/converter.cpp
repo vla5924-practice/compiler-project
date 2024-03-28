@@ -219,6 +219,8 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
         return visitStringLiteralValue(node, ctx);
     case NodeType::BinaryOperation:
         return visitBinaryOperation(node, ctx);
+    case NodeType::VariableName:
+        return visitVariableName(node, ctx);
     }
     UNREACHABLE("Unexpected ast::NodeType value in visitNode");
 }
