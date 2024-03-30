@@ -90,9 +90,3 @@ CheckOptions:
     value:           camelBack
   - key:             readability-identifier-naming.VariableCase
     value:           camelBack
-  - key:             readability-identifier-naming.IgnoreMainLikeFunctions
-    value:           1
-  - key:             readability-redundant-member-init.IgnoreBaseInCopyConstructors
-    value:           1
-  - key:             modernize-use-default-member-init.UseAssignment
-    value:           1
