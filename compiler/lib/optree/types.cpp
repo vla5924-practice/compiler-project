@@ -18,6 +18,10 @@ void dumpTypes(std::ostream &stream, const Type::PtrVector &types) {
     utils::interleaveComma(stream, types, [&](const Type::Ptr &type) { type->dump(stream); });
 }
 
+unsigned Type::bitWidth() const {
+    return 0U;
+}
+
 void Type::dump(std::ostream &stream) const {
     stream << "<<NULL TYPE>>";
 }
@@ -35,6 +39,10 @@ bool IntegerType::operator==(const Type &other) const {
     return width == other.as<IntegerType>().width;
 }
 
+unsigned IntegerType::bitWidth() const {
+    return width;
+}
+
 void IntegerType::dump(std::ostream &stream) const {
     stream << "int(" << width << ")";
 }
@@ -42,6 +50,10 @@ void IntegerType::dump(std::ostream &stream) const {
 bool FloatType::operator==(const Type &other) const {
     TYPE_COMPARE_EARLY_RETURN(FloatType, other)
     return width == other.as<FloatType>().width;
+}
+
+unsigned FloatType::bitWidth() const {
+    return width;
 }
 
 void FloatType::dump(std::ostream &stream) const {

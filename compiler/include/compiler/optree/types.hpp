@@ -45,6 +45,7 @@ struct Type {
         return !(*this == other);
     }
 
+    virtual unsigned bitWidth() const;
     virtual void dump(std::ostream &stream) const;
 
     template <typename ConcreteType, typename... Args>
@@ -74,7 +75,19 @@ struct IntegerType : public Type {
     bool operator==(const Type &other) const override;
     using Type::operator!=;
 
+    unsigned bitWidth() const override;
     void dump(std::ostream &stream) const override;
+};
+
+struct BoolType : public IntegerType {
+    using Ptr = std::shared_ptr<const BoolType>;
+
+    static constinit const unsigned intWidth = 8U;
+
+    BoolType() : IntegerType(intWidth){};
+
+    using IntegerType::operator==;
+    using IntegerType::operator!=;
 };
 
 struct FloatType : public Type {
@@ -87,6 +100,7 @@ struct FloatType : public Type {
     bool operator==(const Type &other) const override;
     using Type::operator!=;
 
+    unsigned bitWidth() const override;
     void dump(std::ostream &stream) const override;
 };
 
