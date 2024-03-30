@@ -1,0 +1,156 @@
+#pragma once
+
+#include <concepts>
+#include <functional>
+#include <memory>
+#include <ostream>
+#include <type_traits>
+#include <vector>
+
+namespace optree {
+
+struct Type {
+    using Ptr = std::shared_ptr<const Type>;
+    using PtrVector = std::vector<Type::Ptr>;
+
+    Type() = default;
+    Type(const Type &) = default;
+    Type(Type &&) = default;
+    virtual ~Type() = default;
+
+    Type &operator=(const Type &) = default;
+    Type &operator=(Type &&) = default;
+
+    template <typename DerivedType>
+        requires std::derived_from<DerivedType, Type>
+    bool is() const {
+        return dynamic_cast<const std::remove_cvref_t<DerivedType> *>(this) != nullptr;
+    }
+
+    template <typename DerivedType>
+        requires std::derived_from<DerivedType, Type>
+    const std::remove_cvref_t<DerivedType> &as() const {
+        return dynamic_cast<const std::remove_cvref_t<DerivedType> &>(*this);
+    }
+
+    operator bool() const {
+        return !is<Type>();
+    }
+
+    virtual bool operator==(const Type &) const {
+        return false;
+    }
+
+    virtual bool operator!=(const Type &other) const {
+        return !(*this == other);
+    }
+
+    virtual void dump(std::ostream &stream) const;
+
+    template <typename ConcreteType, typename... Args>
+    static auto make(Args... args) {
+        return std::make_shared<const std::remove_cvref_t<ConcreteType>>(std::forward<Args>(args)...);
+    }
+};
+
+struct NoneType : public Type {
+    using Ptr = std::shared_ptr<const NoneType>;
+
+    NoneType() = default;
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
+
+    void dump(std::ostream &stream) const override;
+};
+
+struct IntegerType : public Type {
+    using Ptr = std::shared_ptr<const IntegerType>;
+
+    const unsigned width;
+
+    explicit IntegerType(unsigned width) : width(width){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
+
+    void dump(std::ostream &stream) const override;
+};
+
+struct FloatType : public Type {
+    using Ptr = std::shared_ptr<const FloatType>;
+
+    const unsigned width;
+
+    explicit FloatType(unsigned width) : width(width){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
+
+    void dump(std::ostream &stream) const override;
+};
+
+struct StrType : public Type {
+    using Ptr = std::shared_ptr<const StrType>;
+
+    const unsigned charWidth;
+
+    explicit StrType(unsigned charWidth) : charWidth(charWidth){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
+
+    void dump(std::ostream &stream) const override;
+};
+
+struct FunctionType : public Type {
+    using Ptr = std::shared_ptr<const FunctionType>;
+
+    const PtrVector arguments;
+    const Type::Ptr result;
+
+    FunctionType(const PtrVector &arguments, Type::Ptr result) : arguments(arguments), result(result){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
+
+    void dump(std::ostream &stream) const override;
+};
+
+struct PointerType : public Type {
+    using Ptr = std::shared_ptr<const PointerType>;
+
+    const Type::Ptr pointee;
+
+    PointerType(Type::Ptr pointee) : pointee(pointee){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
+
+    void dump(std::ostream &stream) const override;
+};
+
+struct TupleType : public Type {
+    using Ptr = std::shared_ptr<const TupleType>;
+
+    const PtrVector members;
+
+    TupleType(const PtrVector &members) : members(members){};
+
+    bool operator==(const Type &other) const override;
+    using Type::operator!=;
+
+    void dump(std::ostream &stream) const override;
+};
+
+struct TypeStorage {
+    TypeStorage() = delete;
+    ~TypeStorage() = delete;
+
+    static NoneType::Ptr noneType();
+    static IntegerType::Ptr integerType(unsigned width = 64U);
+    static FloatType::Ptr floatType(unsigned width = 64U);
+    static StrType::Ptr strType(unsigned charWidth = 8U);
+};
+
+} // namespace optree
