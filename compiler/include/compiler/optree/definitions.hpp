@@ -18,6 +18,10 @@ enum class ArithCastOpKind {
     Unknown,
     IntToFloat,
     FloatToInt,
+    ExtI,
+    TruncI,
+    ExtF,
+    TruncF,
 };
 
 enum class LogicBinOpKind {
