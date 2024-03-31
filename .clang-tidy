@@ -1,0 +1,92 @@
+WarningsAsErrors: '*'
+
+Checks: >
+  -*,
+  bugprone-assignment-in-if-condition,
+  bugprone-forward-declaration-namespace,
+  bugprone-infinite-loop,
+  bugprone-integer-division,
+  bugprone-macro-parentheses,
+  bugprone-macro-repeated-side-effects,
+  bugprone-move-forwarding-reference,
+  bugprone-redundant-branch-condition,
+  bugprone-reserved-identifier,
+  bugprone-suspicious-include,
+  bugprone-suspicious-semicolon,
+  bugprone-terminating-continue,
+  bugprone-throw-keyword-missing,
+  bugprone-unused-raii,
+  bugprone-unused-return-value,
+  cppcoreguidelines-macro-usage,
+  llvm-include-order,
+  llvm-namespace-comment,
+  misc-confusable-identifiers,
+  misc-definitions-in-headers,
+  misc-header-include-cycle,
+  misc-include-cleaner,
+  misc-misplaced-const,
+  misc-non-copyable-objects,
+  misc-redundant-expression,
+  misc-static-assert,
+  misc-throw-by-value-catch-by-reference,
+  misc-unconventional-assign-operator,
+  misc-unused-alias-decls,
+  misc-unused-parameters,
+  misc-unused-using-decls,
+  misc-use-anonymous-namespace,
+  modernize-avoid-c-arrays,
+  modernize-deprecated-headers,
+  modernize-loop-convert,
+  modernize-make-shared,
+  modernize-make-unique,
+  modernize-raw-string-literal,
+  modernize-return-braced-init-list,
+  modernize-type-traits,
+  modernize-use-auto,
+  modernize-use-constraints,
+  modernize-use-emplace,
+  modernize-use-equals-default,
+  modernize-use-override,
+  modernize-use-starts-ends-with,
+  modernize-use-std-numbers,
+  performance-avoid-endl,
+  performance-faster-string-find,
+  performance-for-range-copy,
+  performance-implicit-conversion-in-loop,
+  performance-inefficient-algorithm,
+  performance-no-automatic-move,
+  performance-trivially-destructible,
+  performance-unnecessary-copy-initialization,
+  performance-unnecessary-value-param,
+  readability-avoid-const-params-in-decls,
+  readability-avoid-nested-conditional-operator,
+  readability-avoid-return-with-void-value,
+  readability-const-return-type,
+  readability-container-contains,
+  readability-identifier-naming,
+  readability-inconsistent-declaration-parameter-name,
+  readability-misleading-indentation,
+  readability-non-const-parameter,
+  readability-qualified-auto,
+  readability-redundant-smartptr-get,
+  readability-redundant-string-init,
+  readability-simplify-boolean-expr,
+  readability-simplify-subscript-expr,
+  readability-uppercase-literal-suffix,
+  cppcoreguidelines-avoid-goto
+
+CheckOptions:
+  - key:             readability-identifier-naming.ClassCase
+    value:           CamelCase
+  - key:             readability-identifier-naming.EnumCase
+    value:           CamelCase
+  - key:             readability-identifier-naming.FunctionCase
+    value:           camelBack
+  - key:             readability-identifier-naming.MemberCase
+    value:           camelBack
+  - key:             readability-identifier-naming.ParameterCase
+    value:           camelBack
+  - key:             readability-identifier-naming.UnionCase
+    value:           camelBack
+  - key:             readability-identifier-naming.VariableCase
+    value:           camelBack
