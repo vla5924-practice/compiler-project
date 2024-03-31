@@ -113,7 +113,7 @@ int Compiler::exec(int argc, char *argv[]) {
         .default_value("llc");
     program.add_argument("-o", ARG_OUTPUT).help("output file");
 #endif
-    program.add_argument(ARG_FILES).help("source files (separated by spaces)").required();
+    program.add_argument(ARG_FILES).help("source files (separated by spaces)").required().remaining();
 
     try {
         program.parse_args(argc, argv);
