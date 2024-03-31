@@ -1,5 +1,7 @@
 #include "semantizer/semantizer.hpp"
 
+#include "compiler/ast/types.hpp"
+
 using namespace semantizer;
 using namespace ast;
 
