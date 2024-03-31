@@ -81,8 +81,9 @@ OperationType getOperationType(const ast::Node &node) {
         return OperationType::Binary;
     case ast::NodeType::UnaryOperation:
         return OperationType::Unary;
+    default:
+        return OperationType::Unknown;
     }
-    return OperationType::Unknown;
 }
 
 ExpressionTokenType getExpressionTokenType(const Token &token) {

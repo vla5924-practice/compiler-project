@@ -1,5 +1,7 @@
 #include "semantizer/semantizer.hpp"
 
+#include "compiler/ast/types.hpp"
+
 using namespace semantizer;
 using namespace ast;
 
@@ -171,8 +173,9 @@ TypeId literalNodeTypeToTypeId(NodeType type) {
         return BuiltInTypes::FloatType;
     case NodeType::StringLiteralValue:
         return BuiltInTypes::StrType;
+    default:
+        return BuiltInTypes::UnknownType;
     }
-    return BuiltInTypes::UnknownType;
 }
 
 static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContext &ctx) {
