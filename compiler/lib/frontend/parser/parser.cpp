@@ -4,6 +4,10 @@
 #include <functional>
 #include <unordered_map>
 
+#include "compiler/ast/node.hpp"
+#include "compiler/ast/node_type.hpp"
+
+#include "lexer/token_types.hpp"
 #include "parser/parser_context.hpp"
 #include "parser/parser_error.hpp"
 #include "parser/type_registry.hpp"
@@ -88,7 +92,8 @@ OperationType getOperationType(const ast::Node &node) {
 
 ExpressionTokenType getExpressionTokenType(const Token &token) {
     if (token.type == TokenType::Identifier || token.type == TokenType::IntegerLiteral ||
-        token.type == TokenType::FloatingPointLiteral || token.type == TokenType::StringLiteral)
+        token.type == TokenType::FloatingPointLiteral || token.type == TokenType::StringLiteral ||
+        token.is(Keyword::True) || token.is(Keyword::False))
         return ExpressionTokenType::Operand;
     if (token.is(Operator::LeftBrace))
         return ExpressionTokenType::OpeningBrace;
@@ -163,6 +168,9 @@ size_t getOperationPriority(const Token &token) {
     case BinaryOperation::Greater:
     case BinaryOperation::GreaterEqual:
         return 30;
+    case BinaryOperation::Equal:
+    case BinaryOperation::NotEqual:
+        return 35;
     case BinaryOperation::And:
         return 40;
     case BinaryOperation::Or:
@@ -222,6 +230,13 @@ void buildExpressionSubtree(std::stack<SubExpression> postfixForm, ast::Node::Pt
                     ast::Node::Ptr node =
                         ParserContext::unshiftChildNode(currNode, ast::NodeType::StringLiteralValue, token.ref);
                     node->value = token.literal();
+                } else if (token.is(Keyword::False) || token.is(Keyword::True)) {
+                    ast::Node::Ptr node =
+                        ParserContext::unshiftChildNode(currNode, ast::NodeType::BooleanLiteralValue, token.ref);
+                    if (token.is(Keyword::True))
+                        node->value = true;
+                    else if (token.is(Keyword::False))
+                        node->value = false;
                 }
             }
         } else {
