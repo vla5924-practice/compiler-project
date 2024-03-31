@@ -46,9 +46,12 @@ jobs:
         with:
           submodules: true
       - name: Build
+        env:
+          CC: gcc
+          CXX: g++
         run: |
-          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_IR_GENERATOR=OFF
-          ninja -C build
+          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN=OFF
+          cmake --build build --parallel
       - name: Archive binaries
         run: tar cf binaries.tar -C build bin
       - name: Upload binaries
@@ -56,6 +59,29 @@ jobs:
         with:
           name: binaries-ubuntu-latest-gcc
           path: binaries.tar
+
+  build-clang:
+    name: Build on Ubuntu Clang
+    runs-on: ubuntu-latest
+    needs: code-style-check
+    container:
+      image: ghcr.io/vla5924-practice/compiler-project/devcontainer:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+      - name: Initialize repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Build
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN=OFF
+          cmake --build build --parallel
 
   unit-test:
     name: Unit test

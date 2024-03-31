@@ -57,8 +57,9 @@ const char *const binaryOperationToString(BinaryOperation binOp) {
         return "FOr";
     case BinaryOperation::Unknown:
         return "Unknown";
+    default:
+        return "";
     }
-    return "";
 }
 
 const char *const unaryOperationToString(UnaryOperation unOp) {

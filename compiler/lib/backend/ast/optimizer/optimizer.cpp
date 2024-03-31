@@ -16,8 +16,9 @@ bool isLiteral(const Node::Ptr &node) {
     case NodeType::FloatingPointLiteralValue:
     case NodeType::StringLiteralValue:
         return true;
+    default:
+        return false;
     }
-    return false;
 }
 
 bool isAssignment(const Node::Ptr &node) {
@@ -106,8 +107,9 @@ long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperat
         return lhs <= rhs;
     case BinaryOperation::NotEqual:
         return lhs != rhs;
+    default:
+        return 0;
     }
-    return 0;
 }
 
 double calculateFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
@@ -141,8 +143,9 @@ double calculateFloatOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperat
         return lhs <= rhs;
     case BinaryOperation::FNotEqual:
         return lhs != rhs;
+    default:
+        return 0.0;
     }
-    return 0.0;
 }
 
 bool constantPropagation(Node::Ptr &first, Node::Ptr &second, OptimizerContext &ctx) {
