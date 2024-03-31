@@ -3,6 +3,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "node_type.hpp"
+
 using namespace ast;
 
 namespace {
@@ -104,7 +106,7 @@ void Node::dump(std::ostream &stream, int depth) const {
         stream << "BinaryOperation: " << binaryOperationToString(binOp()) << "\n";
         break;
     case NodeType::BooleanLiteralValue:
-        stream << "BooleanLiteralValue: " << boolean() << "\n";
+        stream << "BooleanLiteralValue: " << (boolean() ? "True" : "False") << "\n";
         break;
     case NodeType::BranchRoot:
         stream << "BranchRoot";

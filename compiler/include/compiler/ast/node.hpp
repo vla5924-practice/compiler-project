@@ -9,6 +9,7 @@
 #include "compiler/utils/source_ref.hpp"
 
 #include "compiler/ast/node_type.hpp"
+#include "compiler/ast/types.hpp"
 #include "compiler/ast/variables_table.hpp"
 
 namespace ast {
@@ -26,6 +27,7 @@ struct Node {
      * value type      : node type
      * long int        : IntegerLiteralValue
      * double          : FloatingPointLiteralValue
+     * bool            : BooleanLiteralValue
      * std::string     : StringLiteralValue, FunctionName, VariableName
      * TypeId          : TypeName
      * BinaryOperation : BinaryOperation

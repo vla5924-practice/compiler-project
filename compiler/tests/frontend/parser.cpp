@@ -460,3 +460,34 @@ TEST(Parser, can_parse_complex_nested_function_call) {
                            "                VariableName: z\n";
     ASSERT_EQ(tree_str, tree.dump());
 }
+
+TEST(Parser, can_parse_bool) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x: bool = True",
+        "    x = (3 == 4) and False",
+    };
+    TokenList tokens = Lexer::process(source);
+
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: BoolType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          BooleanLiteralValue: True\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: And\n"
+                           "            BinaryOperation: Equal\n"
+                           "              IntegerLiteralValue: 3\n"
+                           "              IntegerLiteralValue: 4\n"
+                           "            BooleanLiteralValue: False\n";
+    ASSERT_EQ(expected, tree.dump());
+}
