@@ -53,29 +53,6 @@ const char *const ARG_LLC = "--llc";
 const char *const ARG_OUTPUT = "--output";
 #endif
 
-argparse::ArgumentParser createArgumentParser() {
-    argparse::ArgumentParser parser("compiler", "1.0", argparse::default_arguments::none);
-    parser.add_argument("-h", ARG_HELP).help("show help message and exit").default_value(false).implicit_value(true);
-    parser.add_argument("-v", ARG_VERBOSE).help("print info messages").default_value(false).implicit_value(true);
-    parser.add_argument("-l", ARG_LOG).help("log file (stages output will be saved if provided)");
-    parser.add_argument("-O", ARG_OPTIMIZE).help("run optimization pass").default_value(false).implicit_value(true);
-#ifdef ENABLE_CODEGEN
-    parser.add_argument("-c", ARG_COMPILE)
-        .help("produce an executable instead of LLVM IR code")
-        .default_value(false)
-        .implicit_value(true);
-    parser.add_argument(ARG_CLANG)
-        .help("path to clang executable (required if --compile argument is set)")
-        .default_value("clang");
-    parser.add_argument(ARG_LLC)
-        .help("path to llc executable (required if --compile argument is set)")
-        .default_value("llc");
-    parser.add_argument("-o", ARG_OUTPUT).help("output file");
-#endif
-    parser.add_argument(ARG_FILES).help("source files (separated by spaces)").required().remaining();
-    return parser;
-}
-
 #ifdef ENABLE_CODEGEN
 std::filesystem::path createTemporaryDirectory() {
     auto tempDir = std::filesystem::temp_directory_path();
@@ -118,7 +95,26 @@ std::string generateClangCommand(const std::string &clangBin, const std::filesys
 } // namespace
 
 int Compiler::exec(int argc, char *argv[]) {
-    argparse::ArgumentParser program = createArgumentParser();
+    argparse::ArgumentParser program("compiler", "1.0", argparse::default_arguments::none);
+    program.add_argument("-h", ARG_HELP).help("show help message and exit").default_value(false).implicit_value(true);
+    program.add_argument("-v", ARG_VERBOSE).help("print info messages").default_value(false).implicit_value(true);
+    program.add_argument("-l", ARG_LOG).help("log file (stages output will be saved if provided)");
+    program.add_argument("-O", ARG_OPTIMIZE).help("run optimization pass").default_value(false).implicit_value(true);
+#ifdef ENABLE_CODEGEN
+    program.add_argument("-c", ARG_COMPILE)
+        .help("produce an executable instead of LLVM IR code")
+        .default_value(false)
+        .implicit_value(true);
+    program.add_argument(ARG_CLANG)
+        .help("path to clang executable (required if --compile argument is set)")
+        .default_value("clang");
+    program.add_argument(ARG_LLC)
+        .help("path to llc executable (required if --compile argument is set)")
+        .default_value("llc");
+    program.add_argument("-o", ARG_OUTPUT).help("output file");
+#endif
+    program.add_argument(ARG_FILES).help("source files (separated by spaces)").required().remaining();
+
     try {
         program.parse_args(argc, argv);
     } catch (const std::runtime_error &err) {

@@ -24,7 +24,7 @@ option(ENABLE_CLI "Enables command-line interface application" ON)
 option(ENABLE_TESTS "Enables tests for components" ON)
 option(ENABLE_COVERAGE "Enables code coverage instrumentation" OFF)
 
-if(WIN32)
+if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Z7 /Od")
     option(gtest_force_shared_crt "" TRUE)
 endif()
