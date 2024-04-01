@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include "compiler/optree/operation.hpp"
+#include "compiler/utils/source_ref.hpp"
 
 #define OPTREE_ADAPTOR_HELPER(BASE_ADAPTOR_CLASS, OPERATION_NAME, SPECID_MEMBER_NAME)                                  \
   public:                                                                                                              \
@@ -12,11 +13,11 @@
         return (OPERATION_NAME);                                                                                       \
     }                                                                                                                  \
     static Operation::SpecId getSpecId() {                                                                             \
-        return &SPECID_MEMBER_NAME;                                                                                    \
+        return &(SPECID_MEMBER_NAME);                                                                                  \
     }                                                                                                                  \
                                                                                                                        \
   private:                                                                                                             \
-    static inline char SPECID_MEMBER_NAME;                                                                             \
+    static inline char(SPECID_MEMBER_NAME);                                                                            \
                                                                                                                        \
   public:
 

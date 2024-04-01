@@ -1,7 +1,8 @@
 #pragma once
 
-#include "compiler/optree/operation.hpp"
 #include "compiler/utils/source_ref.hpp"
+
+#include "compiler/optree/operation.hpp"
 
 namespace optree {
 
@@ -11,7 +12,8 @@ class Builder {
     Operation::Ptr currentOp;
     InsertPoint insertPoint;
 
-    Builder(Operation::Ptr currentOp, InsertPoint insertPoint) : currentOp(currentOp), insertPoint(insertPoint){};
+    Builder(const Operation::Ptr &currentOp, const InsertPoint &insertPoint)
+        : currentOp(currentOp), insertPoint(insertPoint){};
 
   public:
     Builder() = default;

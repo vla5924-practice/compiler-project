@@ -1,7 +1,8 @@
 #pragma once
 
-#include <concepts>
-#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <ostream>
 #include <string>
 #include <variant>
 

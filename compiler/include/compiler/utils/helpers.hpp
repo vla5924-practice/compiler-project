@@ -2,6 +2,7 @@
 
 #include <iterator>
 #include <ostream>
+#include <type_traits>
 
 namespace utils {
 

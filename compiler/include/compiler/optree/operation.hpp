@@ -1,13 +1,13 @@
 #pragma once
 
-#include <algorithm>
+#include <cstddef>
 #include <functional>
 #include <list>
 #include <memory>
-#include <optional>
+#include <ostream>
 #include <stdexcept>
+#include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 #include "compiler/utils/source_ref.hpp"
@@ -41,10 +41,10 @@ struct Operation {
     Operation(Operation &&) = default;
     ~Operation() = default;
 
-    explicit Operation(Ptr parent = {}, Body::iterator position = {})
+    explicit Operation(const Ptr &parent = {}, const Body::iterator &position = {})
         : parent(parent), position(position), specId(nullptr), verifier([](const Operation *) { return true; }){};
-    Operation(SpecId specId, const Verifier &verifier, std::string_view name = "Unknown", Ptr parent = Ptr(),
-              Body::iterator position = {})
+    Operation(SpecId specId, const Verifier &verifier, std::string_view name = "Unknown", const Ptr &parent = {},
+              const Body::iterator &position = {})
         : parent(parent), position(position), specId(specId), verifier(verifier), name(name){};
 
     const Value::Ptr &operand(size_t index) const {
@@ -84,7 +84,7 @@ struct Operation {
         for (const auto &a : attributes)
             if (a.is<VariantType>())
                 return a.as<VariantType>();
-        throw std::exception("There are no attributes with a given type");
+        throw std::logic_error("There are no attributes with a given type");
     }
 
     operator bool() const {
@@ -133,11 +133,11 @@ struct Operation {
         return attributes.emplace_back(value);
     }
 
-    void addOperand(Value::Ptr value);
+    void addOperand(const Value::Ptr &value);
     void eraseOperand(size_t operandNumber);
-    Value::Ptr addResult(Type::Ptr type);
-    Value::Ptr addInward(Type::Ptr type);
-    Body::iterator addToBody(Operation::Ptr op);
+    Value::Ptr addResult(const Type::Ptr &type);
+    Value::Ptr addInward(const Type::Ptr &type);
+    Body::iterator addToBody(const Operation::Ptr &op);
     void erase();
 
     bool verify() const;
@@ -146,7 +146,7 @@ struct Operation {
     void dump(std::ostream &stream) const;
 
     template <typename AdaptorType>
-    static AdaptorType make(Ptr parent = {}, Body::iterator position = {}) {
+    static AdaptorType make(const Ptr &parent = {}, const Body::iterator &position = {}) {
         auto op = std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::verify,
                                               AdaptorType::getOperationName(), parent, position);
         return {op};

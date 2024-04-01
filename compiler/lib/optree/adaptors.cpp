@@ -1,13 +1,22 @@
 #include "adaptors.hpp"
 
-#include "compiler/optree/traits.hpp"
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "base_adaptor.hpp"
+#include "definitions.hpp"
+#include "operation.hpp"
+#include "traits.hpp"
+#include "types.hpp"
+#include "value.hpp"
 
 using namespace optree;
 using namespace trait;
 
 // The following definitions for the methods of the operation classes should be arranged in alphabetical order.
 
-void AllocateOp::init(Type::Ptr type) {
+void AllocateOp::init(const Type::Ptr &type) {
     op->results.emplace_back(Value::make(type, op));
 }
 
@@ -15,12 +24,13 @@ bool AllocateOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<0U>(op) && numResults<1U>(op);
 }
 
-void ArithBinaryOp::init(ArithBinOpKind kind, Type::Ptr resultType, Value::Ptr lhs, Value::Ptr rhs) {
+void ArithBinaryOp::init(ArithBinOpKind kind, const Type::Ptr &resultType, const Value::Ptr &lhs,
+                         const Value::Ptr &rhs) {
     BinaryOp::init(resultType, lhs, rhs);
     op->addAttr(kind);
 }
 
-void ArithBinaryOp::init(ArithBinOpKind kind, Value::Ptr lhs, Value::Ptr rhs) {
+void ArithBinaryOp::init(ArithBinOpKind kind, const Value::Ptr &lhs, const Value::Ptr &rhs) {
     init(kind, lhs->type, lhs, rhs);
 }
 
@@ -28,7 +38,7 @@ bool ArithBinaryOp::verify(const Operation *op) {
     return BinaryOp::verify(op) && oneAttrOfType<ArithBinOpKind>(op) && operandsAndResultsHaveSameType(op);
 }
 
-void ArithCastOp::init(ArithCastOpKind kind, Type::Ptr resultType, Value::Ptr value) {
+void ArithCastOp::init(ArithCastOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value) {
     UnaryOp::init(resultType, value);
     op->addAttr(kind);
 }
@@ -37,7 +47,7 @@ bool ArithCastOp::verify(const Operation *op) {
     return UnaryOp::verify(op) && oneAttrOfType<ArithCastOpKind>(op);
 }
 
-void BinaryOp::init(Type::Ptr resultType, Value::Ptr lhs, Value::Ptr rhs) {
+void BinaryOp::init(const Type::Ptr &resultType, const Value::Ptr &lhs, const Value::Ptr &rhs) {
     op->addResult(resultType);
     op->addOperand(lhs);
     op->addOperand(rhs);
@@ -61,17 +71,17 @@ bool ConditionOp::verify(const Operation *op) {
            numResults<1U>(op->body.back().get());
 }
 
-void ConstantOp::init(Type::Ptr type, int64_t value) {
+void ConstantOp::init(const Type::Ptr &type, int64_t value) {
     op->results.emplace_back(Value::make(type, op));
     op->addAttr(value);
 }
 
-void ConstantOp::init(Type::Ptr type, double value) {
+void ConstantOp::init(const Type::Ptr &type, double value) {
     op->results.emplace_back(Value::make(type, op));
     op->addAttr(value);
 }
 
-void ConstantOp::init(Type::Ptr type, const std::string &value) {
+void ConstantOp::init(const Type::Ptr &type, const std::string &value) {
     op->results.emplace_back(Value::make(type, op));
     op->addAttr(value);
 }
@@ -87,7 +97,8 @@ bool ElseOp::verify(const Operation *op) {
     return Adaptor::verify(op);
 }
 
-void ForOp::init(Type::Ptr iteratorType, Value::Ptr start, Value::Ptr stop, Value::Ptr step) {
+void ForOp::init(const Type::Ptr &iteratorType, const Value::Ptr &start, const Value::Ptr &stop,
+                 const Value::Ptr &step) {
     op->addOperand(start);
     op->addOperand(stop);
     op->addOperand(step);
@@ -98,10 +109,10 @@ bool ForOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<3U>(op) && numResults<0U>(op);
 }
 
-void FunctionOp::init(const std::string &name, Type::Ptr funcType) {
+void FunctionOp::init(const std::string &name, const Type::Ptr &funcType) {
     op->addAttr(name);
     op->addAttr(funcType);
-    for (auto argType : funcType->as<FunctionType>().arguments)
+    for (const auto &argType : funcType->as<FunctionType>().arguments)
         op->addInward(argType);
 }
 
@@ -110,7 +121,8 @@ bool FunctionOp::verify(const Operation *op) {
            op->attr(1).isType<FunctionType>();
 }
 
-void FunctionCallOp::init(const std::string &name, Type::Ptr resultType, const std::vector<Value::Ptr> &arguments) {
+void FunctionCallOp::init(const std::string &name, const Type::Ptr &resultType,
+                          const std::vector<Value::Ptr> &arguments) {
     op->operands = arguments;
     op->results.emplace_back(Value::make(resultType, op));
     op->addAttr(name);
@@ -133,7 +145,7 @@ bool FunctionCallOp::verify(const Operation *op) {
     return false;
 }
 
-void IfOp::init(Value::Ptr cond, bool withElse) {
+void IfOp::init(const Value::Ptr &cond, bool withElse) {
     op->addOperand(cond);
     op->addToBody(Operation::make<ThenOp>(op).op);
     if (withElse)
@@ -152,7 +164,7 @@ bool IfOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<1U>(op) && numResults<0U>(op);
 }
 
-void InputOp::init(Type::Ptr inputType) {
+void InputOp::init(const Type::Ptr &inputType) {
     op->addResult(inputType);
 }
 
@@ -160,12 +172,12 @@ bool InputOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<0U>(op) && numResults<1U>(op);
 }
 
-void LoadOp::init(Type::Ptr resultType, Value::Ptr src) {
+void LoadOp::init(const Type::Ptr &resultType, const Value::Ptr &src) {
     op->addOperand(src);
     op->results.emplace_back(Value::make(resultType, op));
 }
 
-void LoadOp::init(Value::Ptr src) {
+void LoadOp::init(const Value::Ptr &src) {
     auto resultType = src->type->as<PointerType>().pointee;
     init(resultType, src);
 }
@@ -175,7 +187,7 @@ bool LoadOp::verify(const Operation *op) {
            op->operand(0)->canPointTo(op->result(0));
 }
 
-void LogicBinaryOp::init(LogicBinOpKind kind, Value::Ptr lhs, Value::Ptr rhs) {
+void LogicBinaryOp::init(LogicBinOpKind kind, const Value::Ptr &lhs, const Value::Ptr &rhs) {
     BinaryOp::init(TypeStorage::integerType(), lhs, rhs);
     op->addAttr(kind);
 }
@@ -185,7 +197,7 @@ bool LogicBinaryOp::verify(const Operation *op) {
            op->result(0)->type->is<IntegerType>();
 }
 
-void LogicUnaryOp::init(LogicUnaryOpKind kind, Type::Ptr resultType, Value::Ptr value) {
+void LogicUnaryOp::init(LogicUnaryOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value) {
     UnaryOp::init(resultType, value);
     op->addAttr(kind);
 }
@@ -202,7 +214,7 @@ bool ModuleOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numOperands<0U>(op) && numResults<0U>(op) && bodyContainsOnly<FunctionOp>(op);
 }
 
-void PrintOp::init(Value::Ptr valueToPrint) {
+void PrintOp::init(const Value::Ptr &valueToPrint) {
     op->addOperand(valueToPrint);
 }
 
@@ -213,7 +225,7 @@ bool PrintOp::verify(const Operation *op) {
 void ReturnOp::init() {
 }
 
-void ReturnOp::init(Value::Ptr value) {
+void ReturnOp::init(const Value::Ptr &value) {
     op->addOperand(value);
 }
 
@@ -221,7 +233,7 @@ bool ReturnOp::verify(const Operation *op) {
     return Adaptor::verify(op) && numResults<0U>(op) && op->numOperands() <= 1U;
 }
 
-void StoreOp::init(Value::Ptr dst, Value::Ptr valueToStore) {
+void StoreOp::init(const Value::Ptr &dst, const Value::Ptr &valueToStore) {
     op->addOperand(dst);
     op->addOperand(valueToStore);
 }
@@ -238,7 +250,7 @@ bool ThenOp::verify(const Operation *op) {
     return Adaptor::verify(op);
 }
 
-void UnaryOp::init(Type::Ptr resultType, Value::Ptr value) {
+void UnaryOp::init(const Type::Ptr &resultType, const Value::Ptr &value) {
     op->addResult(resultType);
     op->addOperand(value);
 }

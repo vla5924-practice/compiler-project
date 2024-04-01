@@ -1,5 +1,13 @@
 #include "attribute.hpp"
 
+#include <cstdint>
+#include <ostream>
+#include <string>
+#include <variant>
+
+#include "definitions.hpp"
+#include "types.hpp"
+
 using namespace optree;
 
 void Attribute::dump(std::ostream &stream) const {

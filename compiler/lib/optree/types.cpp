@@ -1,11 +1,15 @@
 #include "types.hpp"
 
+#include <algorithm>
+#include <ostream>
+#include <unordered_map>
+
 #include "compiler/utils/helpers.hpp"
 
 #define TYPE_COMPARE_EARLY_RETURN(CLASS_NAME, OTHER_NAME)                                                              \
-    if (this == &OTHER_NAME)                                                                                           \
+    if (this == &(OTHER_NAME))                                                                                         \
         return true;                                                                                                   \
-    if (!OTHER_NAME.is<CLASS_NAME>())                                                                                  \
+    if (!(OTHER_NAME).is<CLASS_NAME>())                                                                                \
         return false;
 
 using namespace optree;

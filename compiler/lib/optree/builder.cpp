@@ -2,6 +2,8 @@
 
 #include <iterator>
 
+#include "operation.hpp"
+
 using namespace optree;
 
 Builder Builder::before(const Operation::Ptr &op) {

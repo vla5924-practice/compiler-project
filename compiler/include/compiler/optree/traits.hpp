@@ -1,8 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 
 #include "compiler/optree/operation.hpp"
+#include "compiler/optree/types.hpp"
+#include "compiler/optree/value.hpp"
 
 namespace optree {
 

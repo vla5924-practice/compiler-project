@@ -1,9 +1,14 @@
 #pragma once
 
-#include <concepts>
-#include <string_view>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 #include "compiler/optree/base_adaptor.hpp"
+#include "compiler/optree/definitions.hpp"
+#include "compiler/optree/operation.hpp"
+#include "compiler/optree/types.hpp"
+#include "compiler/optree/value.hpp"
 
 namespace optree {
 
@@ -40,7 +45,7 @@ struct ModuleOp : Adaptor {
 struct FunctionOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Function", specId)
 
-    void init(const std::string &name, Type::Ptr funcType);
+    void init(const std::string &name, const Type::Ptr &funcType);
 
     OPTREE_ADAPTOR_ATTRIBUTE(name, setName, std::string, 0)
     OPTREE_ADAPTOR_ATTRIBUTE_TYPE(type, FunctionType, 1)
@@ -51,7 +56,7 @@ struct FunctionOp : Adaptor {
 struct FunctionCallOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "FunctionCall", specId)
 
-    void init(const std::string &name, Type::Ptr resultType, const std::vector<Value::Ptr> &arguments);
+    void init(const std::string &name, const Type::Ptr &resultType, const std::vector<Value::Ptr> &arguments);
     void init(const FunctionOp &callee, const std::vector<Value::Ptr> &arguments);
 
     OPTREE_ADAPTOR_ATTRIBUTE(name, setName, std::string, 0)
@@ -64,7 +69,7 @@ struct ReturnOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Return", specId)
 
     void init();
-    void init(Value::Ptr value);
+    void init(const Value::Ptr &value);
 
     OPTREE_ADAPTOR_OPERAND(value, setValue, 0)
 
@@ -74,9 +79,9 @@ struct ReturnOp : Adaptor {
 struct ConstantOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Constant", specId)
 
-    void init(Type::Ptr type, int64_t value);
-    void init(Type::Ptr type, double value);
-    void init(Type::Ptr type, const std::string &value);
+    void init(const Type::Ptr &type, int64_t value);
+    void init(const Type::Ptr &type, double value);
+    void init(const Type::Ptr &type, const std::string &value);
 
     OPTREE_ADAPTOR_ATTRIBUTE_OPAQUE(value, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
@@ -98,7 +103,7 @@ struct LogicUnaryOp;
 struct BinaryOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Binary", specId)
 
-    void init(Type::Ptr resultType, Value::Ptr lhs, Value::Ptr rhs);
+    void init(const Type::Ptr &resultType, const Value::Ptr &lhs, const Value::Ptr &rhs);
 
     OPTREE_ADAPTOR_OPERAND(lhs, setLhs, 0)
     OPTREE_ADAPTOR_OPERAND(rhs, setRhs, 1)
@@ -110,8 +115,8 @@ struct BinaryOp : Adaptor {
 struct ArithBinaryOp : BinaryOp {
     OPTREE_ADAPTOR_HELPER(BinaryOp, "ArithBinary", specId)
 
-    void init(ArithBinOpKind kind, Type::Ptr resultType, Value::Ptr lhs, Value::Ptr rhs);
-    void init(ArithBinOpKind kind, Value::Ptr lhs, Value::Ptr rhs);
+    void init(ArithBinOpKind kind, const Type::Ptr &resultType, const Value::Ptr &lhs, const Value::Ptr &rhs);
+    void init(ArithBinOpKind kind, const Value::Ptr &lhs, const Value::Ptr &rhs);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, ArithBinOpKind, 0)
 
@@ -121,7 +126,7 @@ struct ArithBinaryOp : BinaryOp {
 struct LogicBinaryOp : BinaryOp {
     OPTREE_ADAPTOR_HELPER(BinaryOp, "LogicBinary", specId)
 
-    void init(LogicBinOpKind kind, Value::Ptr lhs, Value::Ptr rhs);
+    void init(LogicBinOpKind kind, const Value::Ptr &lhs, const Value::Ptr &rhs);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, LogicBinOpKind, 0)
 
@@ -131,7 +136,7 @@ struct LogicBinaryOp : BinaryOp {
 struct UnaryOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Unary", specId)
 
-    void init(Type::Ptr resultType, Value::Ptr value);
+    void init(const Type::Ptr &resultType, const Value::Ptr &value);
 
     OPTREE_ADAPTOR_OPERAND(value, setValue, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
@@ -142,7 +147,7 @@ struct UnaryOp : Adaptor {
 struct ArithCastOp : UnaryOp {
     OPTREE_ADAPTOR_HELPER(UnaryOp, "ArithCast", specId)
 
-    void init(ArithCastOpKind kind, Type::Ptr resultType, Value::Ptr value);
+    void init(ArithCastOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, ArithCastOpKind, 0)
 
@@ -152,7 +157,7 @@ struct ArithCastOp : UnaryOp {
 struct LogicUnaryOp : UnaryOp {
     OPTREE_ADAPTOR_HELPER(UnaryOp, "LogicUnary", specId)
 
-    void init(LogicUnaryOpKind kind, Type::Ptr resultType, Value::Ptr value);
+    void init(LogicUnaryOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, LogicUnaryOpKind, 0)
 
@@ -170,7 +175,7 @@ struct StoreOp;
 struct AllocateOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Allocate", specId)
 
-    void init(Type::Ptr type);
+    void init(const Type::Ptr &type);
 
     OPTREE_ADAPTOR_RESULT(result, 0)
 
@@ -180,8 +185,8 @@ struct AllocateOp : Adaptor {
 struct LoadOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Load", specId)
 
-    void init(Type::Ptr resultType, Value::Ptr src);
-    void init(Value::Ptr src);
+    void init(const Type::Ptr &resultType, const Value::Ptr &src);
+    void init(const Value::Ptr &src);
 
     OPTREE_ADAPTOR_OPERAND(src, setSrc, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
@@ -192,7 +197,7 @@ struct LoadOp : Adaptor {
 struct StoreOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Store", specId)
 
-    void init(Value::Ptr dst, Value::Ptr valueToStore);
+    void init(const Value::Ptr &dst, const Value::Ptr &valueToStore);
 
     OPTREE_ADAPTOR_OPERAND(dst, setDst, 0)
     OPTREE_ADAPTOR_OPERAND(valueToStore, setValueToStore, 1)
@@ -214,7 +219,7 @@ struct ForOp;
 struct IfOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "If", specId)
 
-    void init(Value::Ptr cond, bool withElse = false);
+    void init(const Value::Ptr &cond, bool withElse = false);
 
     OPTREE_ADAPTOR_OPERAND(cond, setCond, 0);
 
@@ -263,7 +268,7 @@ struct ConditionOp : Adaptor {
 struct ForOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "For", specId)
 
-    void init(Type::Ptr iteratorType, Value::Ptr start, Value::Ptr stop, Value::Ptr step);
+    void init(const Type::Ptr &iteratorType, const Value::Ptr &start, const Value::Ptr &stop, const Value::Ptr &step);
 
     OPTREE_ADAPTOR_OPERAND(start, setStart, 0)
     OPTREE_ADAPTOR_OPERAND(stop, setStop, 1)
@@ -283,7 +288,7 @@ struct PrintOp;
 struct InputOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Input", specId)
 
-    void init(Type::Ptr inputType);
+    void init(const Type::Ptr &inputType);
 
     OPTREE_ADAPTOR_RESULT(value, 0)
 
@@ -293,7 +298,7 @@ struct InputOp : Adaptor {
 struct PrintOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Print", specId)
 
-    void init(Value::Ptr valueToPrint);
+    void init(const Value::Ptr &valueToPrint);
 
     OPTREE_ADAPTOR_OPERAND(value, setValue, 0)
 

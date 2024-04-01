@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <forward_list>
 #include <memory>
 
@@ -35,8 +36,8 @@ struct Value {
     Value(Value &&) = default;
     ~Value() = default;
 
-    Value(Type::Ptr type, Operation *owner) : type(type), owner(owner){};
-    Value(Type::Ptr type, std::shared_ptr<Operation> owner) : Value(type, owner.get()){};
+    Value(const Type::Ptr &type, Operation *owner) : type(type), owner(owner){};
+    Value(const Type::Ptr &type, const std::shared_ptr<Operation> &owner) : Value(type, owner.get()){};
 
     operator bool() const {
         return type.operator bool();

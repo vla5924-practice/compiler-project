@@ -1,7 +1,5 @@
 #pragma once
 
-#include <concepts>
-#include <functional>
 #include <memory>
 #include <ostream>
 #include <type_traits>
@@ -123,7 +121,7 @@ struct FunctionType : public Type {
     const PtrVector arguments;
     const Type::Ptr result;
 
-    FunctionType(const PtrVector &arguments, Type::Ptr result) : arguments(arguments), result(result){};
+    FunctionType(const PtrVector &arguments, const Type::Ptr &result) : arguments(arguments), result(result){};
 
     bool operator==(const Type &other) const override;
     using Type::operator!=;
@@ -136,7 +134,7 @@ struct PointerType : public Type {
 
     const Type::Ptr pointee;
 
-    PointerType(Type::Ptr pointee) : pointee(pointee){};
+    PointerType(const Type::Ptr &pointee) : pointee(pointee){};
 
     bool operator==(const Type &other) const override;
     using Type::operator!=;

@@ -1,14 +1,21 @@
 #include "operation.hpp"
 
+#include <cstddef>
 #include <ostream>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
 
 #include "compiler/utils/helpers.hpp"
 
+#include "attribute.hpp"
+#include "types.hpp"
+#include "value.hpp"
+
 using namespace optree;
 
-void Operation::addOperand(Value::Ptr value) {
+void Operation::addOperand(const Value::Ptr &value) {
     size_t operandNumber = operands.size();
     operands.emplace_back(value);
     value->uses.emplace_front(this, operandNumber);
@@ -20,15 +27,15 @@ void Operation::eraseOperand(size_t operandNumber) {
     operands.erase(operands.begin() + operandNumber);
 }
 
-Value::Ptr Operation::addResult(Type::Ptr type) {
+Value::Ptr Operation::addResult(const Type::Ptr &type) {
     return results.emplace_back(Value::make(type, this));
 }
 
-Value::Ptr Operation::addInward(Type::Ptr type) {
+Value::Ptr Operation::addInward(const Type::Ptr &type) {
     return inwards.emplace_back(Value::make(type, this));
 }
 
-Operation::Body::iterator Operation::addToBody(Operation::Ptr op) {
+Operation::Body::iterator Operation::addToBody(const Operation::Ptr &op) {
     auto it = body.emplace(body.end(), op);
     op->position = it;
     return it;
@@ -62,13 +69,15 @@ std::string Operation::dump() const {
     return str.str();
 }
 
-static void dumpValue(const Value::Ptr &value, std::ostream &stream, int valueId) {
+namespace {
+
+void dumpValue(const Value::Ptr &value, std::ostream &stream, int valueId) {
     stream << '#' << valueId << " : ";
     value->type->dump(stream);
 }
 
-static void dumpOperation(const Operation *op, std::ostream &stream, int depth,
-                          std::unordered_map<const Value *, int> &valueIds, int &nextValueId) {
+void dumpOperation(const Operation *op, std::ostream &stream, int depth,
+                   std::unordered_map<const Value *, int> &valueIds, int &nextValueId) {
     for (int i = 0; i < depth; i++)
         stream << "  ";
     stream << op->name;
@@ -96,6 +105,8 @@ static void dumpOperation(const Operation *op, std::ostream &stream, int depth,
     for (const auto &op : op->body)
         dumpOperation(op.get(), stream, depth + 1, valueIds, nextValueId);
 }
+
+} // namespace
 
 void Operation::dump(std::ostream &stream) const {
     std::unordered_map<const Value *, int> valueIds;
