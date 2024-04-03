@@ -120,9 +120,12 @@ struct Operation {
     template <typename AdaptorType>
     AdaptorType findParent() const {
         Ptr upperParent = parent;
-        while (upperParent && !upperParent->is<AdaptorType>())
+        while (upperParent && !upperParent->is<AdaptorType>()) {
+            if (upperParent->is<AdaptorType>())
+                return {upperParent};
             upperParent = upperParent->parent;
-        return AdaptorType(upperParent);
+        }
+        return {};
     }
 
     template <typename VariantType>
@@ -142,9 +145,7 @@ struct Operation {
 
     template <typename AdaptorType>
     static AdaptorType make(const Ptr &parent = {}, const Body::iterator &position = {}) {
-        auto op =
-            std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::getOperationName(), parent, position);
-        return {op};
+        return std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::getOperationName(), parent, position);
     }
 
     template <typename AdaptorType>
