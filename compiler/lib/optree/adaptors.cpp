@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "base_adaptor.hpp"
 #include "definitions.hpp"
 #include "operation.hpp"
 #include "types.hpp"
