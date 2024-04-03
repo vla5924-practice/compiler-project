@@ -54,6 +54,11 @@ void Operation::erase() {
             throw std::logic_error("Operation cannot be erased since its inwards still have uses");
     }
     inwards.clear();
+    for (size_t i = 0; i < operands.size(); i++) {
+        operands[i]->uses.remove_if([&](const Value::Use &use) { return use.user == this && use.operandNumber == i; });
+    }
+    operands.clear();
+    attributes.clear();
     if (!parent || position == Body::iterator())
         return;
     parent->body.erase(position);
