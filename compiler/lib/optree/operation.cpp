@@ -59,10 +59,6 @@ void Operation::erase() {
     parent->body.erase(position);
 }
 
-bool Operation::verify() const {
-    return verifier(this);
-}
-
 std::string Operation::dump() const {
     std::stringstream str;
     dump(str);

@@ -23,7 +23,7 @@ struct ReturnOp;
 struct ConstantOp;
 
 struct ModuleOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Module", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Module")
 
     void init();
 
@@ -38,46 +38,38 @@ struct ModuleOp : Adaptor {
         }
         return {};
     }
-
-    static bool verify(const Operation *op);
 };
 
 struct FunctionOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Function", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Function")
 
     void init(const std::string &name, const Type::Ptr &funcType);
 
     OPTREE_ADAPTOR_ATTRIBUTE(name, setName, std::string, 0)
     OPTREE_ADAPTOR_ATTRIBUTE_TYPE(type, FunctionType, 1)
-
-    static bool verify(const Operation *op);
 };
 
 struct FunctionCallOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "FunctionCall", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "FunctionCall")
 
     void init(const std::string &name, const Type::Ptr &resultType, const std::vector<Value::Ptr> &arguments);
     void init(const FunctionOp &callee, const std::vector<Value::Ptr> &arguments);
 
     OPTREE_ADAPTOR_ATTRIBUTE(name, setName, std::string, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct ReturnOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Return", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Return")
 
     void init();
     void init(const Value::Ptr &value);
 
     OPTREE_ADAPTOR_OPERAND(value, setValue, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct ConstantOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Constant", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Constant")
 
     void init(const Type::Ptr &type, int64_t value);
     void init(const Type::Ptr &type, double value);
@@ -85,8 +77,6 @@ struct ConstantOp : Adaptor {
 
     OPTREE_ADAPTOR_ATTRIBUTE_OPAQUE(value, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
-
-    static bool verify(const Operation *op);
 };
 
 // ----------------------------------------------------------------------------
@@ -101,67 +91,55 @@ struct ArithCastOp;
 struct LogicUnaryOp;
 
 struct BinaryOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Binary", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Binary")
 
     void init(const Type::Ptr &resultType, const Value::Ptr &lhs, const Value::Ptr &rhs);
 
     OPTREE_ADAPTOR_OPERAND(lhs, setLhs, 0)
     OPTREE_ADAPTOR_OPERAND(rhs, setRhs, 1)
     OPTREE_ADAPTOR_RESULT(result, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct ArithBinaryOp : BinaryOp {
-    OPTREE_ADAPTOR_HELPER(BinaryOp, "ArithBinary", specId)
+    OPTREE_ADAPTOR_HELPER(BinaryOp, "ArithBinary")
 
     void init(ArithBinOpKind kind, const Type::Ptr &resultType, const Value::Ptr &lhs, const Value::Ptr &rhs);
     void init(ArithBinOpKind kind, const Value::Ptr &lhs, const Value::Ptr &rhs);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, ArithBinOpKind, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct LogicBinaryOp : BinaryOp {
-    OPTREE_ADAPTOR_HELPER(BinaryOp, "LogicBinary", specId)
+    OPTREE_ADAPTOR_HELPER(BinaryOp, "LogicBinary")
 
     void init(LogicBinOpKind kind, const Value::Ptr &lhs, const Value::Ptr &rhs);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, LogicBinOpKind, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct UnaryOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Unary", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Unary")
 
     void init(const Type::Ptr &resultType, const Value::Ptr &value);
 
     OPTREE_ADAPTOR_OPERAND(value, setValue, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct ArithCastOp : UnaryOp {
-    OPTREE_ADAPTOR_HELPER(UnaryOp, "ArithCast", specId)
+    OPTREE_ADAPTOR_HELPER(UnaryOp, "ArithCast")
 
     void init(ArithCastOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, ArithCastOpKind, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct LogicUnaryOp : UnaryOp {
-    OPTREE_ADAPTOR_HELPER(UnaryOp, "LogicUnary", specId)
+    OPTREE_ADAPTOR_HELPER(UnaryOp, "LogicUnary")
 
     void init(LogicUnaryOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, LogicUnaryOpKind, 0)
-
-    static bool verify(const Operation *op);
 };
 
 // ----------------------------------------------------------------------------
@@ -173,36 +151,30 @@ struct LoadOp;
 struct StoreOp;
 
 struct AllocateOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Allocate", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Allocate")
 
     void init(const Type::Ptr &type);
 
     OPTREE_ADAPTOR_RESULT(result, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct LoadOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Load", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Load")
 
     void init(const Type::Ptr &resultType, const Value::Ptr &src);
     void init(const Value::Ptr &src);
 
     OPTREE_ADAPTOR_OPERAND(src, setSrc, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct StoreOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Store", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Store")
 
     void init(const Value::Ptr &dst, const Value::Ptr &valueToStore);
 
     OPTREE_ADAPTOR_OPERAND(dst, setDst, 0)
     OPTREE_ADAPTOR_OPERAND(valueToStore, setValueToStore, 1)
-
-    static bool verify(const Operation *op);
 };
 
 // ----------------------------------------------------------------------------
@@ -217,7 +189,7 @@ struct ConditionOp;
 struct ForOp;
 
 struct IfOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "If", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "If")
 
     void init(const Value::Ptr &cond, bool withElse = false);
 
@@ -225,48 +197,38 @@ struct IfOp : Adaptor {
 
     ThenOp thenOp() const;
     ElseOp elseOp() const;
-
-    static bool verify(const Operation *op);
 };
 
 struct ThenOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Then", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Then")
 
     void init();
-
-    static bool verify(const Operation *op);
 };
 
 struct ElseOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Else", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Else")
 
     void init();
-
-    static bool verify(const Operation *op);
 };
 
 struct WhileOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "While", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "While")
 
     void init();
 
     ConditionOp conditionOp() const;
-
-    static bool verify(const Operation *op);
 };
 
 struct ConditionOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Condition", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Condition")
 
     void init();
 
     Value::Ptr terminator() const;
-
-    static bool verify(const Operation *op);
 };
 
 struct ForOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "For", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "For")
 
     void init(const Type::Ptr &iteratorType, const Value::Ptr &start, const Value::Ptr &stop, const Value::Ptr &step);
 
@@ -274,8 +236,6 @@ struct ForOp : Adaptor {
     OPTREE_ADAPTOR_OPERAND(stop, setStop, 1)
     OPTREE_ADAPTOR_OPERAND(step, setStep, 2)
     OPTREE_ADAPTOR_INWARD(iterator, 0)
-
-    static bool verify(const Operation *op);
 };
 
 // ----------------------------------------------------------------------------
@@ -286,23 +246,19 @@ struct InputOp;
 struct PrintOp;
 
 struct InputOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Input", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Input")
 
     void init(const Type::Ptr &inputType);
 
     OPTREE_ADAPTOR_RESULT(value, 0)
-
-    static bool verify(const Operation *op);
 };
 
 struct PrintOp : Adaptor {
-    OPTREE_ADAPTOR_HELPER(Adaptor, "Print", specId)
+    OPTREE_ADAPTOR_HELPER(Adaptor, "Print")
 
     void init(const Value::Ptr &valueToPrint);
 
     OPTREE_ADAPTOR_OPERAND(value, setValue, 0)
-
-    static bool verify(const Operation *op);
 };
 
 } // namespace optree

@@ -21,13 +21,11 @@ namespace optree {
 struct Operation {
     using Ptr = std::shared_ptr<Operation>;
     using Body = std::list<Ptr>;
-    using Verifier = std::function<bool(const Operation *)>;
     using SpecId = void *;
 
     Ptr parent;
     Body::iterator position;
     SpecId specId;
-    Verifier verifier;
     utils::SourceRef ref;
     std::string_view name;
 
@@ -42,10 +40,10 @@ struct Operation {
     ~Operation() = default;
 
     explicit Operation(const Ptr &parent = {}, const Body::iterator &position = {})
-        : parent(parent), position(position), specId(nullptr), verifier([](const Operation *) { return true; }){};
-    Operation(SpecId specId, const Verifier &verifier, std::string_view name = "Unknown", const Ptr &parent = {},
+        : parent(parent), position(position), specId(nullptr){};
+    Operation(SpecId specId, std::string_view name = "Unknown", const Ptr &parent = {},
               const Body::iterator &position = {})
-        : parent(parent), position(position), specId(specId), verifier(verifier), name(name){};
+        : parent(parent), position(position), specId(specId), name(name){};
 
     const Value::Ptr &operand(size_t index) const {
         return operands[index];
@@ -140,15 +138,13 @@ struct Operation {
     Body::iterator addToBody(const Operation::Ptr &op);
     void erase();
 
-    bool verify() const;
-
     std::string dump() const;
     void dump(std::ostream &stream) const;
 
     template <typename AdaptorType>
     static AdaptorType make(const Ptr &parent = {}, const Body::iterator &position = {}) {
-        auto op = std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::verify,
-                                              AdaptorType::getOperationName(), parent, position);
+        auto op =
+            std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::getOperationName(), parent, position);
         return {op};
     }
 

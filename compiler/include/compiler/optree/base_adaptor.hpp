@@ -5,21 +5,16 @@
 #include "compiler/optree/operation.hpp"
 #include "compiler/utils/source_ref.hpp"
 
-#define OPTREE_ADAPTOR_HELPER(BASE_ADAPTOR_CLASS, OPERATION_NAME, SPECID_MEMBER_NAME)                                  \
-  public:                                                                                                              \
+#define OPTREE_ADAPTOR_HELPER(BASE_ADAPTOR_CLASS, OPERATION_NAME)                                                      \
     using BASE_ADAPTOR_CLASS::BASE_ADAPTOR_CLASS;                                                                      \
     using BASE_ADAPTOR_CLASS::operator bool;                                                                           \
     static std::string_view getOperationName() {                                                                       \
         return (OPERATION_NAME);                                                                                       \
     }                                                                                                                  \
     static Operation::SpecId getSpecId() {                                                                             \
-        return &(SPECID_MEMBER_NAME);                                                                                  \
-    }                                                                                                                  \
-                                                                                                                       \
-  private:                                                                                                             \
-    static inline char(SPECID_MEMBER_NAME);                                                                            \
-                                                                                                                       \
-  public:
+        static char specId = 0;                                                                                        \
+        return &specId;                                                                                                \
+    }
 
 #define OPTREE_ADAPTOR_ATTRIBUTE(GET_NAME, SET_NAME, TYPE, NUMBER)                                                     \
     const TYPE &GET_NAME() const {                                                                                     \
@@ -85,10 +80,6 @@ struct Adaptor {
 
     void setRef(const utils::SourceRef &ref) {
         op->ref = ref;
-    }
-
-    static bool verify(const Operation *op) {
-        return op != nullptr;
     }
 
     static std::string_view getOperationName() {
