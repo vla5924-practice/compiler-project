@@ -131,6 +131,11 @@ IntegerType::Ptr TypeStorage::integerType(unsigned width) {
     return ptr;
 }
 
+BoolType::Ptr TypeStorage::boolType() {
+    static BoolType::Ptr ptr = Type::make<BoolType>();
+    return ptr;
+}
+
 FloatType::Ptr TypeStorage::floatType(unsigned width) {
     static std::unordered_map<unsigned, FloatType::Ptr> storage;
     FloatType::Ptr ptr;

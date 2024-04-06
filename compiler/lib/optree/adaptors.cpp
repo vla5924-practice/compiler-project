@@ -52,6 +52,11 @@ void ConstantOp::init(const Type::Ptr &type, int64_t value) {
     op->addAttr(value);
 }
 
+void ConstantOp::init(const Type::Ptr &type, bool value) {
+    op->results.emplace_back(Value::make(type, op));
+    op->addAttr(value);
+}
+
 void ConstantOp::init(const Type::Ptr &type, double value) {
     op->results.emplace_back(Value::make(type, op));
     op->addAttr(value);
@@ -121,12 +126,12 @@ void LoadOp::init(const Value::Ptr &src) {
 }
 
 void LogicBinaryOp::init(LogicBinOpKind kind, const Value::Ptr &lhs, const Value::Ptr &rhs) {
-    BinaryOp::init(TypeStorage::integerType(), lhs, rhs);
+    BinaryOp::init(TypeStorage::boolType(), lhs, rhs);
     op->addAttr(kind);
 }
 
-void LogicUnaryOp::init(LogicUnaryOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value) {
-    UnaryOp::init(resultType, value);
+void LogicUnaryOp::init(LogicUnaryOpKind kind, const Value::Ptr &value) {
+    UnaryOp::init(TypeStorage::boolType(), value);
     op->addAttr(kind);
 }
 

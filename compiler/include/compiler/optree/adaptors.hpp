@@ -72,6 +72,7 @@ struct ConstantOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Constant")
 
     void init(const Type::Ptr &type, int64_t value);
+    void init(const Type::Ptr &type, bool value);
     void init(const Type::Ptr &type, double value);
     void init(const Type::Ptr &type, const std::string &value);
 
@@ -137,7 +138,7 @@ struct ArithCastOp : UnaryOp {
 struct LogicUnaryOp : UnaryOp {
     OPTREE_ADAPTOR_HELPER(UnaryOp, "LogicUnary")
 
-    void init(LogicUnaryOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value);
+    void init(LogicUnaryOpKind kind, const Value::Ptr &value);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, LogicUnaryOpKind, 0)
 };

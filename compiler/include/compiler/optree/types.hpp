@@ -161,6 +161,7 @@ struct TypeStorage {
 
     static NoneType::Ptr noneType();
     static IntegerType::Ptr integerType(unsigned width = 64U);
+    static BoolType::Ptr boolType();
     static FloatType::Ptr floatType(unsigned width = 64U);
     static StrType::Ptr strType(unsigned charWidth = 8U);
 };
