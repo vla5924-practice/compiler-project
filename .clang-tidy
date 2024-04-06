@@ -17,7 +17,6 @@ Checks: >
   bugprone-throw-keyword-missing,
   bugprone-unused-raii,
   bugprone-unused-return-value,
-  cppcoreguidelines-macro-usage,
   llvm-include-order,
   llvm-namespace-comment,
   misc-confusable-identifiers,
