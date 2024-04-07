@@ -1,37 +1,44 @@
 #include "lexer/lexer.hpp"
 
+#include <string_view>
+#include <unordered_map>
+
 #include "lexer/lexer_error.hpp"
+#include "lexer/token.hpp"
+#include "lexer/token_types.hpp"
 
 using namespace lexer;
 using namespace utils;
 
-// clang-format off
-std::map<std::string_view, Keyword> Lexer::keywords = {
-    {"bool", Keyword::Bool},         {"False", Keyword::False},
-    {"int", Keyword::Int},           {"float", Keyword::Float},
-    {"str", Keyword::Str},           {"if", Keyword::If},
-    {"else", Keyword::Else},         {"elif", Keyword::Elif},
-    {"range", Keyword::Range},       {"while", Keyword::While},
-    {"for", Keyword::For},           {"break", Keyword::Break},
-    {"import", Keyword::Import},     {"continue", Keyword::Continue},
-    {"def", Keyword::Definition},    {"return", Keyword::Return},
-    {"or", Keyword::Or},             {"and", Keyword::And},
-    {"not", Keyword::Not},           {"in", Keyword::In},
-    {"True", Keyword::True},         {"None", Keyword::None}};
-
-std::map<std::string_view, Operator> Lexer::operators = {
-    {"%", Operator::Mod},            {".", Operator::Dot},        {"]", Operator::RectRightBrace},
-    {",", Operator::Comma},          {"=", Operator::Assign},     {"+", Operator::Add},
-    {"-", Operator::Sub},            {"*", Operator::Mult},       {"/", Operator::Div},
-    {"==", Operator::Equal},         {"!=", Operator::NotEqual},  {"<", Operator::Less},
-    {">", Operator::Greater},        {"<=", Operator::LessEqual}, {">=", Operator::GreaterEqual},
-    {"(", Operator::LeftBrace},      {")", Operator::RightBrace}, {"[", Operator::RectLeftBrace}};
-// clang-format on
-
 namespace {
+
+std::unordered_map<std::string_view, Keyword> keywords = {
+    {"bool", Keyword::Bool},      {"False", Keyword::False},
+    {"int", Keyword::Int},        {"float", Keyword::Float},
+    {"str", Keyword::Str},        {"if", Keyword::If},
+    {"else", Keyword::Else},      {"elif", Keyword::Elif},
+    {"range", Keyword::Range},    {"while", Keyword::While},
+    {"for", Keyword::For},        {"break", Keyword::Break},
+    {"import", Keyword::Import},  {"continue", Keyword::Continue},
+    {"def", Keyword::Definition}, {"return", Keyword::Return},
+    {"or", Keyword::Or},          {"and", Keyword::And},
+    {"not", Keyword::Not},        {"in", Keyword::In},
+    {"True", Keyword::True},      {"None", Keyword::None},
+};
+
+std::unordered_map<std::string_view, Operator> operators = {
+    {"%", Operator::Mod},       {".", Operator::Dot},        {"]", Operator::RectRightBrace},
+    {",", Operator::Comma},     {"=", Operator::Assign},     {"+", Operator::Add},
+    {"-", Operator::Sub},       {"*", Operator::Mult},       {"/", Operator::Div},
+    {"==", Operator::Equal},    {"!=", Operator::NotEqual},  {"<", Operator::Less},
+    {">", Operator::Greater},   {"<=", Operator::LessEqual}, {">=", Operator::GreaterEqual},
+    {"(", Operator::LeftBrace}, {")", Operator::RightBrace}, {"[", Operator::RectLeftBrace},
+};
+
 inline std::string_view makeStringView(std::string::const_iterator begin_token, std::string::const_iterator end_token) {
     return std::string_view(&*begin_token, static_cast<size_t>(std::distance(begin_token, end_token)));
 }
+
 } // namespace
 
 TokenList Lexer::process(const SourceFile &source) {
