@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <iostream>
 #include <string>
 
 class Logger {
@@ -14,11 +15,14 @@ class Logger {
     void setStdoutEnabled(bool enabled);
     void setOutputFile(const std::string &filename);
 
-    Logger &operator<<(const std::string &);
-    Logger &operator<<(const char *const);
-    Logger &operator<<(char);
-    Logger &operator<<(size_t);
-    Logger &operator<<(std::ostream &(*)(std::ostream &));
+    template <typename T>
+    Logger &operator<<(const T &out) {
+        if (stdoutEnabled)
+            std::cout << out;
+        if (fileOutput.is_open())
+            fileOutput << out;
+        return *this;
+    }
 
   private:
     void closeOutputFile();
