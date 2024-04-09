@@ -14,8 +14,9 @@ bool lhsRequiresPtr(BinaryOperation op) {
     case BinaryOperation::Assign:
     case BinaryOperation::FAssign:
         return true;
+    default:
+        return false;
     }
-    return false;
 }
 
 bool isLLVMPointer(llvm::Value *value) {
@@ -44,8 +45,9 @@ const char *const placeholderNameByTypeId(TypeId id) {
         return PLACEHOLDER_FLOAT_NAME;
     case BuiltInTypes::StrType:
         return PLACEHOLDER_STR_NAME;
+    default:
+        return PLACEHOLDER_POINTER_NAME;
     }
-    return PLACEHOLDER_POINTER_NAME;
 }
 
 TypeId findVariableType(Node::Ptr node) {
@@ -75,8 +77,9 @@ TypeId detectExpressionType(Node::Ptr node) {
         return BuiltInTypes::StrType;
     case NodeType::VariableName:
         return findVariableType(node);
+    default:
+        return BuiltInTypes::NoneType;
     }
-    return BuiltInTypes::NoneType;
 }
 
 } // namespace
@@ -246,8 +249,9 @@ llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
         return visitTypeConversion(rawNode);
     case NodeType::VariableName:
         return visitVariableName(rawNode);
+    default:
+        return nullptr;
     }
-    return nullptr;
 }
 
 llvm::Value *IRGenerator::visitBinaryOperation(Node *node) {
@@ -313,6 +317,8 @@ llvm::Value *IRGenerator::visitBinaryOperation(Node *node) {
     case BinaryOperation::Or:
     case BinaryOperation::FOr:
         return builder->CreateOr(lhs, rhs);
+    case BinaryOperation::Unknown:
+        return nullptr;
     }
     return nullptr;
 }
@@ -461,6 +467,8 @@ void IRGenerator::processNode(Node::Ptr node) {
         return;
     case NodeType::WhileStatement:
         processWhileStatement(rawNode);
+        return;
+    default:
         return;
     }
 }
