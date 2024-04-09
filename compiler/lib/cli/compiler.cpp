@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-#ifdef ENABLE_CODEGEN
+#ifdef ENABLE_CODEGEN_AST_TO_LLVMIR
 #include <cstdlib>
 #include <filesystem>
 #include <random>
@@ -25,8 +25,8 @@
 #include "compiler/utils/source_files.hpp"
 #include "compiler/utils/timer.hpp"
 
-#ifdef ENABLE_CODEGEN
-#include "compiler/codegen/ir_generator.hpp"
+#ifdef ENABLE_CODEGEN_AST_TO_LLVMIR
+#include "compiler/codegen/ast_to_llvmir/ir_generator.hpp"
 #endif
 
 #include "dumping.hpp"
@@ -40,7 +40,7 @@ using semantizer::Semantizer;
 using utils::SourceFile;
 using utils::Timer;
 
-#ifdef ENABLE_CODEGEN
+#ifdef ENABLE_CODEGEN_AST_TO_LLVMIR
 using ir_generator::IRGenerator;
 #endif
 
@@ -54,7 +54,7 @@ constexpr std::string_view time = "--time";
 constexpr std::string_view stopAfter = "--stop-after";
 constexpr std::string_view files = "FILES";
 
-#ifdef ENABLE_CODEGEN
+#ifdef ENABLE_CODEGEN_AST_TO_LLVMIR
 constexpr std::string_view compile = "--compile";
 constexpr std::string_view clang = "--clang";
 constexpr std::string_view llc = "--llc";
@@ -71,7 +71,7 @@ constexpr std::string_view parser = "parser";
 constexpr std::string_view semantizer = "semantizer";
 constexpr std::string_view optimizer = "optimizer";
 
-#ifdef ENABLE_CODEGEN
+#ifdef ENABLE_CODEGEN_AST_TO_LLVMIR
 constexpr std::string_view codegen = "codegen";
 #endif
 
@@ -79,7 +79,7 @@ constexpr std::string_view codegen = "codegen";
 
 namespace {
 
-#ifdef ENABLE_CODEGEN
+#ifdef ENABLE_CODEGEN_AST_TO_LLVMIR
 std::filesystem::path createTemporaryDirectory() {
     auto tempDir = std::filesystem::temp_directory_path();
     std::random_device dev;
@@ -126,7 +126,7 @@ int Compiler::exec(int argc, char *argv[]) {
     program.add_argument("-v", arg::verbose).help("print info messages").default_value(false).implicit_value(true);
     program.add_argument("-l", arg::log).help("log file (stages output will be saved if provided)");
     program.add_argument("-O", arg::optimize).help("run optimization pass").default_value(false).implicit_value(true);
-#ifdef ENABLE_CODEGEN
+#ifdef ENABLE_CODEGEN_AST_TO_LLVMIR
     program.add_argument("-c", arg::compile)
         .help("produce an executable instead of LLVM IR code")
         .default_value(false)
@@ -268,7 +268,7 @@ int Compiler::exec(int argc, char *argv[]) {
         return 3;
     }
 
-#ifdef ENABLE_CODEGEN
+#ifdef ENABLE_CODEGEN_AST_TO_LLVMIR
     logger << "\nIR GENERATOR:\n";
     IRGenerator generator("module");
     generator.process(tree);

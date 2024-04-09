@@ -20,6 +20,12 @@ target_link_libraries(${TARGET_NAME} PUBLIC
     frontend
     utils
 )
-if (ENABLE_CODEGEN)
-    target_link_libraries(${TARGET_NAME} PUBLIC codegen)
-endif()
+
+foreach(TARGET_SUFFIX IN LISTS AVAILABLE_CODEGEN)
+    set(CODEGEN_TARGET "codegen_${TARGET_SUFFIX}")
+    if (TARGET ${CODEGEN_TARGET})
+        target_link_libraries(${TARGET_NAME} PUBLIC ${CODEGEN_TARGET})
+        string(TOUPPER "ENABLE_${CODEGEN_TARGET}" HELPER_DEFINE)
+        target_compile_definitions(${TARGET_NAME} PUBLIC ${HELPER_DEFINE})
+    endif()
+endforeach()

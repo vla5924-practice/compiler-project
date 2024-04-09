@@ -10,7 +10,7 @@ file(GLOB_RECURSE TARGET_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
 add_definitions(${LLVM_DEFINITIONS_LIST})
-llvm_map_components_to_libnames(LLVM_LINK_LIBRARIES core)
+llvm_map_components_to_libnames(LLVM_LINK_LIBRARIES core support)
 
 add_library(${TARGET_NAME} STATIC ${TARGET_SRC} ${TARGET_HEADERS})
 

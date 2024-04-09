@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
-#include <backend/lexer/lexer.hpp>
-#include <backend/parser/parser.hpp>
-#include <backend/semantizer/semantizer.hpp>
-#include <ir_generator/ir_generator.hpp>
-#include <utils/source_files.hpp>
+#include "compiler/backend/ast/semantizer/semantizer.hpp"
+#include "compiler/codegen/ast_to_llvmir/ir_generator.hpp"
+#include "compiler/frontend/lexer/lexer.hpp"
+#include "compiler/frontend/parser/parser.hpp"
+#include "compiler/utils/source_files.hpp"
 
 using namespace ast;
 using namespace ir_generator;
@@ -58,92 +58,86 @@ TEST(IRGenerator, can_generate_and_dump_ir) {
     IRGenerator generator("module");
     generator.process(tree);
 
-    std::string ir = ""
-                     "@.str.0 = private unnamed_addr constant [3 x i8] c\"hi\\00\", align 1\n"
-                     "\n"
-                     "declare i32 @printf(i8*, ...)\n"
-                     "\n"
-                     "declare i32 @scanf(i8*, ...)\n"
-                     "\n"
-                     "define double @foo(i64 %0) {\n"
-                     "foo_entry:\n"
-                     "  %x = alloca i64, align 8\n"
-                     "  store i64 %0, i64* %x, align 4\n"
-                     "  br label %block\n"
-                     "\n"
-                     "block:                                            ; preds = %foo_entry\n"
-                     "  %1 = load i64, i64* %x, align 4\n"
-                     "  %2 = add i64 5, %1\n"
-                     "  %z = alloca i64, align 8\n"
-                     "  store i64 %2, i64* %z, align 4\n"
-                     "  %3 = load i64, i64* %z, align 4\n"
-                     "  %typeconv = sitofp i64 %3 to double\n"
-                     "  %4 = fadd double 3.500000e+00, %typeconv\n"
-                     "  ret double %4\n"
-                     "}\n"
-                     "\n"
-                     "define void @main() {\n"
-                     "main_entry:\n"
-                     "  br label %block\n"
-                     "\n"
-                     "block:                                            ; preds = %main_entry\n"
-                     "  %x = alloca i64, align 8\n"
-                     "  store i64 1, i64* %x, align 4\n"
-                     "  %y = alloca double, align 8\n"
-                     "  %input = alloca double, align 8\n"
-                     "  %0 = call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* "
-                     "@.placeholder.float, i32 0, i32 0), double* %input)\n"
-                     "  %1 = load double, double* %input, align 8\n"
-                     "  store double %1, double* %y, align 8\n"
-                     "  %2 = load [3 x i8], [3 x i8]* @.str.0, align 1\n"
-                     "  %3 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* "
-                     "@.placeholder.str, i32 0, i32 0), [3 x i8] %2)\n"
-                     "  %4 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* "
-                     "@.placeholder.newline, i32 0, i32 0))\n"
-                     "  br label %ifcond\n"
-                     "\n"
-                     "ifcond:                                           ; preds = %block\n"
-                     "  %5 = load double, double* %y, align 8\n"
-                     "  %6 = fcmp ogt double %5, 1.500000e+00\n"
-                     "  br i1 %6, label %ifbody, label %elsebody\n"
-                     "\n"
-                     "ifbody:                                           ; preds = %ifcond\n"
-                     "  %7 = load i64, i64* %x, align 4\n"
-                     "  %8 = call double @foo(i64 %7)\n"
-                     "  %9 = fmul double %8, 2.500000e+00\n"
-                     "  %z = alloca double, align 8\n"
-                     "  store double %9, double* %z, align 8\n"
-                     "  br label %endif\n"
-                     "\n"
-                     "elsebody:                                         ; preds = %ifcond\n"
-                     "  %typeconv = sitofp i64 6 to double\n"
-                     "  store double %typeconv, double* %y, align 8\n"
-                     "  br label %whilecond\n"
-                     "\n"
-                     "whilecond:                                        ; preds = %whilebody, %elsebody\n"
-                     "  %10 = load i64, i64* %x, align 4\n"
-                     "  %11 = icmp slt i64 %10, 10\n"
-                     "  br i1 %11, label %whilebody, label %endwhile\n"
-                     "\n"
-                     "whilebody:                                        ; preds = %whilecond\n"
-                     "  %12 = load i64, i64* %x, align 4\n"
-                     "  %13 = add i64 %12, 1\n"
-                     "  store i64 %13, i64* %x, align 4\n"
-                     "  br label %whilecond\n"
-                     "\n"
-                     "endwhile:                                         ; preds = %whilecond\n"
-                     "  br label %endif\n"
-                     "\n"
-                     "endif:                                            ; preds = %endwhile, %ifbody\n"
-                     "  %14 = load double, double* %y, align 8\n"
-                     "  %15 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* "
-                     "@.placeholder.float, i32 0, i32 0), double %14)\n"
-                     "  %16 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* "
-                     "@.placeholder.newline, i32 0, i32 0))\n"
-                     "  ret void\n"
-                     "}\n";
+    std::string ir = R"(
+@.str.0 = private unnamed_addr constant [3 x i8] c"hi\00", align 1
+
+declare i32 @printf(ptr, ...)
+
+declare i32 @scanf(ptr, ...)
+
+define double @foo(i64 %0) {
+foo_entry:
+  %x = alloca i64, align 8
+  store i64 %0, ptr %x, align 4
+  br label %block
+
+block:                                            ; preds = %foo_entry
+  %1 = load i64, ptr %x, align 4
+  %2 = add i64 5, %1
+  %z = alloca i64, align 8
+  store i64 %2, ptr %z, align 4
+  %3 = load i64, ptr %z, align 4
+  %typeconv = sitofp i64 %3 to double
+  %4 = fadd double 3.500000e+00, %typeconv
+  ret double %4
+}
+
+define void @main() {
+main_entry:
+  br label %block
+
+block:                                            ; preds = %main_entry
+  %x = alloca i64, align 8
+  store i64 1, ptr %x, align 4
+  %y = alloca double, align 8
+  %input = alloca double, align 8
+  %0 = call i32 (ptr, ...) @scanf(ptr @.placeholder.float, ptr %input)
+  %1 = load double, ptr %input, align 8
+  store double %1, ptr %y, align 8
+  %2 = call i32 (ptr, ...) @printf(ptr @.placeholder.str, ptr @.str.0)
+  %3 = call i32 (ptr, ...) @printf(ptr @.placeholder.newline)
+  br label %ifcond
+
+ifcond:                                           ; preds = %block
+  %4 = load double, ptr %y, align 8
+  %5 = fcmp ogt double %4, 1.500000e+00
+  br i1 %5, label %ifbody, label %elsebody
+
+ifbody:                                           ; preds = %ifcond
+  %6 = load i64, ptr %x, align 4
+  %7 = call double @foo(i64 %6)
+  %8 = fmul double %7, 2.500000e+00
+  %z = alloca double, align 8
+  store double %8, ptr %z, align 8
+  br label %endif
+
+elsebody:                                         ; preds = %ifcond
+  %typeconv = sitofp i64 6 to double
+  store double %typeconv, ptr %y, align 8
+  br label %whilecond
+
+whilecond:                                        ; preds = %whilebody, %elsebody
+  %9 = load i64, ptr %x, align 4
+  %10 = icmp slt i64 %9, 10
+  br i1 %10, label %whilebody, label %endwhile
+
+whilebody:                                        ; preds = %whilecond
+  %11 = load i64, ptr %x, align 4
+  %12 = add i64 %11, 1
+  store i64 %12, ptr %x, align 4
+  br label %whilecond
+
+endwhile:                                         ; preds = %whilecond
+  br label %endif
+
+endif:                                            ; preds = %endwhile, %ifbody
+  %13 = call i32 (ptr, ...) @printf(ptr @.placeholder.float, ptr %y)
+  %14 = call i32 (ptr, ...) @printf(ptr @.placeholder.newline)
+  ret void
+}
+)";
     std::string generated = generator.dump();
-    generated = generated.substr(generated.find("@.str"));
+    generated = "\n" + generated.substr(generated.find("@.str"));
 
     ASSERT_EQ(ir, generated);
 }

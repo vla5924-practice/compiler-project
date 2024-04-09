@@ -40,6 +40,7 @@ class IRGenerator {
     std::list<std::unordered_map<std::string, llvm::AllocaInst *>> localVariables;
     std::unordered_map<std::string, llvm::Function *> functions;
     std::unordered_map<std::string, llvm::Function *> internalFunctions;
+    std::unordered_map<llvm::Value *, llvm::Type *> valuesTypes;
 
     static const std::unordered_map<std::string, NodeVisitor> builtInFunctions;
 
