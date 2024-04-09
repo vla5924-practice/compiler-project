@@ -1,25 +1,11 @@
 cmake_minimum_required(VERSION 3.22)
 
-set(TARGET_NAME codegen)
-set_target_include_dir(${TARGET_NAME})
-
-find_package(LLVM REQUIRED CONFIG)
-
-file(GLOB_RECURSE TARGET_HEADERS ${TARGET_INCLUDE_DIR}/*.hpp)
-file(GLOB_RECURSE TARGET_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-
-separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
-add_definitions(${LLVM_DEFINITIONS_LIST})
-llvm_map_components_to_libnames(LLVM_LINK_LIBRARIES core)
-
-add_library(${TARGET_NAME} STATIC ${TARGET_SRC} ${TARGET_HEADERS})
-
-target_include_directories(${TARGET_NAME}
-    PUBLIC ${COMPILER_INCLUDE_DIR} ${LLVM_INCLUDE_DIRS}
-    PRIVATE ${TARGET_INCLUDE_DIR}
-)
-
-target_link_libraries(${TARGET_NAME} PUBLIC
-    ast
-    ${LLVM_LINK_LIBRARIES}
-)
+if(DEFINED ENABLE_CODEGEN AND NOT "${ENABLE_CODEGEN}^" STREQUAL "^" AND NOT "${ENABLE_CODEGEN}^" STREQUAL "OFF^")
+    foreach(TARGET IN LISTS ENABLE_CODEGEN)
+        if(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${TARGET}")
+            add_subdirectory(${TARGET})
+        else()
+            message(FATAL_ERROR "${TARGET} is not a correct codegen backend")
+        endif()
+    endforeach()
+endif()

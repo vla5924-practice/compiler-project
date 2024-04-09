@@ -19,7 +19,7 @@ set(COMPILER_CMAKE_DIR ${CMAKE_SOURCE_DIR}/cmake)
 set(COMPILER_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(COMPILER_LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 
-option(ENABLE_CODEGEN "Enables LLVM IR generation backend" OFF)
+set(ENABLE_CODEGEN "" CACHE STRING "Enables low-level code generation")
 option(ENABLE_CLI "Enables command-line interface application" ON)
 option(ENABLE_TESTS "Enables tests for components" ON)
 option(ENABLE_COVERAGE "Enables code coverage instrumentation" OFF)

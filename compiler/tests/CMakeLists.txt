@@ -22,6 +22,7 @@ endif()
 add_subdirectory(ast)
 add_subdirectory(frontend)
 add_subdirectory(backend)
+add_subdirectory(codegen)
 
 add_custom_target(tests
 DEPENDS
@@ -36,9 +37,3 @@ DEPENDS
     run_frontend_test
     run_backend_ast_test
 )
-
-if(ENABLE_CODEGEN)
-    add_subdirectory(codegen)
-    add_dependencies(tests codegen_test)
-    add_dependencies(run_tests run_codegen_test)
-endif()

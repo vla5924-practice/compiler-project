@@ -5,11 +5,7 @@ add_subdirectory(ast)
 add_subdirectory(optree)
 add_subdirectory(frontend)
 add_subdirectory(backend)
-
-if(ENABLE_CODEGEN)
-    add_subdirectory(codegen)
-    add_compile_definitions("ENABLE_CODEGEN")
-endif()
+add_subdirectory(codegen)
 
 if(ENABLE_CLI)
     add_subdirectory(cli)
