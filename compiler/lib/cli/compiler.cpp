@@ -22,6 +22,7 @@
 #include "compiler/frontend/lexer/lexer.hpp"
 #include "compiler/frontend/parser/parser.hpp"
 #include "compiler/frontend/preprocessor/preprocessor.hpp"
+#include "compiler/utils/pipeline.hpp"
 #include "compiler/utils/source_files.hpp"
 #include "compiler/utils/timer.hpp"
 
@@ -193,6 +194,9 @@ int Compiler::exec(int argc, char *argv[]) {
         logger << e.what();
         return 3;
     }
+
+    auto process = utils::pipeline<const SourceFile>(Preprocessor::process) >> Lexer::process >> Parser::process;
+    auto tree = process(source);
 
     std::string stopAfter;
     if (program.is_used(arg::stopAfter))
