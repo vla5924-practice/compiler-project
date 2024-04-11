@@ -11,6 +11,8 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
 #pragma warning(pop)
 
 #include "compiler/ast/syntax_tree.hpp"
@@ -40,6 +42,7 @@ class IRGenerator {
     std::list<std::unordered_map<std::string, llvm::AllocaInst *>> localVariables;
     std::unordered_map<std::string, llvm::Function *> functions;
     std::unordered_map<std::string, llvm::Function *> internalFunctions;
+    std::unordered_map<llvm::Value *, llvm::Type *> valuesTypes;
 
     static const std::unordered_map<std::string, NodeVisitor> builtInFunctions;
 

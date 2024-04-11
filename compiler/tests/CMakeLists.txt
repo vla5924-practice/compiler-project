@@ -37,8 +37,4 @@ DEPENDS
     run_backend_ast_test
 )
 
-if(ENABLE_CODEGEN)
-    add_subdirectory(codegen)
-    add_dependencies(tests codegen_test)
-    add_dependencies(run_tests run_codegen_test)
-endif()
+add_subdirectory(codegen)

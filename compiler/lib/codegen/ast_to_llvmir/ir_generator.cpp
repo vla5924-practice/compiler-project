@@ -14,8 +14,9 @@ bool lhsRequiresPtr(BinaryOperation op) {
     case BinaryOperation::Assign:
     case BinaryOperation::FAssign:
         return true;
+    default:
+        return false;
     }
-    return false;
 }
 
 bool isLLVMPointer(llvm::Value *value) {
@@ -44,8 +45,9 @@ const char *const placeholderNameByTypeId(TypeId id) {
         return PLACEHOLDER_FLOAT_NAME;
     case BuiltInTypes::StrType:
         return PLACEHOLDER_STR_NAME;
+    default:
+        return PLACEHOLDER_POINTER_NAME;
     }
-    return PLACEHOLDER_POINTER_NAME;
 }
 
 TypeId findVariableType(Node::Ptr node) {
@@ -75,8 +77,9 @@ TypeId detectExpressionType(Node::Ptr node) {
         return BuiltInTypes::StrType;
     case NodeType::VariableName:
         return findVariableType(node);
+    default:
+        return BuiltInTypes::NoneType;
     }
-    return BuiltInTypes::NoneType;
 }
 
 } // namespace
@@ -204,11 +207,13 @@ llvm::Value *IRGenerator::declareString(const std::string &str, std::string name
 }
 
 void IRGenerator::declareLocalVariable(TypeId type, std::string &name, llvm::Value *initialValue) {
-    llvm::AllocaInst *inst = new llvm::AllocaInst(createLLVMType(type), 0, name, currentBlock);
+    llvm::Type *llvmType = createLLVMType(type);
+    llvm::AllocaInst *inst = new llvm::AllocaInst(llvmType, 0, name, currentBlock);
     localVariables.back().insert_or_assign(name, inst);
+    valuesTypes[inst] = llvmType;
     if (initialValue != nullptr) {
         if (isLLVMPointer(initialValue))
-            initialValue = builder->CreateLoad(initialValue);
+            initialValue = builder->CreateLoad(llvmType, initialValue);
         builder->CreateStore(initialValue, inst);
     }
 }
@@ -244,8 +249,9 @@ llvm::Value *IRGenerator::visitNode(Node::Ptr node) {
         return visitTypeConversion(rawNode);
     case NodeType::VariableName:
         return visitVariableName(rawNode);
+    default:
+        return nullptr;
     }
-    return nullptr;
 }
 
 llvm::Value *IRGenerator::visitBinaryOperation(Node *node) {
@@ -258,9 +264,9 @@ llvm::Value *IRGenerator::visitBinaryOperation(Node *node) {
 
     BinaryOperation op = node->binOp();
     if (lhsNode->type == NodeType::VariableName && !lhsRequiresPtr(op))
-        lhs = builder->CreateLoad(lhs);
+        lhs = builder->CreateLoad(valuesTypes[lhs], lhs);
     if (rhsNode->type == NodeType::VariableName)
-        rhs = builder->CreateLoad(rhs);
+        rhs = builder->CreateLoad(valuesTypes[rhs], rhs);
     switch (op) {
     case BinaryOperation::Add:
         return builder->CreateAdd(lhs, rhs);
@@ -311,6 +317,8 @@ llvm::Value *IRGenerator::visitBinaryOperation(Node *node) {
     case BinaryOperation::Or:
     case BinaryOperation::FOr:
         return builder->CreateOr(lhs, rhs);
+    case BinaryOperation::Unknown:
+        return nullptr;
     }
     return nullptr;
 }
@@ -342,7 +350,7 @@ llvm::Value *IRGenerator::visitFunctionCall(Node *node) {
     for (const auto &currentNode : argsNode->children) {
         llvm::Value *arg = visitExpression(currentNode.get());
         if (isLLVMPointer(arg))
-            arg = builder->CreateLoad(arg);
+            arg = builder->CreateLoad(valuesTypes[arg], arg);
         arguments.push_back(arg);
     }
     return builder->CreateCall(functions[name], arguments);
@@ -367,9 +375,10 @@ llvm::Value *IRGenerator::visitTypeConversion(Node *node) {
 
     Node::Ptr &base = node->lastChild();
     llvm::Value *operand = nullptr;
-    if (base->type == NodeType::VariableName)
-        operand = builder->CreateLoad(visitVariableName(base.get()));
-    else
+    if (base->type == NodeType::VariableName) {
+        llvm::Value *ptr = visitVariableName(base.get());
+        operand = builder->CreateLoad(valuesTypes[ptr], ptr);
+    } else
         operand = visitNode(base);
     TypeId srcType = detectExpressionType(base);
     TypeId dstType = node->firstChild()->typeId();
@@ -407,7 +416,7 @@ llvm::Value *IRGenerator::visitPrintFunctionCall(Node *node) {
     if (placeholders.find(placeholderName)->second[0] == '%') {
         llvm::Value *arg = visitNode(valueNode);
         if (isLLVMPointer(arg) && arg->getType() != createLLVMType(BuiltInTypes::StrType))
-            arg = builder->CreateLoad(arg);
+            arg = builder->CreateLoad(valuesTypes[arg], arg);
         arguments.push_back(arg);
     }
     llvm::Function *function = internalFunctions[PRINTF_FUNCTION_NAME];
@@ -421,10 +430,12 @@ llvm::Value *IRGenerator::visitInputFunctionCall(Node *node) {
     assert(node && node->type == NodeType::FunctionCall && node->firstChild()->str() == INPUT_FUNCTION_NAME);
 
     TypeId returnType = node->lastChild()->typeId();
-    llvm::AllocaInst *temporary = new llvm::AllocaInst(createLLVMType(returnType), 0, "input", currentBlock);
+    llvm::Type *llvmType = createLLVMType(returnType);
+    llvm::AllocaInst *temporary = new llvm::AllocaInst(llvmType, 0, "input", currentBlock);
+    valuesTypes[temporary] = llvmType;
     std::vector<llvm::Value *> arguments = {getGlobalString(placeholderNameByTypeId(returnType)), temporary};
     builder->CreateCall(internalFunctions[SCANF_FUNCTION_NAME], arguments);
-    return builder->CreateLoad(temporary);
+    return builder->CreateLoad(llvmType, temporary);
 }
 
 void IRGenerator::processNode(Node::Ptr node) {
@@ -456,6 +467,8 @@ void IRGenerator::processNode(Node::Ptr node) {
         return;
     case NodeType::WhileStatement:
         processWhileStatement(rawNode);
+        return;
+    default:
         return;
     }
 }
@@ -575,7 +588,7 @@ void IRGenerator::processReturnStatement(Node *node) {
 
     llvm::Value *ret = visitNode(node->firstChild());
     if (isLLVMPointer(ret))
-        ret = builder->CreateLoad(ret);
+        ret = builder->CreateLoad(valuesTypes[ret], ret);
     builder->CreateRet(ret);
 }
 
