@@ -16,7 +16,9 @@
 #include "compiler/optree/definitions.hpp"
 #include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
+#include "compiler/optree/program.hpp"
 #include "compiler/optree/types.hpp"
+#include "compiler/optree/value.hpp"
 #include "compiler/utils/helpers.hpp"
 #include "compiler/utils/source_ref.hpp"
 
