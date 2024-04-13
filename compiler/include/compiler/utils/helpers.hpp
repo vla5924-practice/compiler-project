@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iterator>
+#include <memory>
 #include <ostream>
 #include <type_traits>
 
@@ -70,6 +71,16 @@ void interleaveComma(std::ostream &stream, const Range &values, const UnaryPred 
 template <typename Iterator>
 auto advanceEarly(Iterator begin, Iterator end) {
     return detail::AdvanceEarlyRange<Iterator>(begin, end);
+}
+
+template <typename... Types, typename Type>
+inline bool isAny(const std::shared_ptr<Type> &object) {
+    return (object->template is<Types>() || ...);
+}
+
+template <typename... Types, typename Type>
+inline bool isAny(const Type &object) {
+    return (object.template is<Types>() || ...);
 }
 
 } // namespace utils
