@@ -187,15 +187,11 @@ void processReturnStatement(const Node::Ptr &node, ConverterContext &ctx) {
 
 void processWhileStatement(const Node::Ptr &node, ConverterContext &ctx) {
     auto whileOp = ctx.insert<WhileOp>(node->ref);
-    ctx.enterScope();
     ctx.goInto(whileOp.conditionOp().op);
     processNode(node->firstChild(), ctx);
     ctx.goParent();
-    ctx.exitScope();
-    ctx.enterScope();
     processNode(node->lastChild(), ctx);
     ctx.goParent();
-    ctx.exitScope();
 }
 
 void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
