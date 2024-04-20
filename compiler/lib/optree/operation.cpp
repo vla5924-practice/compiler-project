@@ -59,7 +59,7 @@ void Operation::erase() {
     }
     operands.clear();
     attributes.clear();
-    if (!parent || position == Body::iterator())
+    if (!parent)
         return;
     parent->body.erase(position);
 }

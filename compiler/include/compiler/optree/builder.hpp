@@ -19,7 +19,7 @@ class Builder {
     Builder() = default;
     Builder(const Builder &) = default;
     Builder(Builder &&) = default;
-    ~Builder() = default;
+    virtual ~Builder() = default;
 
     static Builder before(const Operation::Ptr &op);
     static Builder after(const Operation::Ptr &op);
@@ -31,7 +31,7 @@ class Builder {
     void setInsertPointAtBodyBegin(const Operation::Ptr &op);
     void setInsertPointAtBodyEnd(const Operation::Ptr &op);
 
-    void insert(const Operation::Ptr &op);
+    virtual void insert(const Operation::Ptr &op);
 
     template <typename AdaptorType, typename... Args>
     AdaptorType insert(Args... args) {

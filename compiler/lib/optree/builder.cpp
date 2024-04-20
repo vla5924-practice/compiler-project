@@ -15,6 +15,8 @@ Builder Builder::after(const Operation::Ptr &op) {
 }
 
 Builder Builder::atBodyBegin(const Operation::Ptr &op) {
+    if (op->body.empty())
+        return atBodyEnd(op);
     return {op, std::next(op->body.begin())};
 }
 
@@ -33,6 +35,10 @@ void Builder::setInsertPointAfter(const Operation::Ptr &op) {
 }
 
 void Builder::setInsertPointAtBodyBegin(const Operation::Ptr &op) {
+    if (op->body.empty()) {
+        setInsertPointAtBodyEnd(op);
+        return;
+    }
     currentOp = op;
     insertPoint = std::next(op->body.begin());
 }
