@@ -122,6 +122,7 @@ struct FunctionType : public Type {
     const Type::Ptr result;
 
     FunctionType(const PtrVector &arguments, const Type::Ptr &result) : arguments(arguments), result(result){};
+    explicit FunctionType(const Type::Ptr &result) : result(result){};
 
     bool operator==(const Type &other) const override;
     using Type::operator!=;
