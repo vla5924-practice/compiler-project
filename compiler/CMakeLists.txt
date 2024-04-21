@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.22)
 project(Compiler LANGUAGES CXX)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 
 set(CMAKE_CXX_STANDARD 23)
@@ -32,6 +32,25 @@ if(MSVC)
 endif()
 
 include(${COMPILER_CMAKE_DIR}/utils.cmake)
+
+if(ENABLE_COVERAGE)
+    if(NOT UNIX)
+        message(FATAL_ERROR "gcov is available on Unix only")
+    endif()
+
+    add_compile_options("-O0" "--coverage")
+    add_link_options("-lgcov" "--coverage")
+
+    find_program(LCOV lcov REQUIRED)
+    find_program(GENHTML genhtml REQUIRED)
+
+    set(COVERAGE_INFO "${CMAKE_BINARY_DIR}/coverage.info")
+    add_custom_target(coverage
+        COMMAND ${LCOV} --directory . --capture --include '${CMAKE_SOURCE_DIR}/include/*' --include '${CMAKE_SOURCE_DIR}/lib/*' --output-file ${COVERAGE_INFO}
+        COMMAND ${GENHTML} --demangle-cpp -o coverage ${COVERAGE_INFO}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    )
+endif()
 
 add_subdirectory(../thirdparty thirdparty)
 add_subdirectory(lib)
