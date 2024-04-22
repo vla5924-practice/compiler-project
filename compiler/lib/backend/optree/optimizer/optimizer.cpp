@@ -14,8 +14,8 @@ using namespace optree;
 using namespace optree::optimizer;
 
 class OperationSet {
-    std::vector<Operation::Ptr> data;
-    std::unordered_map<const Operation *, size_t> positions;
+    std::vector<Operation *> data;
+    std::unordered_map<Operation *, size_t> positions;
 
   public:
     OperationSet() {
@@ -31,29 +31,29 @@ class OperationSet {
         return positions.empty();
     }
 
-    void push(const Operation::Ptr &op) {
-        if (positions.contains(op.get()))
+    void push(Operation *op) {
+        if (positions.contains(op))
             return;
-        positions[op.get()] = data.size();
+        positions[op] = data.size();
         data.emplace_back(op);
     }
 
-    Operation::Ptr pop() {
+    Operation *pop() {
         while (!data.back())
             data.pop_back();
-        Operation::Ptr op = data.back();
+        Operation *op = data.back();
         data.pop_back();
-        positions.erase(op.get());
+        positions.erase(op);
         while (!data.empty() && !data.back())
             data.pop_back();
         return op;
     }
 
-    void erase(const Operation::Ptr &op) {
-        auto it = positions.find(op.get());
+    void erase(Operation *op) {
+        auto it = positions.find(op);
         if (it == positions.end())
             return;
-        data[it->second].reset();
+        data[it->second] = nullptr;
         positions.erase(it);
     }
 
@@ -65,7 +65,7 @@ class OperationSet {
 
 namespace {
 
-void pushToSet(const Operation::Ptr &root, OperationSet &ops) {
+void pushToSet(Operation *root, OperationSet &ops) {
     for (const auto &op : root->body)
         pushToSet(op, ops);
     ops.push(root);
@@ -81,15 +81,15 @@ void Optimizer::process(Program &program) const {
     OperationSet ops;
     bool mutated = false;
     OptBuilder::Notifier notifier;
-    notifier.onInsert = [&ops, &mutated](const Operation::Ptr &op) {
+    notifier.onInsert = [&ops, &mutated](Operation *op) {
         ops.push(op);
         mutated = true;
     };
-    notifier.onUpdate = [&ops, &mutated](const Operation::Ptr &op) {
+    notifier.onUpdate = [&ops, &mutated](Operation *op) {
         ops.push(op);
         mutated = true;
     };
-    notifier.onErase = [&ops, &mutated](const Operation::Ptr &op) {
+    notifier.onErase = [&ops, &mutated](Operation *op) {
         ops.erase(op);
         mutated = true;
     };
@@ -99,7 +99,7 @@ void Optimizer::process(Program &program) const {
         ops.clear();
         pushToSet(program.root, ops);
         while (!ops.empty()) {
-            Operation::Ptr op = ops.pop();
+            Operation *op = ops.pop();
             for (const auto &transform : transforms) {
                 if (!transform->canRun(op))
                     continue;

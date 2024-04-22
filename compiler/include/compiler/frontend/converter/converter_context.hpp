@@ -23,7 +23,7 @@ struct ConverterContext {
         bool needsLoad = true;
     };
 
-    optree::Operation::Ptr op;
+    optree::Operation *op;
     std::unordered_map<std::string, optree::Type::Ptr> functions;
     std::forward_list<std::unordered_map<std::string, LocalVariable>> variables;
     optree::Builder builder;
@@ -34,7 +34,7 @@ struct ConverterContext {
         return builder.insert<AdaptorType>(std::forward<Args>(args)...);
     }
 
-    void goInto(const optree::Operation::Ptr &rootOp) {
+    void goInto(optree::Operation *rootOp) {
         op = rootOp;
         builder.setInsertPointAtBodyEnd(op);
     }

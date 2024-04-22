@@ -4,9 +4,11 @@
 #include <list>
 #include <memory>
 #include <ostream>
+#include <queue>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 
 #include "compiler/utils/source_ref.hpp"
@@ -18,13 +20,58 @@
 namespace optree {
 
 struct Operation {
-    using Ptr = std::shared_ptr<Operation>;
-    using Body = std::list<Ptr>;
+    using Body = std::list<Operation *>;
     using SpecId = void *;
 
-    Ptr parent;
-    Body::iterator position;
+  private:
+    static inline struct Storage {
+        std::unordered_set<Operation *> data;
+        std::queue<Operation *> outdated;
+
+        Storage() = default;
+        Storage(const Storage &) = delete;
+        Storage(Storage &&) = delete;
+
+        ~Storage() {
+            cleanup();
+            for (Operation *op : data)
+                delete op;
+        }
+
+        void emplace(Operation *op) {
+            cleanup();
+            data.emplace(op);
+        }
+
+        void destroy(Operation *op) {
+            outdated.push(op);
+        }
+
+        void cleanup() {
+            while (!outdated.empty()) {
+                Operation *op = outdated.front();
+                delete op;
+                outdated.pop();
+                data.erase(op);
+            }
+        }
+    } storage;
+
     SpecId specId;
+
+    Operation(const Operation &) = delete;
+    Operation(Operation &&) = default;
+    ~Operation() = default;
+
+    explicit Operation(Operation *parent = nullptr, const Body::iterator &position = {})
+        : parent(parent), position(position), specId(nullptr){};
+    Operation(SpecId specId, std::string_view name = "Unknown", Operation *parent = nullptr,
+              const Body::iterator &position = {})
+        : parent(parent), position(position), specId(specId), name(name){};
+
+  public:
+    Operation *parent;
+    Body::iterator position;
     utils::SourceRef ref;
     std::string_view name;
 
@@ -33,16 +80,6 @@ struct Operation {
     std::vector<Value::Ptr> inwards;
     std::vector<Attribute> attributes;
     Body body;
-
-    Operation(const Operation &) = delete;
-    Operation(Operation &&) = default;
-    ~Operation() = default;
-
-    explicit Operation(const Ptr &parent = {}, const Body::iterator &position = {})
-        : parent(parent), position(position), specId(nullptr){};
-    Operation(SpecId specId, std::string_view name = "Unknown", const Ptr &parent = {},
-              const Body::iterator &position = {})
-        : parent(parent), position(position), specId(specId), name(name){};
 
     const Value::Ptr &operand(size_t index) const {
         return operands[index];
@@ -119,7 +156,7 @@ struct Operation {
 
     template <typename AdaptorType>
     AdaptorType findParent() const {
-        Ptr upperParent = parent;
+        Operation *upperParent = parent;
         while (upperParent && !upperParent->is<AdaptorType>()) {
             if (upperParent->is<AdaptorType>())
                 return {upperParent};
@@ -137,19 +174,21 @@ struct Operation {
     void eraseOperand(size_t operandNumber);
     Value::Ptr addResult(const Type::Ptr &type);
     Value::Ptr addInward(const Type::Ptr &type);
-    Body::iterator addToBody(const Operation::Ptr &op);
+    void addToBody(Operation *op);
     void erase();
 
     std::string dump() const;
     void dump(std::ostream &stream) const;
 
     template <typename AdaptorType>
-    static AdaptorType make(const Ptr &parent = {}, const Body::iterator &position = {}) {
-        return std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::getOperationName(), parent, position);
+    static AdaptorType make(Operation *parent = nullptr, const Body::iterator &position = {}) {
+        auto *op = new Operation(AdaptorType::getSpecId(), AdaptorType::getOperationName(), parent, position);
+        storage.emplace(op);
+        return op;
     }
 
     template <typename AdaptorType>
-    static AdaptorType as(const Operation::Ptr &op) {
+    static AdaptorType as(Operation *op) {
         if (op->is<AdaptorType>())
             return AdaptorType(op);
         return {};

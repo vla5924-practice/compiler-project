@@ -35,14 +35,15 @@ Value::Ptr Operation::addInward(const Type::Ptr &type) {
     return inwards.emplace_back(Value::make(type, this));
 }
 
-Operation::Body::iterator Operation::addToBody(const Operation::Ptr &op) {
-    auto it = body.emplace(body.end(), op);
-    op->position = it;
-    return it;
+void Operation::addToBody(Operation *op) {
+    op->position = body.emplace(body.end(), op);
+    op->parent = this;
 }
 
 void Operation::erase() {
-    for (auto &innerOp : utils::advanceEarly(body.rbegin(), body.rend()))
+    // TODO: use utils::advanceEarly instead of body backup
+    auto fullBody = body;
+    for (Operation *innerOp : fullBody)
         innerOp->erase();
     for (const auto &result : results) {
         if (!result->uses.empty())
@@ -62,6 +63,7 @@ void Operation::erase() {
     if (!parent)
         return;
     parent->body.erase(position);
+    storage.destroy(this);
 }
 
 std::string Operation::dump() const {
@@ -103,8 +105,8 @@ void dumpOperation(const Operation *op, std::ostream &stream, int depth,
         stream << "]";
     }
     stream << "\n";
-    for (const auto &op : op->body)
-        dumpOperation(op.get(), stream, depth + 1, valueIds, nextValueId);
+    for (const auto *op : op->body)
+        dumpOperation(op, stream, depth + 1, valueIds, nextValueId);
 }
 
 } // namespace

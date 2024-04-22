@@ -58,20 +58,20 @@
 namespace optree {
 
 struct Adaptor {
-    Operation::Ptr op;
+    Operation *op;
 
     Adaptor(const Adaptor &) = default;
     Adaptor(Adaptor &&) = default;
     ~Adaptor() = default;
 
     Adaptor() : op(nullptr){};
-    Adaptor(const Operation::Ptr &op) : op(op){};
+    Adaptor(Operation *op) : op(op){};
 
     Adaptor &operator=(const Adaptor &) = default;
     Adaptor &operator=(Adaptor &&) = default;
 
     operator bool() const {
-        return op.operator bool();
+        return op != nullptr;
     }
 
     const utils::SourceRef &ref() const {

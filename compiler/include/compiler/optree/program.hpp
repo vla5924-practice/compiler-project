@@ -5,12 +5,12 @@
 namespace optree {
 
 struct Program {
-    Operation::Ptr root;
+    Operation *root;
 
     Program() = default;
     Program(const Program &) = default;
     Program(Program &&) = default;
-    ~Program() = default;
+    ~Program();
 };
 
 } // namespace optree

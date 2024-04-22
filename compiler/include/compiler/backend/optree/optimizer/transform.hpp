@@ -17,8 +17,8 @@ struct BaseTransform {
     BaseTransform(BaseTransform &&) = default;
     virtual ~BaseTransform() = default;
 
-    virtual bool canRun(const Operation::Ptr &op) const = 0;
-    virtual void run(const Operation::Ptr &op, OptBuilder &builder) const = 0;
+    virtual bool canRun(Operation *op) const = 0;
+    virtual void run(Operation *op, OptBuilder &builder) const = 0;
 };
 
 template <typename... AdaptorTypes>
@@ -28,7 +28,7 @@ struct Transform : public BaseTransform {
     Transform(Transform &&) = default;
     ~Transform() override = default;
 
-    bool canRun(const Operation::Ptr &op) const final {
+    bool canRun(Operation *op) const final {
         if constexpr (sizeof...(AdaptorTypes) == 0)
             return true;
         else

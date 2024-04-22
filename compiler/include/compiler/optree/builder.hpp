@@ -9,11 +9,10 @@ namespace optree {
 class Builder {
     using InsertPoint = Operation::Body::iterator;
 
-    Operation::Ptr currentOp;
+    Operation *currentOp;
     InsertPoint insertPoint;
 
-    Builder(const Operation::Ptr &currentOp, const InsertPoint &insertPoint)
-        : currentOp(currentOp), insertPoint(insertPoint){};
+    Builder(Operation *currentOp, const InsertPoint &insertPoint) : currentOp(currentOp), insertPoint(insertPoint){};
 
   public:
     Builder() = default;
@@ -21,17 +20,17 @@ class Builder {
     Builder(Builder &&) = default;
     virtual ~Builder() = default;
 
-    static Builder before(const Operation::Ptr &op);
-    static Builder after(const Operation::Ptr &op);
-    static Builder atBodyBegin(const Operation::Ptr &op);
-    static Builder atBodyEnd(const Operation::Ptr &op);
+    static Builder before(Operation *op);
+    static Builder after(Operation *op);
+    static Builder atBodyBegin(Operation *op);
+    static Builder atBodyEnd(Operation *op);
 
-    void setInsertPointBefore(const Operation::Ptr &op);
-    void setInsertPointAfter(const Operation::Ptr &op);
-    void setInsertPointAtBodyBegin(const Operation::Ptr &op);
-    void setInsertPointAtBodyEnd(const Operation::Ptr &op);
+    void setInsertPointBefore(Operation *op);
+    void setInsertPointAfter(Operation *op);
+    void setInsertPointAtBodyBegin(Operation *op);
+    void setInsertPointAtBodyEnd(Operation *op);
 
-    virtual void insert(const Operation::Ptr &op);
+    virtual void insert(Operation *op);
 
     template <typename AdaptorType, typename... Args>
     AdaptorType insert(Args... args) {

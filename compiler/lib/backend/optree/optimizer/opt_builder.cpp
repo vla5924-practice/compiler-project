@@ -8,18 +8,18 @@
 using namespace optree;
 using namespace optree::optimizer;
 
-void OptBuilder::insert(const Operation::Ptr &op) {
+void OptBuilder::insert(Operation *op) {
     Builder::insert(op);
     notifier.onInsert(op);
 }
 
-Operation::Ptr OptBuilder::clone(const Operation::Ptr &op) {
+Operation *OptBuilder::clone(Operation *op) {
     // TODO
     notifier.onInsert(op);
     return op;
 }
 
-void OptBuilder::erase(const Operation::Ptr &op) {
+void OptBuilder::erase(Operation *op) {
     if (op->parent)
         setInsertPointAfter(op);
     for (const auto &nestedOp : op->body)
@@ -28,7 +28,7 @@ void OptBuilder::erase(const Operation::Ptr &op) {
     notifier.onErase(op);
 }
 
-void OptBuilder::update(const Operation::Ptr &op, const std::function<void()> &actor) {
+void OptBuilder::update(Operation *op, const std::function<void()> &actor) {
     actor();
     notifier.onUpdate(op);
 }

@@ -11,7 +11,7 @@ namespace optimizer {
 class OptBuilder : public Builder {
   public:
     struct Notifier {
-        using Callback = std::function<void(const Operation::Ptr &)>;
+        using Callback = std::function<void(Operation *)>;
 
         Callback onInsert;
         Callback onUpdate;
@@ -23,10 +23,10 @@ class OptBuilder : public Builder {
     OptBuilder(OptBuilder &&) = default;
     ~OptBuilder() override = default;
 
-    void insert(const Operation::Ptr &op) override;
-    Operation::Ptr clone(const Operation::Ptr &op);
-    void erase(const Operation::Ptr &op);
-    void update(const Operation::Ptr &op, const std::function<void()> &actor);
+    void insert(Operation *op) override;
+    Operation *clone(Operation *op);
+    void erase(Operation *op);
+    void update(Operation *op, const std::function<void()> &actor);
 
   private:
     const Notifier &notifier;
