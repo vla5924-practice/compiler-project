@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "compiler/utils/source_ref.hpp"
@@ -24,6 +25,8 @@ struct Operation : public std::enable_shared_from_this<Operation> {
     using SpecId = void *;
 
   private:
+    using ValueMapping = std::unordered_map<Value::Ptr, Value::Ptr>;
+
     SpecId specId;
 
     explicit Operation(const Ptr &parent = nullptr, const Body::iterator &position = {})
@@ -35,6 +38,9 @@ struct Operation : public std::enable_shared_from_this<Operation> {
     void addUse(const Value::Ptr &value, size_t operandNumber);
     void removeUse(const Value::Ptr &value, size_t operandNumber);
     void updateUse(const Value::Ptr &value, size_t operandNumber, const std::function<void(Value::Use &)> &actor);
+
+    Ptr cloneImpl(const ValueMapping &operandsMap = {});
+    Ptr cloneWithoutBodyImpl(const ValueMapping &operandsMap, ValueMapping &outputsMap);
 
   public:
     Ptr parent;

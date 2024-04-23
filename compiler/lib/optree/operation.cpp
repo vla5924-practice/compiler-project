@@ -1,6 +1,9 @@
 #include "operation.hpp"
 
+#include <algorithm>
 #include <cstddef>
+#include <functional>
+#include <iterator>
 #include <ostream>
 #include <sstream>
 #include <stdexcept>
@@ -29,6 +32,39 @@ void Operation::updateUse(const Value::Ptr &value, size_t operandNumber,
     for (auto &use : value->uses)
         if (use.userIs(this) && use.operandNumber == operandNumber)
             actor(use);
+}
+
+Operation::Ptr Operation::cloneImpl(const ValueMapping &operandsMap) {
+    ValueMapping outputsMap;
+    auto newOp = cloneWithoutBodyImpl(operandsMap, outputsMap);
+    for (const auto &nestedOp : body) {
+        newOp->addToBody(nestedOp->cloneImpl(outputsMap));
+    }
+    for (const auto &inward : inwards)
+        outputsMap.erase(inward);
+    return newOp;
+}
+
+Operation::Ptr Operation::cloneWithoutBodyImpl(const ValueMapping &operandsMap, ValueMapping &outputsMap) {
+    auto newOp = Operation::Ptr(new Operation(specId, name));
+    auto producer = [&](const Value::Ptr &value) { return Value::make(value->type, newOp); };
+    newOp->ref = ref;
+    std::vector<Value::Ptr> newOperands;
+    std::transform(operands.begin(), operands.end(), std::back_inserter(newOperands), [&](const Value::Ptr &value) {
+        if (operandsMap.contains(value))
+            return operandsMap.at(value);
+        return value;
+    });
+    for (const auto &operand : newOperands)
+        newOp->addOperand(operand);
+    std::transform(results.begin(), results.end(), std::back_inserter(newOp->results), producer);
+    for (size_t i = 0; i < results.size(); i++)
+        outputsMap[result(i)] = newOp->result(i);
+    std::transform(inwards.begin(), inwards.end(), std::back_inserter(newOp->inwards), producer);
+    for (size_t i = 0; i < inwards.size(); i++)
+        outputsMap[inward(i)] = newOp->inward(i);
+    newOp->attributes = attributes;
+    return newOp;
 }
 
 void Operation::addOperand(const Value::Ptr &value) {
@@ -96,21 +132,12 @@ void Operation::erase() {
 }
 
 Operation::Ptr Operation::clone() {
-    auto newOp = cloneWithoutBody();
-    for (auto nestedOp : body) {
-        newOp->addToBody(nestedOp->clone());
-    }
-    return newOp;
+    return cloneImpl();
 }
 
 Operation::Ptr Operation::cloneWithoutBody() {
-    auto newOp = Operation::Ptr(new Operation(specId, name));
-    newOp->ref = ref;
-    newOp->operands = operands;
-    newOp->results = results;
-    newOp->inwards = inwards;
-    newOp->attributes = attributes;
-    return newOp;
+    ValueMapping inwardsMap;
+    return cloneWithoutBodyImpl({}, inwardsMap);
 }
 
 std::string Operation::dump() const {

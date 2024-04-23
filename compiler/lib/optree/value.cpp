@@ -1,5 +1,7 @@
 #include "value.hpp"
 
+#include <cstddef>
+
 #include "compiler/utils/source_ref.hpp"
 
 #include "operation.hpp"
