@@ -15,30 +15,61 @@
 
 using namespace optree;
 
+void Operation::addUse(const Value::Ptr &value, size_t operandNumber) {
+    value->uses.emplace_front(weak_from_this(), operandNumber);
+}
+
+void Operation::removeUse(const Value::Ptr &value, size_t operandNumber) {
+    value->uses.remove_if(
+        [&](const Value::Use &use) { return use.userIs(this) && use.operandNumber == operandNumber; });
+}
+
+void Operation::updateUse(const Value::Ptr &value, size_t operandNumber,
+                          const std::function<void(Value::Use &)> &actor) {
+    for (auto &use : value->uses)
+        if (use.userIs(this) && use.operandNumber == operandNumber)
+            actor(use);
+}
+
 void Operation::addOperand(const Value::Ptr &value) {
-    size_t operandNumber = operands.size();
     operands.emplace_back(value);
-    value->uses.emplace_front(this, operandNumber);
+    addUse(value, operands.size());
+}
+
+void Operation::insertOperand(size_t operandNumber, const Value::Ptr &value) {
+    auto operandIt = operands.emplace(operands.begin() + operandNumber, value);
+    addUse(value, operandNumber);
+    for (auto it = std::next(operandIt); it != operands.end(); ++it) {
+        updateUse(*it, operandNumber++, [](Value::Use &use) { use.operandNumber++; });
+    }
+}
+
+void Operation::setOperand(size_t operandNumber, const Value::Ptr &value) {
+    auto &operand = operands[operandNumber];
+    removeUse(operand, operandNumber);
+    operand = value;
+    addUse(value, operandNumber);
 }
 
 void Operation::eraseOperand(size_t operandNumber) {
-    auto &uses = operands[operandNumber]->uses;
-    uses.remove_if([&](const Value::Use &use) { return use.user == this && use.operandNumber == operandNumber; });
-    operands.erase(operands.begin() + operandNumber);
+    removeUse(operands[operandNumber], operandNumber);
+    auto operandIt = operands.erase(operands.begin() + operandNumber);
+    for (auto it = operandIt; it != operands.end(); ++it) {
+        updateUse(*it, ++operandNumber, [](Value::Use &use) { use.operandNumber--; });
+    }
 }
 
 Value::Ptr Operation::addResult(const Type::Ptr &type) {
-    return results.emplace_back(Value::make(type, this));
+    return results.emplace_back(Value::make(type, weak_from_this()));
 }
 
 Value::Ptr Operation::addInward(const Type::Ptr &type) {
-    return inwards.emplace_back(Value::make(type, this));
+    return inwards.emplace_back(Value::make(type, weak_from_this()));
 }
 
-Operation::Body::iterator Operation::addToBody(const Operation::Ptr &op) {
-    auto it = body.emplace(body.end(), op);
-    op->position = it;
-    return it;
+void Operation::addToBody(const Operation::Ptr &op) {
+    op->position = body.emplace(body.end(), op);
+    op->parent = shared_from_this();
 }
 
 void Operation::erase() {
@@ -55,13 +86,31 @@ void Operation::erase() {
     }
     inwards.clear();
     for (size_t i = 0; i < operands.size(); i++) {
-        operands[i]->uses.remove_if([&](const Value::Use &use) { return use.user == this && use.operandNumber == i; });
+        removeUse(operands[i], i);
     }
     operands.clear();
     attributes.clear();
     if (!parent)
         return;
     parent->body.erase(position);
+}
+
+Operation::Ptr Operation::clone() {
+    auto newOp = cloneWithoutBody();
+    for (auto nestedOp : body) {
+        newOp->addToBody(nestedOp->clone());
+    }
+    return newOp;
+}
+
+Operation::Ptr Operation::cloneWithoutBody() {
+    auto newOp = Operation::Ptr(new Operation(specId, name));
+    newOp->ref = ref;
+    newOp->operands = operands;
+    newOp->results = results;
+    newOp->inwards = inwards;
+    newOp->attributes = attributes;
+    return newOp;
 }
 
 std::string Operation::dump() const {

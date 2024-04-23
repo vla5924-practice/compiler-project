@@ -31,7 +31,7 @@ struct ModuleOp : Adaptor {
         requires std::convertible_to<decltype(std::declval<AdaptorType>().name()), std::string>
     AdaptorType lookup(const std::string &name) const {
         for (const auto &childOp : op->body) {
-            if (AdaptorType adapted = Operation::as<AdaptorType>(childOp)) {
+            if (AdaptorType adapted = childOp->as<AdaptorType>()) {
                 if (adapted.name() == name)
                     return adapted;
             }
