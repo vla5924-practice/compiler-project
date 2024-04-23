@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "compiler/utils/helpers.hpp"
 
@@ -65,6 +66,11 @@ Operation::Ptr Operation::cloneWithoutBodyImpl(const ValueMapping &operandsMap, 
         outputsMap[inward(i)] = newOp->inward(i);
     newOp->attributes = attributes;
     return newOp;
+}
+
+Operation::SpecId Operation::getUnknownSpecId() {
+    static char unknownSpec;
+    return &unknownSpec;
 }
 
 void Operation::addOperand(const Value::Ptr &value) {
@@ -189,4 +195,12 @@ void Operation::dump(std::ostream &stream) const {
     std::unordered_map<const Value *, int> valueIds;
     int valueId = 0;
     dumpOperation(this, stream, 0, valueIds, valueId);
+}
+
+bool Operation::isUnknown() const {
+    return specId == getUnknownSpecId();
+}
+
+Operation::Ptr Operation::make(std::string_view name, const Ptr &parent, const Body::iterator &position) {
+    return Ptr(new Operation(getUnknownSpecId(), name, parent, position));
 }

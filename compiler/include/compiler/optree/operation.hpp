@@ -42,6 +42,8 @@ struct Operation : public std::enable_shared_from_this<Operation> {
     Ptr cloneImpl(const ValueMapping &operandsMap = {});
     Ptr cloneWithoutBodyImpl(const ValueMapping &operandsMap, ValueMapping &outputsMap);
 
+    static SpecId getUnknownSpecId();
+
   public:
     Ptr parent;
     Body::iterator position;
@@ -170,12 +172,15 @@ struct Operation : public std::enable_shared_from_this<Operation> {
 
     std::string dump() const;
     void dump(std::ostream &stream) const;
+    bool isUnknown() const;
 
     template <typename AdaptorType>
     static AdaptorType make(const Ptr &parent = {}, const Body::iterator &position = {}) {
         auto *op = new Operation(AdaptorType::getSpecId(), AdaptorType::getOperationName(), parent, position);
         return {Operation::Ptr(op)};
     }
+
+    static Ptr make(std::string_view name, const Ptr &parent = {}, const Body::iterator &position = {});
 };
 
 } // namespace optree
