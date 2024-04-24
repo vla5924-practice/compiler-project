@@ -75,8 +75,8 @@ Operation::SpecId Operation::getUnknownSpecId() {
 }
 
 void Operation::addOperand(const Value::Ptr &value) {
-    operands.emplace_back(value);
     addUse(value, operands.size());
+    operands.emplace_back(value);
 }
 
 void Operation::insertOperand(size_t operandNumber, const Value::Ptr &value) {
