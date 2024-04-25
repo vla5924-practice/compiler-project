@@ -74,18 +74,6 @@ struct Adaptor {
         return op.operator bool();
     }
 
-    operator const Operation::Ptr &() const {
-        return op;
-    }
-
-    operator Operation::Ptr() const {
-        return op;
-    }
-
-    Operation *operator->() const {
-        return op.get();
-    }
-
     const utils::SourceRef &ref() const {
         return op->ref;
     }
