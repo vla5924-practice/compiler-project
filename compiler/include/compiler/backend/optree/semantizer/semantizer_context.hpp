@@ -13,8 +13,12 @@ namespace semantizer {
 struct SemantizerContext {
     ErrorBuffer errors;
 
-    void pushError(const Operation::Ptr &op, const std::string &message) {
+    void pushError(const Operation::Ptr &op, const std::string &message = {}) {
         errors.push<SemantizerError>(op, message);
+    }
+
+    void pushOpError(const Operation::Ptr &op, const std::string &message = {}) {
+        errors.push<SemantizerError>(op, std::string(op->name) + " operation " + message);
     }
 };
 
