@@ -122,7 +122,7 @@ void processProgramRoot(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.functions[name] = convertType(typeNode->typeId());
     }
     auto moduleOp = Operation::make<ModuleOp>();
-    ctx.goInto(moduleOp.op);
+    ctx.goInto(moduleOp);
     for (const auto &child : node->children)
         processNode(child, ctx);
 }
@@ -140,10 +140,10 @@ void processFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
     ++it;
     auto funcType = Type::make<FunctionType>(arguments, convertType((*it)->typeId()));
     auto funcOp = ctx.insert<FunctionOp>(node->ref, name, funcType);
-    ctx.goInto(funcOp.op);
+    ctx.goInto(funcOp);
     ctx.enterScope();
     for (size_t i = 0; i < argNames.size(); i++)
-        ctx.saveVariable(argNames[i], funcOp.op->inward(i), false);
+        ctx.saveVariable(argNames[i], funcOp->inward(i), false);
     ++it;
     processNode(*it, ctx);
     ctx.exitScope();
@@ -187,7 +187,7 @@ void processReturnStatement(const Node::Ptr &node, ConverterContext &ctx) {
 
 void processWhileStatement(const Node::Ptr &node, ConverterContext &ctx) {
     auto whileOp = ctx.insert<WhileOp>(node->ref);
-    ctx.goInto(whileOp.conditionOp().op);
+    ctx.goInto(whileOp.conditionOp());
     processNode(node->firstChild(), ctx);
     ctx.goParent();
     processNode(node->lastChild(), ctx);
@@ -198,14 +198,14 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
     auto cond = visitNode(node->firstChild(), ctx);
     bool withElse = node->children.size() > 2;
     auto ifOp = ctx.insert<IfOp>(node->ref, cond, withElse);
-    ctx.goInto(ifOp.thenOp().op);
+    ctx.goInto(ifOp.thenOp());
     processNode(node->secondChild(), ctx);
     ctx.goParent();
     int depth = 0;
     auto elEnd = node->children.end();
     for (auto it = std::next(node->children.begin(), 2); it != elEnd; ++it) {
         depth++;
-        ctx.goInto(ifOp.elseOp().op);
+        ctx.goInto(ifOp.elseOp());
         const auto &elNode = *it;
         if (elNode->type == NodeType::ElseStatement) {
             processNode(elNode->firstChild(), ctx);
@@ -214,7 +214,7 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
             bool withElse = std::next(it) != elEnd;
             ifOp = ctx.insert<IfOp>(elNode->ref, cond, withElse);
             depth++;
-            ctx.goInto(ifOp.thenOp().op);
+            ctx.goInto(ifOp.thenOp());
             processNode(elNode->lastChild(), ctx);
             ctx.goParent();
         } else {
@@ -424,7 +424,5 @@ Program Converter::process(const SyntaxTree &syntaxTree) {
     processNode(syntaxTree.root, ctx);
     if (!ctx.errors.empty())
         throw ctx.errors;
-    Program program;
-    program.root = ctx.op;
-    return program;
+    return {ctx.op};
 }
