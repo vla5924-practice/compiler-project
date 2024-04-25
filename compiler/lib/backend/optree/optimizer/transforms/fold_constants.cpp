@@ -39,7 +39,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
             default:
                 folded = -1; // TODO: extend
             }
-            auto newOp = builder.insert<ConstantOp>(op.ref(), type, folded);
+            auto newOp = builder.insert<ConstantOp>(op->ref, type, folded);
             builder.replace(op, newOp);
             return;
         }
