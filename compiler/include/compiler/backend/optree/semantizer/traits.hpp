@@ -25,14 +25,20 @@ class TraitVerifier {
         return acc;
     }
 
+    operator bool() const {
+        return verified;
+    }
+
     template <typename TraitType, typename... Args>
     TraitVerifier &verify(Args... args) {
         TraitType trait(op, ctx);
         acc &= trait.verify(std::forward<Args>(args)...);
+        return *this;
     }
 };
 
 class Trait {
+  protected:
     const Operation::Ptr &op;
     SemantizerContext &ctx;
 
@@ -54,53 +60,58 @@ struct HasOperands : Trait {
     using Trait::Trait;
     bool verify(size_t numOperands) {
         if (op->numOperands() != numOperands) {
-            ctx.pushOpError(op) << "must have " << numOperands " operands";
+            ctx.pushOpError(op) << "must have " << numOperands << " operands";
             return false;
         }
         return true;
     }
-}
+};
 
 struct HasResults : Trait {
     using Trait::Trait;
     bool verify(size_t numResults) {
         if (op->numResults() == numResults)
             return true;
-        ctx.pushOpError(op) << "must have " << numResults " results";
+        ctx.pushOpError(op) << "must have " << numResults << " results";
         return false;
     }
-}
+};
 
 struct HasInwards : Trait {
     using Trait::Trait;
     bool verify(size_t numInwards) {
         if (op->numInwards() == numInwards)
             return true;
-        ctx.pushOpError(op) << "must have " << numInwards " inwards";
+        ctx.pushOpError(op) << "must have " << numInwards << " inwards";
         return false;
     }
-}
+};
 
 struct HasAttributes : Trait {
     using Trait::Trait;
     bool verify(size_t numAttrs) {
         if (op->numAttrs() == numAttrs)
             return true;
-        ctx.pushOpError(op) << "must have " << numAttrs " attributes";
+        ctx.pushOpError(op) << "must have " << numAttrs << " attributes";
         return false;
     }
-}
+};
 
 template <typename T>
 struct HasNthAttrOfType : Trait {
     using Trait::Trait;
     bool verify(size_t index) {
-        if (op->attr(index).is<T>())
-            return true;
-        ctx.pushOpError(op) << "must have attribute #" << index " of other type";
+        if constexpr (std::is_base_of_v<Type, T>) {
+            if (op->attr(index).isType<T>())
+                return true;
+        } else {
+            if (op->attr(index).is<T>())
+                return true;
+        }
+        ctx.pushOpError(op) << "must have attribute #" << index << " of other type";
         return false;
     }
-}
+};
 
 } // namespace semantizer
 } // namespace optree

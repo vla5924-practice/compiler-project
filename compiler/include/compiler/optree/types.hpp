@@ -64,6 +64,7 @@ struct NoneType : public Type {
 };
 
 struct IntegerType : public Type {
+    using NativeType = int64_t;
     using Ptr = std::shared_ptr<const IntegerType>;
 
     const unsigned width;
@@ -78,6 +79,7 @@ struct IntegerType : public Type {
 };
 
 struct BoolType : public IntegerType {
+    using NativeType = bool;
     using Ptr = std::shared_ptr<const BoolType>;
 
     static constinit const unsigned intWidth = 8U;
@@ -89,6 +91,7 @@ struct BoolType : public IntegerType {
 };
 
 struct FloatType : public Type {
+    using NativeType = double;
     using Ptr = std::shared_ptr<const FloatType>;
 
     const unsigned width;
@@ -103,6 +106,7 @@ struct FloatType : public Type {
 };
 
 struct StrType : public Type {
+    using NativeType = std::string;
     using Ptr = std::shared_ptr<const StrType>;
 
     const unsigned charWidth;
@@ -166,5 +170,13 @@ struct TypeStorage {
     static FloatType::Ptr floatType(unsigned width = 64U);
     static StrType::Ptr strType(unsigned charWidth = 8U);
 };
+
+template <typename ConcreteType>
+using NativeType = typename ConcreteType::NativeType;
+
+using NativeInt = NativeType<IntegerType>;
+using NativeBool = NativeType<BoolType>;
+using NativeFloat = NativeType<FloatType>;
+using NativeStr = NativeType<StrType>;
 
 } // namespace optree

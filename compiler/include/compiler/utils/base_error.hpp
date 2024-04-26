@@ -20,7 +20,7 @@ class BaseError : public std::exception {
     virtual const char *what() const noexcept;
 
     template <typename T>
-    std::stringstream &operator<<(const T &value) {
+    auto &operator<<(const T &value) {
         return messageStr << value;
     }
 };
