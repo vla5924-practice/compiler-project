@@ -26,13 +26,20 @@ class TraitVerifier {
     }
 
     operator bool() const {
-        return verified;
+        return verified();
+    }
+
+    bool fail() {
+        acc = false;
+        return verified();
     }
 
     template <typename TraitType, typename... Args>
     TraitVerifier &verify(Args... args) {
-        TraitType trait(op, ctx);
-        acc &= trait.verify(std::forward<Args>(args)...);
+        if (acc) {
+            TraitType trait(op, ctx);
+            acc &= trait.verify(std::forward<Args>(args)...);
+        }
         return *this;
     }
 };
@@ -73,6 +80,16 @@ struct HasResults : Trait {
         if (op->numResults() == numResults)
             return true;
         ctx.pushOpError(op) << "must have " << numResults << " results";
+        return false;
+    }
+};
+
+struct HasResultOfType : Trait {
+    using Trait::Trait;
+    bool verify(const Type::Ptr &type) {
+        if (op->numResults() == 1 && op->result(0)->hasType(type))
+            return true;
+        ctx.pushOpError(op) << "must have one result of " << type;
         return false;
     }
 };

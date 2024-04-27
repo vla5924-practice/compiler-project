@@ -15,6 +15,9 @@
     static Operation::SpecId getSpecId() {                                                                             \
         static char specId = 0;                                                                                        \
         return &specId;                                                                                                \
+    }                                                                                                                  \
+    static bool implementsSpecById(Operation::SpecId specId) {                                                         \
+        return specId == getSpecId() || Base::implementsSpecById(specId);                                              \
     }
 
 #define OPTREE_ADAPTOR_ATTRIBUTE(GET_NAME, SET_NAME, TYPE, NUMBER)                                                     \
@@ -89,6 +92,10 @@ struct Adaptor {
 
     static Operation::SpecId getSpecId() {
         return nullptr;
+    }
+
+    static bool implementsSpecById(Operation::SpecId) {
+        return false;
     }
 };
 

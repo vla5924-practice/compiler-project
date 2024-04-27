@@ -114,7 +114,7 @@ struct Operation {
 
     template <typename AdaptorType>
     bool is() const {
-        return specId == AdaptorType::getSpecId();
+        return AdaptorType::implementsSpecById(specId);
     }
 
     template <typename AdaptorType>
