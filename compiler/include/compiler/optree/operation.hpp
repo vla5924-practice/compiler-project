@@ -1,12 +1,14 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <list>
 #include <memory>
 #include <ostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "compiler/utils/source_ref.hpp"
@@ -17,14 +19,34 @@
 
 namespace optree {
 
-struct Operation {
+struct Operation : public std::enable_shared_from_this<Operation> {
     using Ptr = std::shared_ptr<Operation>;
     using Body = std::list<Ptr>;
     using SpecId = void *;
 
+  private:
+    using ValueMapping = std::unordered_map<Value::Ptr, Value::Ptr>;
+
+    SpecId specId;
+
+    explicit Operation(const Ptr &parent = nullptr, const Body::iterator &position = {})
+        : parent(parent), position(position), specId(nullptr){};
+    explicit Operation(SpecId specId, std::string_view name = "Unknown", const Ptr &parent = nullptr,
+                       const Body::iterator &position = {})
+        : specId(specId), parent(parent), position(position), ref(), name(name){};
+
+    void addUse(const Value::Ptr &value, size_t operandNumber);
+    void removeUse(const Value::Ptr &value, size_t operandNumber);
+    void updateUse(const Value::Ptr &value, size_t operandNumber, const std::function<void(Value::Use &)> &actor);
+
+    Ptr cloneImpl(const ValueMapping &operandsMap = {});
+    Ptr cloneWithoutBodyImpl(const ValueMapping &operandsMap, ValueMapping &outputsMap);
+
+    static SpecId getUnknownSpecId();
+
+  public:
     Ptr parent;
     Body::iterator position;
-    SpecId specId;
     utils::SourceRef ref;
     std::string_view name;
 
@@ -35,14 +57,8 @@ struct Operation {
     Body body;
 
     Operation(const Operation &) = delete;
-    Operation(Operation &&) = default;
+    Operation(Operation &&) = delete;
     ~Operation() = default;
-
-    explicit Operation(const Ptr &parent = {}, const Body::iterator &position = {})
-        : parent(parent), position(position), specId(nullptr){};
-    Operation(SpecId specId, std::string_view name = "Unknown", const Ptr &parent = {},
-              const Body::iterator &position = {})
-        : parent(parent), position(position), specId(specId), name(name){};
 
     const Value::Ptr &operand(size_t index) const {
         return operands[index];
@@ -118,6 +134,13 @@ struct Operation {
     }
 
     template <typename AdaptorType>
+    AdaptorType as() {
+        if (is<AdaptorType>())
+            return AdaptorType(shared_from_this());
+        return {};
+    }
+
+    template <typename AdaptorType>
     AdaptorType findParent() const {
         Ptr upperParent = parent;
         while (upperParent && !upperParent->is<AdaptorType>()) {
@@ -134,26 +157,30 @@ struct Operation {
     }
 
     void addOperand(const Value::Ptr &value);
+    void insertOperand(size_t operandNumber, const Value::Ptr &value);
+    void setOperand(size_t operandNumber, const Value::Ptr &value);
     void eraseOperand(size_t operandNumber);
+
     Value::Ptr addResult(const Type::Ptr &type);
     Value::Ptr addInward(const Type::Ptr &type);
-    Body::iterator addToBody(const Operation::Ptr &op);
+
+    void addToBody(const Ptr &op);
     void erase();
+
+    Ptr clone();
+    Ptr cloneWithoutBody();
 
     std::string dump() const;
     void dump(std::ostream &stream) const;
+    bool isUnknown() const;
 
     template <typename AdaptorType>
     static AdaptorType make(const Ptr &parent = {}, const Body::iterator &position = {}) {
-        return std::make_shared<Operation>(AdaptorType::getSpecId(), AdaptorType::getOperationName(), parent, position);
+        auto *op = new Operation(AdaptorType::getSpecId(), AdaptorType::getOperationName(), parent, position);
+        return {Operation::Ptr(op)};
     }
 
-    template <typename AdaptorType>
-    static AdaptorType as(const Operation::Ptr &op) {
-        if (op->is<AdaptorType>())
-            return AdaptorType(op);
-        return {};
-    }
+    static Ptr make(std::string_view name, const Ptr &parent = {}, const Body::iterator &position = {});
 };
 
 } // namespace optree

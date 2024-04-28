@@ -21,6 +21,9 @@ struct Attribute {
     Attribute(Attribute &&) = default;
     ~Attribute() = default;
 
+    Attribute &operator=(const Attribute &) = default;
+    Attribute &operator=(Attribute &&) = default;
+
     template <typename VariantType>
     explicit Attribute(const VariantType &value) : storage(value){};
 

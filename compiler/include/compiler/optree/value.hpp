@@ -14,9 +14,10 @@ class Operation;
 
 struct Value {
     using Ptr = std::shared_ptr<Value>;
+    using BackRef = std::weak_ptr<Operation>;
 
     struct Use {
-        Operation *user;
+        BackRef user;
         size_t operandNumber;
 
         Use() = delete;
@@ -24,11 +25,14 @@ struct Value {
         Use(Use &&) = default;
         ~Use() = default;
 
-        Use(Operation *user, size_t operandNumber) : user(user), operandNumber(operandNumber){};
+        Use(const BackRef &user, size_t operandNumber);
+
+        decltype(user.lock()) lock() const noexcept;
+        bool userIs(const Operation *op) const noexcept;
     };
 
     Type::Ptr type;
-    Operation *owner;
+    BackRef owner;
     std::forward_list<Use> uses;
 
     Value() = default;
@@ -36,11 +40,10 @@ struct Value {
     Value(Value &&) = default;
     ~Value() = default;
 
-    Value(const Type::Ptr &type, Operation *owner) : type(type), owner(owner){};
-    Value(const Type::Ptr &type, const std::shared_ptr<Operation> &owner) : Value(type, owner.get()){};
+    Value(const Type::Ptr &type, const BackRef &owner) : type(type), owner(owner){};
 
     operator bool() const {
-        return type.operator bool();
+        return type.operator bool() && !owner.expired();
     }
 
     bool hasType(const Type::Ptr &other) const {
