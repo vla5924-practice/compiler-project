@@ -3,6 +3,7 @@
 #include <iterator>
 #include <memory>
 #include <ostream>
+#include <tuple>
 #include <type_traits>
 
 namespace utils {

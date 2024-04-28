@@ -1,6 +1,5 @@
 #include "optimizer/opt_builder.hpp"
 
-#include <algorithm>
 #include <functional>
 
 #include "compiler/optree/builder.hpp"
