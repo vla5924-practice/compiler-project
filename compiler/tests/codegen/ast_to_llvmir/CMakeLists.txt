@@ -9,6 +9,7 @@ file(GLOB_RECURSE TARGET_SRC
 add_executable(${TARGET_NAME} ${TARGET_SRC})
 
 target_link_libraries(${TARGET_NAME} PUBLIC
+    frontend
     backend_ast
     codegen_ast_to_llvmir
     gtest
