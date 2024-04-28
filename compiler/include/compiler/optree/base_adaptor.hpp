@@ -74,12 +74,12 @@ struct Adaptor {
         return op.operator bool();
     }
 
-    const utils::SourceRef &ref() const {
-        return op->ref;
+    operator const Operation::Ptr &() const {
+        return op;
     }
 
-    void setRef(const utils::SourceRef &ref) {
-        op->ref = ref;
+    Operation *operator->() const {
+        return op.get();
     }
 
     static std::string_view getOperationName() {
