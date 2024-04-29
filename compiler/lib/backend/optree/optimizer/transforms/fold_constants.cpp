@@ -75,7 +75,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
     }
 
     static void foldArithCastOp(const ArithCastOp &op, OptBuilder &builder) {
-        auto valueOp = getValueOwnerAs<ArithCastOp>(op.value());
+        auto valueOp = getValueOwnerAs<ConstantOp>(op.value());
         if (!valueOp)
             return;
         auto valueType = op.value()->type;
