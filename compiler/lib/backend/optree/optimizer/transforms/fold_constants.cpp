@@ -1,5 +1,6 @@
 #include "optimizer/transform.hpp"
 
+#include <cassert>
 #include <cstdint>
 #include <memory>
 
