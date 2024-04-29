@@ -492,7 +492,6 @@ TEST(Parser, can_parse_bool) {
     ASSERT_EQ(expected, tree.dump());
 }
 
-
 TEST(Parser, can_parse_list) {
     StringVec source = {
         "def main() -> None:",
@@ -518,9 +517,7 @@ TEST(Parser, can_parse_list_defenition) {
         "def main() -> None:",
         "    mylist : list[int] = [1 + 1, 1 + 2, 2 + 3]",
     };
-    
     TokenList tokens = Lexer::process(source);
-
     SyntaxTree tree = Parser::process(tokens);
     std::string expected = "ProgramRoot\n"
                            "  FunctionDefinition\n"
