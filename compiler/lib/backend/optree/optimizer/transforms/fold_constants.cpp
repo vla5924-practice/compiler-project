@@ -224,6 +224,9 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
         default:
             folded = -1;
         }
+        auto newOp = builder.insert<ConstantOp>(op->ref, type, folded);
+        builder.replace(op, newOp);
+        return;
     }
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
