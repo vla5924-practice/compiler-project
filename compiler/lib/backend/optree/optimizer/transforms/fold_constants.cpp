@@ -11,6 +11,14 @@
 
 #include "optimizer/opt_builder.hpp"
 
+#if __has_builtin(__builtin_unreachable)
+#define UNREACHABLE(MSG)                                                                                               \
+    assert(false && (MSG));                                                                                            \
+    __builtin_unreachable()
+#else
+#define UNREACHABLE(MSG) assert(false && (MSG))
+#endif
+
 using namespace optree;
 using namespace optree::optimizer;
 
@@ -26,7 +34,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
             return;
         auto type = op.result()->type;
         if (type->is<IntegerType>()) {
-            int64_t folded = 0;
+            int64_t folded;
             int64_t lhs = lhsOp.value().as<int64_t>();
             int64_t rhs = rhsOp.value().as<int64_t>();
             switch (op.kind()) {
@@ -43,13 +51,13 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                 folded = lhs / rhs;
                 break;
             default:
-                folded = -1;
+                UNREACHABLE("Unexpected op kind");
             }
             auto newOp = builder.insert<ConstantOp>(op->ref, type, folded);
             builder.replace(op, newOp);
             return;
         } else if (type->is<FloatType>()) {
-            double folded = 0;
+            double folded;
             double lhs = lhsOp.value().as<double>();
             double rhs = rhsOp.value().as<double>();
             switch (op.kind()) {
@@ -66,7 +74,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                 folded = lhs / rhs;
                 break;
             default:
-                folded = -1;
+                UNREACHABLE("Unexpected op kind");
             }
             auto newOp = builder.insert<ConstantOp>(op->ref, type, folded);
             builder.replace(op, newOp);
@@ -81,7 +89,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
         auto valueType = op.value()->type;
         auto type = op.result()->type;
         if (type->is<IntegerType>()) {
-            int64_t folded = 0;
+            int64_t folded;
             if (valueType->is<IntegerType>()) {
                 int64_t value = valueOp.value().as<int64_t>();
                 switch (op.kind()) {
@@ -90,7 +98,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                     folded = value;
                     break;
                 default:
-                    folded = -1;
+                    UNREACHABLE("Unexpected op kind");
                 }
             } else if (valueType->is<FloatType>()) {
                 double value = valueOp.value().as<double>();
@@ -99,14 +107,14 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                     folded = static_cast<int64_t>(value);
                     break;
                 default:
-                    folded = -1;
+                    UNREACHABLE("Unexpected op kind");
                 }
             }
             auto newOp = builder.insert<ConstantOp>(op->ref, type, folded);
             builder.replace(op, newOp);
             return;
         } else if (type->is<FloatType>()) {
-            double folded = 0;
+            double folded;
             if (valueType->is<FloatType>()) {
                 double value = valueOp.value().as<double>();
                 switch (op.kind()) {
@@ -115,7 +123,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                     folded = value;
                     break;
                 default:
-                    folded = -1;
+                    UNREACHABLE("Unexpected op kind");
                 }
             } else if (valueType->is<IntegerType>()) {
                 double value = valueOp.value().as<double>();
@@ -124,7 +132,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                     folded = static_cast<double>(value);
                     break;
                 default:
-                    folded = -1;
+                    UNREACHABLE("Unexpected op kind");
                 }
             }
             auto newOp = builder.insert<ConstantOp>(op->ref, type, folded);
@@ -140,7 +148,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
             return;
         auto type = op.result()->type;
         auto valType = op.lhs()->type;
-        bool folded = 0;
+        bool folded;
         if (valType->is<IntegerType>()) {
             int64_t lhs = lhsOp.value().as<int64_t>();
             int64_t rhs = rhsOp.value().as<int64_t>();
@@ -164,7 +172,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                 folded = lhs > rhs;
                 break;
             default:
-                folded = -1;
+                UNREACHABLE("Unexpected op kind");
             }
         } else if (valType->is<FloatType>()) {
             double lhs = lhsOp.value().as<double>();
@@ -189,7 +197,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                 folded = lhs > rhs;
                 break;
             default:
-                folded = -1;
+                UNREACHABLE("Unexpected op kind");
             }
         } else if (valType->is<BoolType>()) {
             bool lhs = lhsOp.value().as<bool>();
@@ -202,7 +210,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                 folded = lhs || rhs;
                 break;
             default:
-                folded = -1;
+                UNREACHABLE("Unexpected op kind");
             }
         }
         auto newOp = builder.insert<ConstantOp>(op->ref, type, folded);
@@ -215,18 +223,15 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
         if (!valueOp)
             return;
         auto type = op.result()->type;
-        bool folded = 0;
+        bool folded;
         bool value = valueOp.value().as<bool>();
         switch (op.kind()) {
         case LogicUnaryOpKind::Not:
             folded = !value;
             break;
         default:
-            folded = -1;
+            UNREACHABLE("Unexpected op kind");
         }
-        auto newOp = builder.insert<ConstantOp>(op->ref, type, folded);
-        builder.replace(op, newOp);
-        return;
     }
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
