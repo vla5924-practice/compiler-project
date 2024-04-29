@@ -124,6 +124,7 @@ OptBuilder::Notifier makeNotifier(OperationSet &ops, bool &mutated, MutationTrac
 
 Optimizer::Optimizer() : iterLimit(100U) {
     transforms.emplace_back(createEraseUnusedOps());
+    transforms.emplace_back(createFoldConstants());
 }
 
 void Optimizer::process(Program &program) const {
