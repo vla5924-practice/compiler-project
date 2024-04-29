@@ -538,22 +538,36 @@ static void parseVariableDeclaration(ParserContext &ctx) {
     ctx.goNextToken();
     const Token &colon = ctx.token();
     const Token &varName = *std::prev(ctx.tokenIter);
-    const Token &varType = *std::next(ctx.tokenIter);
-
+    const Token &varType = (std::advance(ctx.tokenIter, 1), ctx.token());
     auto node = ctx.pushChildNode(ast::NodeType::TypeName);
     node->value = TypeRegistry::typeId(varType);
+    bool isListType = varType.is(Keyword::List);
+
+    if (isListType) {
+        const Token &leftBrace = (std::advance(ctx.tokenIter, 1), ctx.token());
+        const Token &varTypeList = (std::advance(ctx.tokenIter, 1), ctx.token());
+        const Token &rightBrace = (std::advance(ctx.tokenIter, 1), ctx.token());
+        if (!leftBrace.is(Operator::RectLeftBrace) || !rightBrace.is(Operator::RectRightBrace)) {
+            ctx.pushError("Unexepted syntax for list declaration");
+        }
+        auto listTypeNode = ParserContext::pushChildNode(node, ast::NodeType::TypeName, ctx.tokenIter->ref);
+        listTypeNode->value = TypeRegistry::typeId(varTypeList);
+    }
     node = ctx.pushChildNode(ast::NodeType::VariableName);
     node->value = varName.id();
 
-    auto endOfDecl = std::next(ctx.tokenIter, 2);
+    auto endOfDecl = std::next(ctx.tokenIter);
     if (endOfDecl->is(Special::EndOfExpression)) {
         // declaration without definition
-        std::advance(ctx.tokenIter, 3);
+        std::advance(ctx.tokenIter, 2);
         ctx.goParentNode();
     } else if (endOfDecl->is(Operator::Assign)) {
         // declaration with definition
         ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
-        std::advance(ctx.tokenIter, 3);
+        if (isListType) {
+            ctx.node = ctx.pushChildNode(ast::NodeType::ListStatement);
+        }
+        std::advance(ctx.tokenIter, 2);
         ctx.propagate();
         ctx.goParentNode();
     } else {
@@ -575,6 +589,30 @@ static void parseWhileStatement(ParserContext &ctx) {
     ctx.propagate();
 }
 
+static void parseListStatement(ParserContext &ctx) {
+    assert(ctx.tokenIter->is(Operator::RectLeftBrace));
+    while (!ctx.token().is(Operator::RectRightBrace)) {
+        ctx.goNextToken();
+        auto it = ctx.tokenIter;
+
+        while (!it->is(Operator::Comma) && !it->is(Operator::RectRightBrace))
+            it++;
+        const auto &tokenIterBegin = ctx.tokenIter;
+        const auto &tokenIterEnd = it;
+        if (tokenIterEnd->is(Special::EndOfExpression)) {
+            ctx.errors.push<ParserError>(*tokenIterEnd, "']' was expected");
+        }
+        ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
+        std::stack<SubExpression> postfixForm = generatePostfixForm(tokenIterBegin, tokenIterEnd, ctx.errors);
+        buildExpressionSubtree(postfixForm, ctx.node, ctx.errors);
+        ctx.tokenIter = tokenIterEnd;
+        ctx.goParentNode();
+    }
+    ctx.goNextToken();
+    ctx.goParentNode();
+    ctx.goParentNode();
+}
+
 // clang-format off
 #define SUBPARSER(NodeTypeVal) {ast::NodeType::NodeTypeVal, parse##NodeTypeVal}
 
@@ -590,6 +628,7 @@ static std::unordered_map<ast::NodeType, std::function<void(ParserContext &)>> s
     SUBPARSER(ReturnStatement),
     SUBPARSER(VariableDeclaration),
     SUBPARSER(WhileStatement),
+    SUBPARSER(ListStatement),
 };
 // clang-format on
 

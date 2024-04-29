@@ -62,6 +62,7 @@ enum class NodeType {
     VariableDeclaration,
     VariableName,
     WhileStatement,
+    ListStatement,
 };
 
 } // namespace ast

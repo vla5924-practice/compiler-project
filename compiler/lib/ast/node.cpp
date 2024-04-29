@@ -84,6 +84,8 @@ const char *const typeIdToString(TypeId typeId) {
         return "BoolType";
     case StrType:
         return "StrType";
+    case ListType:
+        return "ListType";
     case NoneType:
         return "NoneType";
     }
@@ -188,6 +190,9 @@ void Node::dump(std::ostream &stream, int depth) const {
         break;
     case NodeType::WhileStatement:
         stream << "WhileStatement\n";
+        break;
+    case NodeType::ListStatement:
+        stream << "ListStatement\n";
         break;
     default:
         stream << "Unknown\n";

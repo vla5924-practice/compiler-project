@@ -26,6 +26,8 @@ ast::TypeId TypeRegistry::typeId(const Token &token) {
         return ast::BoolType;
     if (token.is(Keyword::Str))
         return ast::StrType;
+    if (token.is(Keyword::List))
+        return ast::ListType;
     if (token.is(Keyword::None))
         return ast::NoneType;
     return ast::UnknownType;
