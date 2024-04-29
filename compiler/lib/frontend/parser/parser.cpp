@@ -195,6 +195,10 @@ bool isFunctionCall(const TokenIterator &tokenIter) {
     return tokenIter->type == TokenType::Identifier && std::next(tokenIter)->is(Operator::LeftBrace);
 }
 
+bool isListAccessor(const TokenIterator &tokenIter) {
+    return tokenIter->type == TokenType::Identifier && std::next(tokenIter)->is(Operator::RectLeftBrace);
+}
+
 void buildExpressionSubtree(std::stack<SubExpression> postfixForm, ast::Node::Ptr root, ErrorBuffer &errors) {
     ast::Node::Ptr currNode = root;
     while (!postfixForm.empty()) {
@@ -240,10 +244,11 @@ void buildExpressionSubtree(std::stack<SubExpression> postfixForm, ast::Node::Pt
                 }
             }
         } else {
-            ast::Node::Ptr funcCallNode = std::get<ast::Node::Ptr>(subexpr);
-            assert(funcCallNode->type == ast::NodeType::FunctionCall);
-            funcCallNode->parent = currNode;
-            currNode->children.push_front(funcCallNode);
+            // can be FunctionCall node and list ListAccessor
+            ast::Node::Ptr callNode = std::get<ast::Node::Ptr>(subexpr);
+            assert(callNode->type == ast::NodeType::FunctionCall or callNode->type == ast::NodeType::ListAccessor);
+            callNode->parent = currNode;
+            currNode->children.push_front(callNode);
         }
         while (currNode->children.size() >= getOperandCount(getOperationType(*currNode)))
             currNode = currNode->parent;
@@ -287,6 +292,21 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
             }
             postfixForm.push(funcCallNode);
             tokenIter = argsEnd;
+            continue;
+        }
+        if (isListAccessor(tokenIter)) {
+            ast::Node::Ptr listAccessorNode = std::make_shared<ast::Node>(ast::NodeType::ListAccessor);
+            auto node = ParserContext::pushChildNode(listAccessorNode, ast::NodeType::VariableName, token.ref);
+            node->value = token.id();
+            auto exprBegin = std::next(tokenIter, 2);
+            auto it = exprBegin;
+            while (!it->is(Operator::RectRightBrace))
+                it++;
+            std::stack<SubExpression> argPostfixForm = generatePostfixForm(exprBegin, it, errors);
+            auto exprNode = ParserContext::pushChildNode(listAccessorNode, ast::NodeType::Expression, token.ref);
+            buildExpressionSubtree(argPostfixForm, exprNode, errors);
+            postfixForm.push(listAccessorNode);
+            tokenIter = it++;
             continue;
         }
         OperationType opType = getOperationType(token);

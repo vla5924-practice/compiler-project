@@ -194,6 +194,9 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::ListStatement:
         stream << "ListStatement\n";
         break;
+    case NodeType::ListAccessor:
+        stream << "ListAccessor\n";
+        break;
     default:
         stream << "Unknown\n";
     }

@@ -545,3 +545,40 @@ TEST(Parser, can_parse_list_defenition) {
                            "                IntegerLiteralValue: 3\n";
     ASSERT_EQ(expected, tree.dump());
 }
+
+TEST(Parser, can_parse_list_access) {
+    StringVec source = {
+        "def main() -> None:",
+        "    mylist : list[int] = [1, 2, 3]",
+        "    x : int = mylist[0]",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: ListType\n"
+                           "          TypeName: IntType\n"
+                           "        VariableName: mylist\n"
+                           "        Expression\n"
+                           "          ListStatement\n"
+                           "            Expression\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "            Expression\n"
+                           "              IntegerLiteralValue: 2\n"
+                           "            Expression\n"
+                           "              IntegerLiteralValue: 3\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          ListAccessor\n"
+                           "            VariableName: mylist\n"
+                           "            Expression\n"
+                           "              IntegerLiteralValue: 0\n";
+    ASSERT_EQ(expected, tree.dump());
+}
