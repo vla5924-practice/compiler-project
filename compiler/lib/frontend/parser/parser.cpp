@@ -5,9 +5,9 @@
 #include <cassert>
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <stack>
 #include <unordered_map>
-#include <memory>
 
 #include "lexer/token.hpp"
 #include "lexer/token_types.hpp"
