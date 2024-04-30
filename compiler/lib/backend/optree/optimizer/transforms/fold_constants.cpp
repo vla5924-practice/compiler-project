@@ -233,6 +233,9 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
         default:
             UNREACHABLE("Unexpected op kind");
         }
+        auto newOp = builder.insert<ConstantOp>(op->ref, type, folded);
+        builder.replace(op, newOp);
+        return;
     }
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
