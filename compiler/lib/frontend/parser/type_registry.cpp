@@ -1,6 +1,6 @@
+#include "parser/type_registry.hpp"
 #include "compiler/ast/types.hpp"
 #include "lexer/token_types.hpp"
-#include "parser/type_registry.hpp"
 
 using ast::TypeId;
 using namespace lexer;
