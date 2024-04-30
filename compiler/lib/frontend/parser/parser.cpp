@@ -7,6 +7,7 @@
 #include <iterator>
 #include <stack>
 #include <unordered_map>
+#include <memory>
 
 #include "lexer/token.hpp"
 #include "lexer/token_types.hpp"
@@ -292,7 +293,7 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
                     argBegin = std::next(argsIter);
                 }
             }
-            postfixForm.push(funcCallNode);
+            postfixForm.emplace(funcCallNode);
             tokenIter = argsEnd;
             continue;
         }
@@ -307,21 +308,21 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
             std::stack<SubExpression> argPostfixForm = generatePostfixForm(exprBegin, it, errors);
             auto exprNode = ParserContext::pushChildNode(listAccessorNode, ast::NodeType::Expression, token.ref);
             buildExpressionSubtree(argPostfixForm, exprNode, errors);
-            postfixForm.push(listAccessorNode);
+            postfixForm.emplace(listAccessorNode);
             tokenIter = it++;
             continue;
         }
         OperationType opType = getOperationType(token);
         ExpressionTokenType expType = getExpressionTokenType(token);
         if (expType == ExpressionTokenType::Operand) {
-            postfixForm.push(tokenIter);
+            postfixForm.emplace(tokenIter);
         } else if (expType == ExpressionTokenType::OpeningBrace) {
-            operations.push(tokenIter);
+            operations.emplace(tokenIter);
         } else if (expType == ExpressionTokenType::ClosingBrace) {
             bool foundBrace = false;
             while (!operations.empty()) {
                 if (getExpressionTokenType(*operations.top()) != ExpressionTokenType::OpeningBrace) {
-                    postfixForm.push(operations.top());
+                    postfixForm.emplace(operations.top());
                     operations.pop();
                 } else {
                     foundBrace = true;
@@ -335,20 +336,20 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
                 operations.pop(); // remove opening brace
         } else if (expType == ExpressionTokenType::Operation) {
             if (operations.empty() || getOperationPriority(token) < getOperationPriority(*operations.top())) {
-                operations.push(tokenIter);
+                operations.emplace(tokenIter);
             } else {
                 while (!operations.empty() && getOperationPriority(*operations.top()) <= getOperationPriority(token)) {
-                    postfixForm.push(operations.top());
+                    postfixForm.emplace(operations.top());
                     operations.pop();
                 }
-                operations.push(tokenIter);
+                operations.emplace(tokenIter);
             }
         } else {
             errors.push<ParserError>(token, "Unexpected token inside an expression");
         }
     }
     while (!operations.empty()) {
-        postfixForm.push(operations.top());
+        postfixForm.emplace(operations.top());
         operations.pop();
     }
     return postfixForm;
