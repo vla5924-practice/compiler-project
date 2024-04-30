@@ -1,12 +1,14 @@
 #include "parser/parser.hpp"
 
-#include <cassert>
-#include <functional>
-#include <unordered_map>
-
 #include "compiler/ast/node.hpp"
 #include "compiler/ast/node_type.hpp"
+#include <cassert>
+#include <functional>
+#include <iterator>
+#include <stack>
+#include <unordered_map>
 
+#include "lexer/token.hpp"
 #include "lexer/token_types.hpp"
 #include "parser/parser_context.hpp"
 #include "parser/parser_error.hpp"
@@ -354,7 +356,8 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
 
 } // namespace
 
-static void parseBranchRoot(ParserContext &ctx) {
+namespace parser {
+void parseBranchRoot(ParserContext &ctx) {
     while (ctx.nestingLevel > 0) {
         if (ctx.tokenIter == ctx.tokenEnd)
             return;
@@ -409,7 +412,7 @@ static void parseBranchRoot(ParserContext &ctx) {
     }
 }
 
-static void parseElifStatement(ParserContext &ctx) {
+void parseElifStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::Elif));
     ctx.goNextToken();
     ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
@@ -423,7 +426,7 @@ static void parseElifStatement(ParserContext &ctx) {
     ctx.propagate();
 }
 
-static void parseElseStatement(ParserContext &ctx) {
+void parseElseStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::Else));
     ctx.goNextToken();
     if (!ctx.token().is(Special::Colon)) {
@@ -435,7 +438,7 @@ static void parseElseStatement(ParserContext &ctx) {
     ctx.propagate();
 }
 
-static void parseExpression(ParserContext &ctx) {
+void parseExpression(ParserContext &ctx) {
     auto it = ctx.tokenIter;
     while (!it->is(Special::Colon) && !it->is(Special::EndOfExpression))
         it++;
@@ -447,7 +450,7 @@ static void parseExpression(ParserContext &ctx) {
     ctx.goParentNode();
 }
 
-static void parseFunctionArguments(ParserContext &ctx) {
+void parseFunctionArguments(ParserContext &ctx) {
     assert(ctx.token().is(Operator::LeftBrace));
     ctx.goNextToken();
     while (!ctx.token().is(Operator::RightBrace)) {
@@ -476,7 +479,7 @@ static void parseFunctionArguments(ParserContext &ctx) {
     ctx.goNextToken();
 }
 
-static void parseFunctionDefinition(ParserContext &ctx) {
+void parseFunctionDefinition(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::Definition));
     ctx.goNextToken();
     if (ctx.token().type != TokenType::Identifier) {
@@ -507,7 +510,7 @@ static void parseFunctionDefinition(ParserContext &ctx) {
     ctx.propagate();
 }
 
-static void parseIfStatement(ParserContext &ctx) {
+void parseIfStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::If));
     ctx.goNextToken();
     ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
@@ -521,7 +524,7 @@ static void parseIfStatement(ParserContext &ctx) {
     ctx.propagate();
 }
 
-static void parseProgramRoot(ParserContext &ctx) {
+void parseProgramRoot(ParserContext &ctx) {
     while (ctx.tokenIter != ctx.tokenEnd) {
         if (ctx.token().is(Keyword::Definition)) {
             ctx.node = ctx.pushChildNode(ast::NodeType::FunctionDefinition);
@@ -533,7 +536,7 @@ static void parseProgramRoot(ParserContext &ctx) {
     }
 }
 
-static void parseReturnStatement(ParserContext &ctx) {
+void parseReturnStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::Return));
     ctx.goNextToken();
     if (ctx.token().is(Special::EndOfExpression)) {
@@ -554,7 +557,7 @@ static void parseReturnStatement(ParserContext &ctx) {
     ctx.goParentNode();
 }
 
-static void parseVariableDeclaration(ParserContext &ctx) {
+void parseVariableDeclaration(ParserContext &ctx) {
     ctx.goNextToken();
     const Token &colon = ctx.token();
     const Token &varName = *std::prev(ctx.tokenIter);
@@ -595,7 +598,7 @@ static void parseVariableDeclaration(ParserContext &ctx) {
     }
 }
 
-static void parseWhileStatement(ParserContext &ctx) {
+void parseWhileStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::While));
     ctx.goNextToken();
     ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
@@ -609,7 +612,7 @@ static void parseWhileStatement(ParserContext &ctx) {
     ctx.propagate();
 }
 
-static void parseListStatement(ParserContext &ctx) {
+void parseListStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Operator::RectLeftBrace));
     while (!ctx.token().is(Operator::RectRightBrace)) {
         ctx.goNextToken();
@@ -651,7 +654,7 @@ static std::unordered_map<ast::NodeType, std::function<void(ParserContext &)>> s
     SUBPARSER(ListStatement),
 };
 // clang-format on
-
+} // namespace parser
 SyntaxTree Parser::process(const TokenList &tokens) {
     SyntaxTree tree;
     tree.root = std::make_shared<Node>(NodeType::ProgramRoot);

@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "node_type.hpp"
+#include "types.hpp"
 
 using namespace ast;
 
