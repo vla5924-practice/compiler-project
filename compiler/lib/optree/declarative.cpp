@@ -51,7 +51,8 @@ void DeclarativeModule::withBody() {
 }
 
 void DeclarativeModule::endBody() {
-    builder.setInsertPointAfter(current->parent);
+    current = current->parent;
+    builder.setInsertPointAfter(current);
 }
 
 const Operation::Ptr &DeclarativeModule::rootOp() const {

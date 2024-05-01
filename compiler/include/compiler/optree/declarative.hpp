@@ -16,6 +16,8 @@
 
 namespace optree {
 
+class DeclarativeModule;
+
 class DeclarativeValue {
     friend class DeclarativeModule;
 
