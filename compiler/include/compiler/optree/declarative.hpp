@@ -7,6 +7,7 @@
 #include <string_view>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 #include "compiler/optree/builder.hpp"
 #include "compiler/optree/operation.hpp"
@@ -100,7 +101,7 @@ class DeclarativeModule {
 
     template <typename AdaptorType>
     DeclarativeModule &op() {
-        current = Operation::make<AdaptorType>();
+        current = Operation::make<AdaptorType>().op;
         builder.insert(current);
         return *this;
     }
@@ -111,11 +112,21 @@ class DeclarativeModule {
         return operands(operandValues...);
     }
 
+    template <typename AdaptorType, typename... Args>
+    DeclarativeModule &opInit(Args... args) {
+        op<AdaptorType>();
+        AdaptorType(current).init(std::forward<Args>(args)...);
+        return *this;
+    }
+
+    DeclarativeModule &operand(const DeclarativeValue &operandValue);
+    DeclarativeModule &operand(size_t index, const DeclarativeValue &operandValue);
+
     template <typename... DeclarativeValues>
-    DeclarativeModule &operands(const DeclarativeValue &operand, const DeclarativeValues &...other) {
-        current->addOperand(operand);
+    DeclarativeModule &operands(const DeclarativeValue &operandValue, const DeclarativeValues &...operandValues) {
+        operand(operandValue);
         if constexpr (sizeof...(DeclarativeValues) != 0)
-            operands(other...);
+            operands(operandValues...);
         return *this;
     }
 
@@ -131,6 +142,12 @@ class DeclarativeModule {
             current->addAttr(static_cast<double>(value));
         else
             current->addAttr(value);
+        return *this;
+    }
+
+    template <typename T>
+    DeclarativeModule &attr(size_t index, const T &value) {
+        current->attr(index).set(value);
         return *this;
     }
 

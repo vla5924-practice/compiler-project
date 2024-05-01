@@ -1,5 +1,6 @@
 #include "declarative.hpp"
 
+#include <cstddef>
 #include <ostream>
 #include <string>
 
@@ -36,6 +37,16 @@ Type::Ptr DeclarativeModule::tFunc(Type::PtrVector &&arguments, const Type::Ptr 
 
 ValueStorage &DeclarativeModule::values() {
     return valueStorage;
+}
+
+DeclarativeModule &DeclarativeModule::operand(const DeclarativeValue &operandValue) {
+    current->addOperand(operandValue);
+    return *this;
+}
+
+DeclarativeModule &DeclarativeModule::operand(size_t index, const DeclarativeValue &operandValue) {
+    current->operand(index) = operandValue;
+    return *this;
 }
 
 DeclarativeModule &DeclarativeModule::result(const Type::Ptr &type) {
