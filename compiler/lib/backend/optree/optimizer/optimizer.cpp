@@ -123,7 +123,10 @@ OptBuilder::Notifier makeNotifier(OperationSet &ops, bool &mutated, MutationTrac
 } // namespace
 
 Optimizer::Optimizer() : iterLimit(100U) {
-    transforms.emplace_back(createEraseUnusedOps());
+}
+
+void Optimizer::add(const BaseTransform::Ptr &transform) {
+    transforms.emplace_back(transform);
 }
 
 void Optimizer::process(Program &program) const {
