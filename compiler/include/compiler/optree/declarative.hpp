@@ -153,6 +153,7 @@ class DeclarativeModule {
 
     DeclarativeModule &result(const Type::Ptr &type);
     DeclarativeModule &inward(DeclarativeValue &inward, const Type::Ptr &type);
+    DeclarativeModule &inward(DeclarativeValue &inward, size_t index);
     void withBody();
     void endBody();
 

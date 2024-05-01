@@ -59,6 +59,11 @@ DeclarativeModule &DeclarativeModule::inward(DeclarativeValue &inward, const Typ
     return *this;
 }
 
+DeclarativeModule &DeclarativeModule::inward(DeclarativeValue &inward, size_t index) {
+    inward.value = current->inward(index);
+    return *this;
+}
+
 void DeclarativeModule::withBody() {
     builder.setInsertPointAtBodyBegin(current);
 }
