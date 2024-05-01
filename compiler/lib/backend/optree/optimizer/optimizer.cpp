@@ -8,6 +8,7 @@
 #include "compiler/optree/program.hpp"
 
 #include "optimizer/opt_builder.hpp"
+#include "optimizer/transform.hpp"
 #include "optimizer/transform_factories.hpp"
 
 using namespace optree;
