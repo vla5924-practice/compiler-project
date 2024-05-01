@@ -1,9 +1,11 @@
 #include "declarative.hpp"
 
 #include <ostream>
+#include <string>
 
 #include "adaptors.hpp"
 #include "builder.hpp"
+#include "operation.hpp"
 #include "program.hpp"
 #include "types.hpp"
 
