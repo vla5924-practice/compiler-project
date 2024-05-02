@@ -208,7 +208,7 @@ bool isListAccessor(const TokenIterator &tokenIter) {
     return tokenIter->type == TokenType::Identifier && std::next(tokenIter)->is(Operator::RectLeftBrace);
 }
 
-void buildExpressionSubtree(std::stack<SubExpression> postfixForm, Node::Ptr &root, ErrorBuffer &errors) {
+void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, Node::Ptr &root, ErrorBuffer &errors) {
     Node::Ptr currNode = root;
     while (!postfixForm.empty()) {
         const SubExpression &subexpr = postfixForm.top();
