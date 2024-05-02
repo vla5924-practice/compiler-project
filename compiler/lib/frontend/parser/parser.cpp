@@ -21,7 +21,7 @@ using namespace parser;
 
 namespace {
 
-using SubExpression = std::variant<TokenIterator, ast::Node::Ptr>;
+using SubExpression = std::variant<TokenIterator, Node::Ptr>;
 
 bool isVariableDeclaration(const TokenIterator &tokenIter, const TokenIterator &tokenEnd) {
     if (tokenIter == tokenEnd || std::next(tokenIter) == tokenEnd || std::next(tokenIter, 2) == tokenEnd)
@@ -45,6 +45,7 @@ enum class ExpressionTokenType {
     Operand,
     OpeningBrace,
     ClosingBrace,
+    RectBrace
 };
 
 OperationType getOperationType(const Token &token) {
@@ -82,11 +83,11 @@ OperationType getOperationType(const Token &token) {
     return OperationType::Unknown;
 }
 
-OperationType getOperationType(const ast::Node &node) {
+OperationType getOperationType(const Node &node) {
     switch (node.type) {
-    case ast::NodeType::BinaryOperation:
+    case NodeType::BinaryOperation:
         return OperationType::Binary;
-    case ast::NodeType::UnaryOperation:
+    case NodeType::UnaryOperation:
         return OperationType::Unary;
     default:
         return OperationType::Unknown;
@@ -102,13 +103,15 @@ ExpressionTokenType getExpressionTokenType(const Token &token) {
         return ExpressionTokenType::OpeningBrace;
     if (token.is(Operator::RightBrace))
         return ExpressionTokenType::ClosingBrace;
+    if (token.is(Operator::RectLeftBrace) || token.is(Operator::RectRightBrace))
+        return ExpressionTokenType::RectBrace;
     if (getOperationType(token) != OperationType::Unknown)
         return ExpressionTokenType::Operation;
     return ExpressionTokenType::Unknown;
 }
 
 ExpressionTokenType getExpressionTokenType(const SubExpression &subexpr) {
-    if (std::holds_alternative<ast::Node::Ptr>(subexpr))
+    if (std::holds_alternative<Node::Ptr>(subexpr))
         return ExpressionTokenType::Operand;
     return getExpressionTokenType(*std::get<TokenIterator>(subexpr));
 }
@@ -202,8 +205,8 @@ bool isListAccessor(const TokenIterator &tokenIter) {
     return tokenIter->type == TokenType::Identifier && std::next(tokenIter)->is(Operator::RectLeftBrace);
 }
 
-void buildExpressionSubtree(std::stack<SubExpression> postfixForm, ast::Node::Ptr root, ErrorBuffer &errors) {
-    ast::Node::Ptr currNode = root;
+void buildExpressionSubtree(std::stack<SubExpression> postfixForm, Node::Ptr root, ErrorBuffer &errors) {
+    Node::Ptr currNode = root;
     while (!postfixForm.empty()) {
         const SubExpression &subexpr = postfixForm.top();
         if (std::holds_alternative<TokenIterator>(subexpr)) {
@@ -212,34 +215,32 @@ void buildExpressionSubtree(std::stack<SubExpression> postfixForm, ast::Node::Pt
             if (expType == ExpressionTokenType::Operation) {
                 OperationType opType = getOperationType(token);
                 if (opType == OperationType::Binary) {
-                    currNode = ParserContext::unshiftChildNode(currNode, ast::NodeType::BinaryOperation, token.ref);
+                    currNode = ParserContext::unshiftChildNode(currNode, NodeType::BinaryOperation, token.ref);
                     currNode->value = getBinaryOperation(token);
                 } else if (opType == OperationType::Unary) {
-                    currNode = ParserContext::unshiftChildNode(currNode, ast::NodeType::UnaryOperation, token.ref);
+                    currNode = ParserContext::unshiftChildNode(currNode, NodeType::UnaryOperation, token.ref);
                 } else {
                     errors.push<ParserError>(token,
                                              "Unknown operator found in expression, it must be either unary or binary");
                 }
             } else if (expType == ExpressionTokenType::Operand) {
                 if (token.type == TokenType::Identifier) {
-                    ast::Node::Ptr node =
-                        ParserContext::unshiftChildNode(currNode, ast::NodeType::VariableName, token.ref);
+                    Node::Ptr node = ParserContext::unshiftChildNode(currNode, NodeType::VariableName, token.ref);
                     node->value = token.id();
                 } else if (token.type == TokenType::IntegerLiteral) {
-                    ast::Node::Ptr node =
-                        ParserContext::unshiftChildNode(currNode, ast::NodeType::IntegerLiteralValue, token.ref);
+                    Node::Ptr node =
+                        ParserContext::unshiftChildNode(currNode, NodeType::IntegerLiteralValue, token.ref);
                     node->value = std::atol(token.literal().c_str());
                 } else if (token.type == TokenType::FloatingPointLiteral) {
-                    ast::Node::Ptr node =
-                        ParserContext::unshiftChildNode(currNode, ast::NodeType::FloatingPointLiteralValue, token.ref);
+                    Node::Ptr node =
+                        ParserContext::unshiftChildNode(currNode, NodeType::FloatingPointLiteralValue, token.ref);
                     node->value = std::stod(token.literal());
                 } else if (token.type == TokenType::StringLiteral) {
-                    ast::Node::Ptr node =
-                        ParserContext::unshiftChildNode(currNode, ast::NodeType::StringLiteralValue, token.ref);
+                    Node::Ptr node = ParserContext::unshiftChildNode(currNode, NodeType::StringLiteralValue, token.ref);
                     node->value = token.literal();
                 } else if (token.is(Keyword::False) || token.is(Keyword::True)) {
-                    ast::Node::Ptr node =
-                        ParserContext::unshiftChildNode(currNode, ast::NodeType::BooleanLiteralValue, token.ref);
+                    Node::Ptr node =
+                        ParserContext::unshiftChildNode(currNode, NodeType::BooleanLiteralValue, token.ref);
                     if (token.is(Keyword::True))
                         node->value = true;
                     else if (token.is(Keyword::False))
@@ -248,8 +249,8 @@ void buildExpressionSubtree(std::stack<SubExpression> postfixForm, ast::Node::Pt
             }
         } else {
             // can be FunctionCall node and list ListAccessor
-            ast::Node::Ptr callNode = std::get<ast::Node::Ptr>(subexpr);
-            assert(callNode->type == ast::NodeType::FunctionCall or callNode->type == ast::NodeType::ListAccessor);
+            Node::Ptr callNode = std::get<Node::Ptr>(subexpr);
+            assert(callNode->type == NodeType::FunctionCall or callNode->type == NodeType::ListAccessor);
             callNode->parent = currNode;
             currNode->children.push_front(callNode);
         }
@@ -266,8 +267,8 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
     for (auto tokenIter = tokenIterBegin; tokenIter != tokenIterEnd; tokenIter++) {
         const Token &token = *tokenIter;
         if (isFunctionCall(tokenIter)) {
-            ast::Node::Ptr funcCallNode = std::make_shared<ast::Node>(ast::NodeType::FunctionCall);
-            auto node = ParserContext::pushChildNode(funcCallNode, ast::NodeType::FunctionName, token.ref);
+            Node::Ptr funcCallNode = std::make_shared<Node>(NodeType::FunctionCall);
+            auto node = ParserContext::pushChildNode(funcCallNode, NodeType::FunctionName, token.ref);
             node->value = token.id();
             auto argsBegin = std::next(tokenIter);
             auto it = argsBegin;
@@ -281,14 +282,14 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
             } while (nestingLevel > 0);
             auto argsEnd = std::prev(it);
             if (std::distance(argsBegin, argsEnd) > 1) {
-                auto argsNode = ParserContext::pushChildNode(funcCallNode, ast::NodeType::FunctionArguments, token.ref);
+                auto argsNode = ParserContext::pushChildNode(funcCallNode, NodeType::FunctionArguments, token.ref);
                 auto argBegin = std::next(argsBegin);
                 for (auto argsIter = argBegin; argsIter != std::next(argsEnd); argsIter++) {
                     if (!argsIter->is(Operator::Comma) && argsIter != argsEnd)
                         continue;
                     const Token &token = *argsIter;
                     std::stack<SubExpression> argPostfixForm = generatePostfixForm(argBegin, argsIter, errors);
-                    auto exprNode = ParserContext::pushChildNode(argsNode, ast::NodeType::Expression, token.ref);
+                    auto exprNode = ParserContext::pushChildNode(argsNode, NodeType::Expression, token.ref);
                     buildExpressionSubtree(argPostfixForm, exprNode, errors);
                     argBegin = std::next(argsIter);
                 }
@@ -298,18 +299,24 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
             continue;
         }
         if (isListAccessor(tokenIter)) {
-            ast::Node::Ptr listAccessorNode = std::make_shared<ast::Node>(ast::NodeType::ListAccessor);
-            auto node = ParserContext::pushChildNode(listAccessorNode, ast::NodeType::VariableName, token.ref);
+            Node::Ptr listAccessorNode = std::make_shared<Node>(NodeType::ListAccessor);
+            auto node = ParserContext::pushChildNode(listAccessorNode, NodeType::VariableName, token.ref);
             node->value = token.id();
-            auto exprBegin = std::next(tokenIter, 2);
+            auto exprBegin = std::next(tokenIter);
             auto it = exprBegin;
-            while (!it->is(Operator::RectRightBrace))
+            unsigned nestingLevel = 0;
+            do {
+                if (it->is(Operator::RectRightBrace))
+                    nestingLevel--;
+                else if (it->is(Operator::RectLeftBrace))
+                    nestingLevel++;
                 it++;
+            } while (nestingLevel > 0);
             std::stack<SubExpression> argPostfixForm = generatePostfixForm(exprBegin, it, errors);
-            auto exprNode = ParserContext::pushChildNode(listAccessorNode, ast::NodeType::Expression, token.ref);
+            auto exprNode = ParserContext::pushChildNode(listAccessorNode, NodeType::Expression, token.ref);
             buildExpressionSubtree(argPostfixForm, exprNode, errors);
             postfixForm.emplace(listAccessorNode);
-            tokenIter = it++;
+            tokenIter = std::prev(it);
             continue;
         }
         OperationType opType = getOperationType(token);
@@ -344,7 +351,10 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
                 }
                 operations.emplace(tokenIter);
             }
-        } else {
+        } else if (expType == ExpressionTokenType::RectBrace) {
+            continue;
+        }
+        else {
             errors.push<ParserError>(token, "Unexpected token inside an expression");
         }
     }
@@ -377,7 +387,7 @@ void parseBranchRoot(ParserContext &ctx) {
                           " indentation(s) expected, " + std::to_string(currNestingLevel) + " indentation(s) given");
         } else if (currNestingLevel < ctx.nestingLevel) {
             ctx.goParentNode();
-            while (ctx.node->type != ast::NodeType::BranchRoot) {
+            while (ctx.node->type != NodeType::BranchRoot) {
                 if (!ctx.node->parent)
                     break;
                 ctx.goParentNode();
@@ -389,25 +399,24 @@ void parseBranchRoot(ParserContext &ctx) {
 
         const Token &currToken = ctx.token();
         if (currToken.is(Keyword::If)) {
-            ctx.node = ctx.pushChildNode(ast::NodeType::IfStatement);
+            ctx.node = ctx.pushChildNode(NodeType::IfStatement);
         } else if (currToken.is(Keyword::While)) {
-            ctx.node = ctx.pushChildNode(ast::NodeType::WhileStatement);
+            ctx.node = ctx.pushChildNode(NodeType::WhileStatement);
         } else if (isVariableDeclaration(ctx.tokenIter, ctx.tokenEnd)) {
-            ctx.node = ctx.pushChildNode(ast::NodeType::VariableDeclaration);
+            ctx.node = ctx.pushChildNode(NodeType::VariableDeclaration);
         } else if (currToken.is(Keyword::Elif) || currToken.is(Keyword::Else)) {
             auto lastNode = ctx.node->children.back();
-            if (lastNode->type == ast::NodeType::IfStatement) {
-                auto nodeType =
-                    currToken.is(Keyword::Elif) ? ast::NodeType::ElifStatement : ast::NodeType::ElseStatement;
+            if (lastNode->type == NodeType::IfStatement) {
+                auto nodeType = currToken.is(Keyword::Elif) ? NodeType::ElifStatement : NodeType::ElseStatement;
                 ctx.node = ParserContext::pushChildNode(lastNode, nodeType, currToken.ref);
             } else {
                 ctx.pushError((currToken.is(Keyword::Elif) ? std::string("elif") : std::string("else")) +
                               " is not allowed here");
             }
         } else if (currToken.is(Keyword::Return)) {
-            ctx.node = ctx.pushChildNode(ast::NodeType::ReturnStatement);
+            ctx.node = ctx.pushChildNode(NodeType::ReturnStatement);
         } else {
-            ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
+            ctx.node = ctx.pushChildNode(NodeType::Expression);
         }
         ctx.propagate();
     }
@@ -416,13 +425,13 @@ void parseBranchRoot(ParserContext &ctx) {
 void parseElifStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::Elif));
     ctx.goNextToken();
-    ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
+    ctx.node = ctx.pushChildNode(NodeType::Expression);
     ctx.propagate();
     if (!ctx.token().is(Special::Colon)) {
         ctx.pushError("Colon expected here");
         ctx.goNextExpression();
     }
-    ctx.node = ctx.pushChildNode(ast::NodeType::BranchRoot);
+    ctx.node = ctx.pushChildNode(NodeType::BranchRoot);
     ctx.nestingLevel++;
     ctx.propagate();
 }
@@ -434,7 +443,7 @@ void parseElseStatement(ParserContext &ctx) {
         ctx.pushError("Colon expected here");
         ctx.goNextExpression();
     }
-    ctx.node = ctx.pushChildNode(ast::NodeType::BranchRoot);
+    ctx.node = ctx.pushChildNode(NodeType::BranchRoot);
     ctx.nestingLevel++;
     ctx.propagate();
 }
@@ -464,10 +473,10 @@ void parseFunctionArguments(ParserContext &ctx) {
                 ctx.goNextToken();
             break;
         }
-        auto node = ctx.pushChildNode(ast::NodeType::FunctionArgument);
-        auto argTypeNode = ParserContext::pushChildNode(node, ast::NodeType::TypeName, argType.ref);
+        auto node = ctx.pushChildNode(NodeType::FunctionArgument);
+        auto argTypeNode = ParserContext::pushChildNode(node, NodeType::TypeName, argType.ref);
         argTypeNode->value = TypeRegistry::typeId(argType);
-        auto argNameNode = ParserContext::pushChildNode(node, ast::NodeType::VariableName, argName.ref);
+        auto argNameNode = ParserContext::pushChildNode(node, NodeType::VariableName, argName.ref);
         argNameNode->value = argName.id();
 
         const Token &last = *std::next(ctx.tokenIter, 3);
@@ -486,12 +495,12 @@ void parseFunctionDefinition(ParserContext &ctx) {
     if (ctx.token().type != TokenType::Identifier) {
         ctx.pushError("Given token is not allowed here in function definition");
     }
-    ctx.pushChildNode(ast::NodeType::FunctionName)->value = ctx.token().id();
+    ctx.pushChildNode(NodeType::FunctionName)->value = ctx.token().id();
     ctx.goNextToken();
     if (!ctx.token().is(Operator::LeftBrace)) {
         ctx.pushError("Given token is not allowed here in function definition");
     }
-    ctx.node = ctx.pushChildNode(ast::NodeType::FunctionArguments);
+    ctx.node = ctx.pushChildNode(NodeType::FunctionArguments);
     ctx.propagate();
     if (!ctx.token().is(Special::Arrow)) {
         ctx.pushError("Function return type is mandatory in its header");
@@ -500,13 +509,13 @@ void parseFunctionDefinition(ParserContext &ctx) {
     if (!TypeRegistry::isTypename(ctx.token())) {
         ctx.pushError("Type name not found");
     }
-    ctx.pushChildNode(ast::NodeType::FunctionReturnType)->value = TypeRegistry::typeId(ctx.token());
+    ctx.pushChildNode(NodeType::FunctionReturnType)->value = TypeRegistry::typeId(ctx.token());
     ctx.goNextToken();
     if (!ctx.token().is(Special::Colon)) {
         ctx.pushError("Colon expected at the end of function header");
     }
     ctx.goNextToken();
-    ctx.node = ctx.pushChildNode(ast::NodeType::BranchRoot);
+    ctx.node = ctx.pushChildNode(NodeType::BranchRoot);
     ctx.nestingLevel = 1;
     ctx.propagate();
 }
@@ -514,13 +523,13 @@ void parseFunctionDefinition(ParserContext &ctx) {
 void parseIfStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::If));
     ctx.goNextToken();
-    ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
+    ctx.node = ctx.pushChildNode(NodeType::Expression);
     ctx.propagate();
     if (!ctx.token().is(Special::Colon)) {
         ctx.pushError("Colon expected here");
         ctx.goNextExpression();
     }
-    ctx.node = ctx.pushChildNode(ast::NodeType::BranchRoot);
+    ctx.node = ctx.pushChildNode(NodeType::BranchRoot);
     ctx.nestingLevel++;
     ctx.propagate();
 }
@@ -528,7 +537,7 @@ void parseIfStatement(ParserContext &ctx) {
 void parseProgramRoot(ParserContext &ctx) {
     while (ctx.tokenIter != ctx.tokenEnd) {
         if (ctx.token().is(Keyword::Definition)) {
-            ctx.node = ctx.pushChildNode(ast::NodeType::FunctionDefinition);
+            ctx.node = ctx.pushChildNode(NodeType::FunctionDefinition);
             ctx.propagate();
         } else {
             ctx.pushError("Function definition was expected");
@@ -553,7 +562,7 @@ void parseReturnStatement(ParserContext &ctx) {
         ctx.goNextExpression();
         return;
     }
-    ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
+    ctx.node = ctx.pushChildNode(NodeType::Expression);
     ctx.propagate();
     ctx.goParentNode();
 }
@@ -563,7 +572,7 @@ void parseVariableDeclaration(ParserContext &ctx) {
     const Token &colon = ctx.token();
     const Token &varName = *std::prev(ctx.tokenIter);
     const Token &varType = (std::advance(ctx.tokenIter, 1), ctx.token());
-    auto node = ctx.pushChildNode(ast::NodeType::TypeName);
+    auto node = ctx.pushChildNode(NodeType::TypeName);
     node->value = TypeRegistry::typeId(varType);
     bool isListType = varType.is(Keyword::List);
 
@@ -574,10 +583,10 @@ void parseVariableDeclaration(ParserContext &ctx) {
         if (!leftBrace.is(Operator::RectLeftBrace) || !rightBrace.is(Operator::RectRightBrace)) {
             ctx.pushError("Unexepted syntax for list declaration");
         }
-        auto listTypeNode = ParserContext::pushChildNode(node, ast::NodeType::TypeName, ctx.tokenIter->ref);
+        auto listTypeNode = ParserContext::pushChildNode(node, NodeType::TypeName, ctx.tokenIter->ref);
         listTypeNode->value = TypeRegistry::typeId(varTypeList);
     }
-    node = ctx.pushChildNode(ast::NodeType::VariableName);
+    node = ctx.pushChildNode(NodeType::VariableName);
     node->value = varName.id();
 
     auto endOfDecl = std::next(ctx.tokenIter);
@@ -587,9 +596,9 @@ void parseVariableDeclaration(ParserContext &ctx) {
         ctx.goParentNode();
     } else if (endOfDecl->is(Operator::Assign)) {
         // declaration with definition
-        ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
+        ctx.node = ctx.pushChildNode(NodeType::Expression);
         if (isListType) {
-            ctx.node = ctx.pushChildNode(ast::NodeType::ListStatement);
+            ctx.node = ctx.pushChildNode(NodeType::ListStatement);
         }
         std::advance(ctx.tokenIter, 2);
         ctx.propagate();
@@ -602,13 +611,13 @@ void parseVariableDeclaration(ParserContext &ctx) {
 void parseWhileStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::While));
     ctx.goNextToken();
-    ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
+    ctx.node = ctx.pushChildNode(NodeType::Expression);
     ctx.propagate();
     if (!ctx.token().is(Special::Colon)) {
         ctx.pushError("Colon expected here");
         ctx.goNextExpression();
     }
-    ctx.node = ctx.pushChildNode(ast::NodeType::BranchRoot);
+    ctx.node = ctx.pushChildNode(NodeType::BranchRoot);
     ctx.nestingLevel++;
     ctx.propagate();
 }
@@ -626,7 +635,7 @@ void parseListStatement(ParserContext &ctx) {
         if (tokenIterEnd->is(Special::EndOfExpression)) {
             ctx.errors.push<ParserError>(*tokenIterEnd, "']' was expected");
         }
-        ctx.node = ctx.pushChildNode(ast::NodeType::Expression);
+        ctx.node = ctx.pushChildNode(NodeType::Expression);
         std::stack<SubExpression> postfixForm = generatePostfixForm(tokenIterBegin, tokenIterEnd, ctx.errors);
         buildExpressionSubtree(postfixForm, ctx.node, ctx.errors);
         ctx.tokenIter = tokenIterEnd;
@@ -638,9 +647,9 @@ void parseListStatement(ParserContext &ctx) {
 }
 
 // clang-format off
-#define SUBPARSER(NodeTypeVal) {ast::NodeType::NodeTypeVal, parse##NodeTypeVal}
+#define SUBPARSER(NodeTypeVal) {NodeType::NodeTypeVal, parse##NodeTypeVal}
 
-static std::unordered_map<ast::NodeType, std::function<void(ParserContext &)>> subparsers = {
+static std::unordered_map<NodeType, std::function<void(ParserContext &)>> subparsers = {
     SUBPARSER(BranchRoot),
     SUBPARSER(ElifStatement),
     SUBPARSER(ElseStatement),

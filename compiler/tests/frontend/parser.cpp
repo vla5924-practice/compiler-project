@@ -550,7 +550,64 @@ TEST(Parser, can_parse_list_access) {
     StringVec source = {
         "def main() -> None:",
         "    mylist : list[int] = [1, 2, 3]",
-        "    x : int = mylist[0]",
+        "    x : int = 1 + mylist[0] - (mylist[1 + 2 * 3] * 2 * mylist[2])",
+    };
+    //
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: ListType\n"
+                           "          TypeName: IntType\n"
+                           "        VariableName: mylist\n"
+                           "        Expression\n"
+                           "          ListStatement\n"
+                           "            Expression\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "            Expression\n"
+                           "              IntegerLiteralValue: 2\n"
+                           "            Expression\n"
+                           "              IntegerLiteralValue: 3\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          BinaryOperation: Sub\n"
+                           "            BinaryOperation: Add\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "              ListAccessor\n"
+                           "                VariableName: mylist\n"
+                           "                Expression\n"
+                           "                  IntegerLiteralValue: 0\n"
+                           "            BinaryOperation: Mult\n"
+                           "              BinaryOperation: Mult\n"
+                           "                ListAccessor\n"
+                           "                  VariableName: mylist\n"
+                           "                  Expression\n"
+                           "                    BinaryOperation: Add\n"
+                           "                      IntegerLiteralValue: 1\n"
+                           "                      BinaryOperation: Mult\n"
+                           "                        IntegerLiteralValue: 2\n"
+                           "                        IntegerLiteralValue: 3\n"
+                           "                IntegerLiteralValue: 2\n"
+                           "              ListAccessor\n"
+                           "                VariableName: mylist\n"
+                           "                Expression\n"
+                           "                  IntegerLiteralValue: 2\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_complex_nested_list) {
+    StringVec source = {
+        "def main() -> None:",
+        "    mylist : list[int] = [1, 2, 3]",
+        "    x : int = mylist[mylist[1]]",
+        "    y : int = mylist[mylist[1] + mylist[mylist[mylist[1]]]]",
     };
     TokenList tokens = Lexer::process(source);
     SyntaxTree tree = Parser::process(tokens);
@@ -579,6 +636,62 @@ TEST(Parser, can_parse_list_access) {
                            "          ListAccessor\n"
                            "            VariableName: mylist\n"
                            "            Expression\n"
-                           "              IntegerLiteralValue: 0\n";
+                           "              ListAccessor\n"
+                           "                VariableName: mylist\n"
+                           "                Expression\n"
+                           "                  IntegerLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "        Expression\n"
+                           "          ListAccessor\n"
+                           "            VariableName: mylist\n"
+                           "            Expression\n"
+                           "              BinaryOperation: Add\n"
+                           "                ListAccessor\n"
+                           "                  VariableName: mylist\n"
+                           "                  Expression\n"
+                           "                    IntegerLiteralValue: 1\n"
+                           "                ListAccessor\n"
+                           "                  VariableName: mylist\n"
+                           "                  Expression\n"
+                           "                    ListAccessor\n"
+                           "                      VariableName: mylist\n"
+                           "                      Expression\n"
+                           "                        ListAccessor\n"
+                           "                          VariableName: mylist\n"
+                           "                          Expression\n"
+                           "                            IntegerLiteralValue: 1\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_list_access_with_nested_function_call) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x = mylist[foo(bar(y))]",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          ListAccessor\n"
+                           "            VariableName: mylist\n"
+                           "            Expression\n"
+                           "              FunctionCall\n"
+                           "                FunctionName: foo\n"
+                           "                FunctionArguments\n"
+                           "                  Expression\n"
+                           "                    FunctionCall\n"
+                           "                      FunctionName: bar\n"
+                           "                      FunctionArguments\n"
+                           "                        Expression\n"
+                           "                          VariableName: y\n";
     ASSERT_EQ(expected, tree.dump());
 }
