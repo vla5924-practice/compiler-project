@@ -512,7 +512,7 @@ TEST(Parser, can_parse_list) {
     ASSERT_EQ(expected, tree.dump());
 }
 
-TEST(Parser, can_parse_list_defenition) {
+TEST(Parser, can_parse_list_definition) {
     StringVec source = {
         "def main() -> None:",
         "    mylist : list[int] = [1 + 1, 1 + 2, 2 + 3]",

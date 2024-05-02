@@ -1,13 +1,14 @@
 #include "parser/parser.hpp"
 
-#include "compiler/ast/node.hpp"
-#include "compiler/ast/node_type.hpp"
 #include <cassert>
 #include <functional>
 #include <iterator>
 #include <memory>
 #include <stack>
 #include <unordered_map>
+
+#include "compiler/ast/node.hpp"
+#include "compiler/ast/node_type.hpp"
 
 #include "lexer/token.hpp"
 #include "lexer/token_types.hpp"
@@ -45,7 +46,7 @@ enum class ExpressionTokenType {
     Operand,
     OpeningBrace,
     ClosingBrace,
-    RectBrace
+    RectBrace,
 };
 
 OperationType getOperationType(const Token &token) {
@@ -353,8 +354,7 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
             }
         } else if (expType == ExpressionTokenType::RectBrace) {
             continue;
-        }
-        else {
+        } else {
             errors.push<ParserError>(token, "Unexpected token inside an expression");
         }
     }
@@ -365,9 +365,6 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
     return postfixForm;
 }
 
-} // namespace
-
-namespace parser {
 void parseBranchRoot(ParserContext &ctx) {
     while (ctx.nestingLevel > 0) {
         if (ctx.tokenIter == ctx.tokenEnd)
@@ -664,7 +661,9 @@ static std::unordered_map<NodeType, std::function<void(ParserContext &)>> subpar
     SUBPARSER(ListStatement),
 };
 // clang-format on
-} // namespace parser
+
+} // namespace
+
 SyntaxTree Parser::process(const TokenList &tokens) {
     SyntaxTree tree;
     tree.root = std::make_shared<Node>(NodeType::ProgramRoot);
