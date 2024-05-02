@@ -492,7 +492,7 @@ TEST(Parser, can_parse_bool) {
     ASSERT_EQ(expected, tree.dump());
 }
 
-TEST(Parser, can_parse_list) {
+TEST(Parser, can_parse_list_declaration) {
     StringVec source = {
         "def main() -> None:",
         "    mylist : list[int]",

@@ -6,9 +6,11 @@
 #include <memory>
 #include <stack>
 #include <unordered_map>
+#include <variant>
 
 #include "compiler/ast/node.hpp"
 #include "compiler/ast/node_type.hpp"
+#include "compiler/utils/error_buffer.hpp"
 
 #include "lexer/token.hpp"
 #include "lexer/token_types.hpp"
@@ -206,7 +208,7 @@ bool isListAccessor(const TokenIterator &tokenIter) {
     return tokenIter->type == TokenType::Identifier && std::next(tokenIter)->is(Operator::RectLeftBrace);
 }
 
-void buildExpressionSubtree(std::stack<SubExpression> postfixForm, Node::Ptr root, ErrorBuffer &errors) {
+void buildExpressionSubtree(std::stack<SubExpression> postfixForm, Node::Ptr &root, ErrorBuffer &errors) {
     Node::Ptr currNode = root;
     while (!postfixForm.empty()) {
         const SubExpression &subexpr = postfixForm.top();
@@ -320,7 +322,6 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
             tokenIter = std::prev(it);
             continue;
         }
-        OperationType opType = getOperationType(token);
         ExpressionTokenType expType = getExpressionTokenType(token);
         if (expType == ExpressionTokenType::Operand) {
             postfixForm.emplace(tokenIter);
