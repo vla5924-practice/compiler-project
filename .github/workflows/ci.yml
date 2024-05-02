@@ -109,6 +109,8 @@ jobs:
         run: tar xf binaries.tar
       - name: Run AST interface tests
         run: ./bin/ast_test
+      - name: Run operation tree interface tests
+        run: ./bin/optree_test
       - name: Run frontend tests
         run: ./bin/frontend_test
       - name: Run AST-based backend tests
