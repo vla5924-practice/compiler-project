@@ -115,6 +115,8 @@ jobs:
         run: ./bin/frontend_test
       - name: Run AST-based backend tests
         run: ./bin/backend_ast_test
+      - name: Run optree-based backend tests
+        run: ./bin/backend_optree_test
       - name: Run codegen tests (AST to LLVM IR)
         run: ./bin/codegen_ast_to_llvmir_test
 

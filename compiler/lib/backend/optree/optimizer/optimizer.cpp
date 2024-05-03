@@ -8,6 +8,7 @@
 #include "compiler/optree/program.hpp"
 
 #include "optimizer/opt_builder.hpp"
+#include "optimizer/transform.hpp"
 #include "optimizer/transform_factories.hpp"
 
 using namespace optree;
@@ -123,7 +124,10 @@ OptBuilder::Notifier makeNotifier(OperationSet &ops, bool &mutated, MutationTrac
 } // namespace
 
 Optimizer::Optimizer() : iterLimit(100U) {
-    transforms.emplace_back(createEraseUnusedOps());
+}
+
+void Optimizer::add(const BaseTransform::Ptr &transform) {
+    transforms.emplace_back(transform);
 }
 
 void Optimizer::process(Program &program) const {

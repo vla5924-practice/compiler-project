@@ -11,6 +11,7 @@ DEPENDS
     optree_test
     frontend_test
     backend_ast_test
+    backend_optree_test
 )
 
 add_custom_target(run_tests
@@ -19,6 +20,7 @@ DEPENDS
     run_optree_test
     run_frontend_test
     run_backend_ast_test
+    run_backend_optree_test
 )
 
 add_subdirectory(codegen)
