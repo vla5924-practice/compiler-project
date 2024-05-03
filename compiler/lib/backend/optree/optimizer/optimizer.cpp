@@ -8,10 +8,13 @@
 #include "compiler/optree/program.hpp"
 
 #include "optimizer/opt_builder.hpp"
+#include "optimizer/transform.hpp"
 #include "optimizer/transform_factories.hpp"
 
 using namespace optree;
 using namespace optree::optimizer;
+
+namespace {
 
 class OperationSet {
     std::vector<Operation::Ptr> data;
@@ -63,7 +66,35 @@ class OperationSet {
     }
 };
 
-namespace {
+class MutationTracker {
+    Operation *const trackedOp;
+    bool updatedTag;
+    bool erasedTag;
+
+  public:
+    MutationTracker(const MutationTracker &) = delete;
+    MutationTracker(MutationTracker &&) = delete;
+    ~MutationTracker() = default;
+
+    explicit MutationTracker(const Operation::Ptr &trackedOp)
+        : trackedOp(trackedOp.get()), updatedTag(false), erasedTag(false){};
+
+    bool updated() const {
+        return updatedTag;
+    }
+    bool erased() const {
+        return erasedTag;
+    }
+
+    void raiseUpdated(const Operation::Ptr &op) {
+        if (op.get() == trackedOp)
+            updatedTag = true;
+    }
+    void raiseErased(const Operation::Ptr &op) {
+        if (op.get() == trackedOp)
+            erasedTag = true;
+    }
+};
 
 void pushToSet(const Operation::Ptr &root, OperationSet &ops) {
     for (const auto &op : root->body)
@@ -71,28 +102,37 @@ void pushToSet(const Operation::Ptr &root, OperationSet &ops) {
     ops.push(root);
 }
 
-} // namespace
-
-Optimizer::Optimizer() : iterLimit(100U) {
-    transforms.emplace_back(createEraseUnusedOps());
-}
-
-void Optimizer::process(Program &program) const {
-    OperationSet ops;
-    bool mutated = false;
+OptBuilder::Notifier makeNotifier(OperationSet &ops, bool &mutated, MutationTracker &tracker) {
     OptBuilder::Notifier notifier;
     notifier.onInsert = [&ops, &mutated](const Operation::Ptr &op) {
         ops.push(op);
         mutated = true;
     };
-    notifier.onUpdate = [&ops, &mutated](const Operation::Ptr &op) {
+    notifier.onUpdate = [&ops, &mutated, &tracker](const Operation::Ptr &op) {
         ops.push(op);
         mutated = true;
+        tracker.raiseUpdated(op);
     };
-    notifier.onErase = [&ops, &mutated](const Operation::Ptr &op) {
+    notifier.onErase = [&ops, &mutated, &tracker](const Operation::Ptr &op) {
         ops.erase(op);
         mutated = true;
+        tracker.raiseErased(op);
     };
+    return notifier;
+}
+
+} // namespace
+
+Optimizer::Optimizer() : iterLimit(100U) {
+}
+
+void Optimizer::add(const BaseTransform::Ptr &transform) {
+    transforms.emplace_back(transform);
+}
+
+void Optimizer::process(Program &program) const {
+    OperationSet ops;
+    bool mutated = false;
     size_t iter = 0;
     do {
         mutated = false;
@@ -100,7 +140,11 @@ void Optimizer::process(Program &program) const {
         pushToSet(program.root, ops);
         while (!ops.empty()) {
             Operation::Ptr op = ops.pop();
+            MutationTracker tracker(op);
+            auto notifier = makeNotifier(ops, mutated, tracker);
             for (const auto &transform : transforms) {
+                if (tracker.erased())
+                    break;
                 if (!transform->canRun(op))
                     continue;
                 OptBuilder builder(notifier);
