@@ -1030,3 +1030,45 @@ TEST(Parser, can_parse_simple_unary_bool_expressions) {
                            "            VariableName: a\n";
     ASSERT_EQ(expected, tree.dump());
 }
+
+TEST(Parser, can_parse_unary_in_if) {
+    StringVec source = {
+        "def main() -> None:", "    if not x and not True:", "        x = 1", "    if not (x and False):",
+        "        x = 1",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          BinaryOperation: And\n"
+                           "            UnaryOperation: Not\n"
+                           "              Expression\n"
+                           "                VariableName: x\n"
+                           "            UnaryOperation: Not\n"
+                           "              Expression\n"
+                           "                BooleanLiteralValue: True\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          UnaryOperation: Not\n"
+                           "            Expression\n"
+                           "              BinaryOperation: And\n"
+                           "                VariableName: x\n"
+                           "                BooleanLiteralValue: False\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n";
+    ASSERT_EQ(expected, tree.dump());
+}
