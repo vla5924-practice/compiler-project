@@ -23,6 +23,7 @@
 #include "compiler/utils/source_ref.hpp"
 
 #include "converter/converter_context.hpp"
+
 #if __has_builtin(__builtin_unreachable)
 #define UNREACHABLE(MSG)                                                                                               \
     assert(false && (MSG));                                                                                            \
