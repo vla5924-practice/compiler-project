@@ -241,7 +241,8 @@ bool canBeUnaryOperation(const TokenIterator &tokenIter) {
 }
 
 bool isUnaryOperation(const TokenIterator &tokenIter, const ExpressionTokenType &prevTokenIter) {
-    return canBeUnaryOperation(tokenIter) && (prevTokenIter == ExpressionTokenType::Operation || prevTokenIter == ExpressionTokenType::OpeningBrace);
+    return canBeUnaryOperation(tokenIter) &&
+           (prevTokenIter == ExpressionTokenType::Operation || prevTokenIter == ExpressionTokenType::OpeningBrace);
 }
 
 void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::Ptr &root, ErrorBuffer &errors) {
@@ -289,11 +290,8 @@ void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::
         } else {
             // can be FunctionCall node and list ListAccessor
             Node::Ptr callNode = std::get<Node::Ptr>(subexpr);
-            assert(
-                callNode->type == NodeType::FunctionCall or 
-                callNode->type == NodeType::ListAccessor or 
-                callNode->type == NodeType::UnaryOperation
-            );
+            assert(callNode->type == NodeType::FunctionCall or callNode->type == NodeType::ListAccessor or
+                   callNode->type == NodeType::UnaryOperation);
             callNode->parent = currNode;
             currNode->children.push_front(callNode);
         }
