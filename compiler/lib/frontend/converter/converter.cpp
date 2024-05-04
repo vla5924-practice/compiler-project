@@ -23,7 +23,8 @@
 #include "compiler/utils/source_ref.hpp"
 
 #include "converter/converter_context.hpp"
-
+#pragma warning( disable : 4067)
+#pragma warning( disable : 4715)
 #if __has_builtin(__builtin_unreachable)
 #define UNREACHABLE(MSG)                                                                                               \
     assert(false && (MSG));                                                                                            \

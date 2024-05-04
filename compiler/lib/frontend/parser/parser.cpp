@@ -163,6 +163,28 @@ BinaryOperation getBinaryOperation(const Token &token) {
     return BinaryOperation::Unknown;
 }
 
+UnaryOperation getUnaryOperation(const Token &token) {
+    if (token.type == TokenType::Operator) {
+        const auto &op = token.op();
+        switch (op) {
+        case Operator::Sub:
+            return UnaryOperation::Negative;
+        default:
+            return UnaryOperation::Unknown;
+        }
+    }
+    if (token.type == TokenType::Keyword) {
+        const auto &kw = token.kw();
+        switch (kw) {
+        case Keyword::Not:
+            return UnaryOperation::Not;
+        default:
+            return UnaryOperation::Unknown;
+        }
+    }
+    return UnaryOperation::Unknown;
+}
+
 size_t getOperationPriority(const Token &token) {
     BinaryOperation op = getBinaryOperation(token);
     switch (op) {
@@ -206,6 +228,20 @@ bool isFunctionCall(const TokenIterator &tokenIter) {
 
 bool isListAccessor(const TokenIterator &tokenIter) {
     return tokenIter->type == TokenType::Identifier && std::next(tokenIter)->is(Operator::RectLeftBrace);
+}
+
+bool canBeUnaryOperation(const TokenIterator &tokenIter) {
+    if (tokenIter->type == TokenType::Operator) {
+        return tokenIter->op() == Operator::Sub || tokenIter->op() == Operator::Add;
+    }
+    if (tokenIter->type == TokenType::Keyword) {
+        return tokenIter->kw() == Keyword::Not;
+    }
+    return false;
+}
+
+bool isUnaryOperation(const TokenIterator &tokenIter, const ExpressionTokenType &prevTokenIter) {
+    return canBeUnaryOperation(tokenIter) && (prevTokenIter == ExpressionTokenType::Operation || prevTokenIter == ExpressionTokenType::OpeningBrace);
 }
 
 void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::Ptr &root, ErrorBuffer &errors) {
@@ -253,7 +289,11 @@ void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::
         } else {
             // can be FunctionCall node and list ListAccessor
             Node::Ptr callNode = std::get<Node::Ptr>(subexpr);
-            assert(callNode->type == NodeType::FunctionCall or callNode->type == NodeType::ListAccessor);
+            assert(
+                callNode->type == NodeType::FunctionCall or 
+                callNode->type == NodeType::ListAccessor or 
+                callNode->type == NodeType::UnaryOperation
+            );
             callNode->parent = currNode;
             currNode->children.push_front(callNode);
         }
@@ -267,6 +307,7 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
                                               ErrorBuffer &errors) {
     std::stack<SubExpression> postfixForm;
     std::stack<TokenIterator> operations;
+    ExpressionTokenType prevExpType = ExpressionTokenType::Operation;
     for (auto tokenIter = tokenIterBegin; tokenIter != tokenIterEnd; tokenIter++) {
         const Token &token = *tokenIter;
         if (isFunctionCall(tokenIter)) {
@@ -299,6 +340,7 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
             }
             postfixForm.emplace(funcCallNode);
             tokenIter = argsEnd;
+            prevExpType = ExpressionTokenType::Operand;
             continue;
         }
         if (isListAccessor(tokenIter)) {
@@ -320,6 +362,32 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
             buildExpressionSubtree(argPostfixForm, exprNode, errors);
             postfixForm.emplace(listAccessorNode);
             tokenIter = std::prev(it);
+            prevExpType = ExpressionTokenType::Operand;
+            continue;
+        }
+        if (isUnaryOperation(tokenIter, prevExpType)) {
+            auto unaryNode = std::make_shared<Node>(NodeType::UnaryOperation);
+            unaryNode->value = getUnaryOperation(*tokenIter);
+            auto argsBegin = std::next(tokenIter);
+            auto it = argsBegin;
+            unsigned nestingLevel = 0;
+            if (isFunctionCall(it) || isListAccessor(it)) {
+                nestingLevel++;
+                std::advance(it, 2);
+            }
+            do {
+                if (it->is(Operator::RightBrace) or it->is(Operator::RectRightBrace))
+                    nestingLevel--;
+                else if (it->is(Operator::LeftBrace) or it->is(Operator::RectLeftBrace))
+                    nestingLevel++;
+                it++;
+            } while (nestingLevel > 0);
+            std::stack<SubExpression> argPostfixForm = generatePostfixForm(argsBegin, it, errors);
+            auto exprNode = ParserContext::pushChildNode(unaryNode, NodeType::Expression, token.ref);
+            buildExpressionSubtree(argPostfixForm, exprNode, errors);
+            postfixForm.emplace(unaryNode);
+            tokenIter = std::prev(it);
+            prevExpType = ExpressionTokenType::Operand;
             continue;
         }
         ExpressionTokenType expType = getExpressionTokenType(token);
@@ -358,6 +426,7 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
         } else {
             errors.push<ParserError>(token, "Unexpected token inside an expression");
         }
+        prevExpType = expType;
     }
     while (!operations.empty()) {
         postfixForm.emplace(operations.top());
