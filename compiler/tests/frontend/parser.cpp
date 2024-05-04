@@ -552,7 +552,6 @@ TEST(Parser, can_parse_list_access) {
         "    mylist : list[int] = [1, 2, 3]",
         "    x : int = 1 + mylist[0] - (mylist[1 + 2 * 3] * 2 * mylist[2])",
     };
-    //
     TokenList tokens = Lexer::process(source);
     SyntaxTree tree = Parser::process(tokens);
     std::string expected = "ProgramRoot\n"
@@ -693,5 +692,383 @@ TEST(Parser, can_parse_list_access_with_nested_function_call) {
                            "                      FunctionArguments\n"
                            "                        Expression\n"
                            "                          VariableName: y\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_simple_unary_expressions) {
+    StringVec source = {
+        "def main() -> None:", "    x = (-a)", "    x = -(a)", "    x = -a", "    x = -(a+a)",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          UnaryOperation: Negative\n"
+                           "            Expression\n"
+                           "              VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          UnaryOperation: Negative\n"
+                           "            Expression\n"
+                           "              VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          UnaryOperation: Negative\n"
+                           "            Expression\n"
+                           "              VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          UnaryOperation: Negative\n"
+                           "            Expression\n"
+                           "              BinaryOperation: Add\n"
+                           "                VariableName: a\n"
+                           "                VariableName: a\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_complex_unary_expressions) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x = -(x + (-a)) * s",
+        "    x = -(x + 1 + (-a)) * -1",
+        "    x = -(x + 1 + (-a)) * (-1)",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Mult\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  VariableName: x\n"
+                           "                  UnaryOperation: Negative\n"
+                           "                    Expression\n"
+                           "                      VariableName: a\n"
+                           "            VariableName: s\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Mult\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  BinaryOperation: Add\n"
+                           "                    VariableName: x\n"
+                           "                    IntegerLiteralValue: 1\n"
+                           "                  UnaryOperation: Negative\n"
+                           "                    Expression\n"
+                           "                      VariableName: a\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                IntegerLiteralValue: 1\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Mult\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  BinaryOperation: Add\n"
+                           "                    VariableName: x\n"
+                           "                    IntegerLiteralValue: 1\n"
+                           "                  UnaryOperation: Negative\n"
+                           "                    Expression\n"
+                           "                      VariableName: a\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                IntegerLiteralValue: 1\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_complex_unary_expressions_with_functions) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x = -(x + fun(-a)) * s",
+        "    x = -fun(x) + -fun(x) * foo(-bar(), -bar(-a))",
+        "    x = -(x + 1 + (-a)) * fun(-1)",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Mult\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  VariableName: x\n"
+                           "                  FunctionCall\n"
+                           "                    FunctionName: fun\n"
+                           "                    FunctionArguments\n"
+                           "                      Expression\n"
+                           "                        UnaryOperation: Negative\n"
+                           "                          Expression\n"
+                           "                            VariableName: a\n"
+                           "            VariableName: s\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Add\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                FunctionCall\n"
+                           "                  FunctionName: fun\n"
+                           "                  FunctionArguments\n"
+                           "                    Expression\n"
+                           "                      VariableName: x\n"
+                           "            BinaryOperation: Mult\n"
+                           "              UnaryOperation: Negative\n"
+                           "                Expression\n"
+                           "                  FunctionCall\n"
+                           "                    FunctionName: fun\n"
+                           "                    FunctionArguments\n"
+                           "                      Expression\n"
+                           "                        VariableName: x\n"
+                           "              FunctionCall\n"
+                           "                FunctionName: foo\n"
+                           "                FunctionArguments\n"
+                           "                  Expression\n"
+                           "                    UnaryOperation: Negative\n"
+                           "                      Expression\n"
+                           "                        FunctionCall\n"
+                           "                          FunctionName: bar\n"
+                           "                  Expression\n"
+                           "                    UnaryOperation: Negative\n"
+                           "                      Expression\n"
+                           "                        FunctionCall\n"
+                           "                          FunctionName: bar\n"
+                           "                          FunctionArguments\n"
+                           "                            Expression\n"
+                           "                              UnaryOperation: Negative\n"
+                           "                                Expression\n"
+                           "                                  VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Mult\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  BinaryOperation: Add\n"
+                           "                    VariableName: x\n"
+                           "                    IntegerLiteralValue: 1\n"
+                           "                  UnaryOperation: Negative\n"
+                           "                    Expression\n"
+                           "                      VariableName: a\n"
+                           "            FunctionCall\n"
+                           "              FunctionName: fun\n"
+                           "              FunctionArguments\n"
+                           "                Expression\n"
+                           "                  UnaryOperation: Negative\n"
+                           "                    Expression\n"
+                           "                      IntegerLiteralValue: 1\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_complex_unary_expressions_with_lists) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x = -(x + fun[-a]) * s",
+        "    x = -fun[x] + -fun[x] * foo[-bar[-a]]",
+        "    x = -(x + 1 + mylist[-a]) * fun[-1]",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Mult\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  VariableName: x\n"
+                           "                  ListAccessor\n"
+                           "                    VariableName: fun\n"
+                           "                    Expression\n"
+                           "                      UnaryOperation: Negative\n"
+                           "                        Expression\n"
+                           "                          VariableName: a\n"
+                           "            VariableName: s\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Add\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                ListAccessor\n"
+                           "                  VariableName: fun\n"
+                           "                  Expression\n"
+                           "                    VariableName: x\n"
+                           "            BinaryOperation: Mult\n"
+                           "              UnaryOperation: Negative\n"
+                           "                Expression\n"
+                           "                  ListAccessor\n"
+                           "                    VariableName: fun\n"
+                           "                    Expression\n"
+                           "                      VariableName: x\n"
+                           "              ListAccessor\n"
+                           "                VariableName: foo\n"
+                           "                Expression\n"
+                           "                  UnaryOperation: Negative\n"
+                           "                    Expression\n"
+                           "                      ListAccessor\n"
+                           "                        VariableName: bar\n"
+                           "                        Expression\n"
+                           "                          UnaryOperation: Negative\n"
+                           "                            Expression\n"
+                           "                              VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Mult\n"
+                           "            UnaryOperation: Negative\n"
+                           "              Expression\n"
+                           "                BinaryOperation: Add\n"
+                           "                  BinaryOperation: Add\n"
+                           "                    VariableName: x\n"
+                           "                    IntegerLiteralValue: 1\n"
+                           "                  ListAccessor\n"
+                           "                    VariableName: mylist\n"
+                           "                    Expression\n"
+                           "                      UnaryOperation: Negative\n"
+                           "                        Expression\n"
+                           "                          VariableName: a\n"
+                           "            ListAccessor\n"
+                           "              VariableName: fun\n"
+                           "              Expression\n"
+                           "                UnaryOperation: Negative\n"
+                           "                  Expression\n"
+                           "                    IntegerLiteralValue: 1\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_simple_unary_bool_expressions) {
+    StringVec source = {
+        "def main() -> None:",  "    x: bool = not a", "    x = not(a)",      "    x = (not a)",
+        "    x = not (a or a)", "    x = not a or a",  "    x = not a and a",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: BoolType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          UnaryOperation: Not\n"
+                           "            Expression\n"
+                           "              VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          UnaryOperation: Not\n"
+                           "            Expression\n"
+                           "              VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          UnaryOperation: Not\n"
+                           "            Expression\n"
+                           "              VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          UnaryOperation: Not\n"
+                           "            Expression\n"
+                           "              BinaryOperation: Or\n"
+                           "                VariableName: a\n"
+                           "                VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: Or\n"
+                           "            UnaryOperation: Not\n"
+                           "              Expression\n"
+                           "                VariableName: a\n"
+                           "            VariableName: a\n"
+                           "      Expression\n"
+                           "        BinaryOperation: Assign\n"
+                           "          VariableName: x\n"
+                           "          BinaryOperation: And\n"
+                           "            UnaryOperation: Not\n"
+                           "              Expression\n"
+                           "                VariableName: a\n"
+                           "            VariableName: a\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_unary_in_if) {
+    StringVec source = {
+        "def main() -> None:", "    if not x and not True:", "        x = 1", "    if not (x and False):",
+        "        x = 1",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          BinaryOperation: And\n"
+                           "            UnaryOperation: Not\n"
+                           "              Expression\n"
+                           "                VariableName: x\n"
+                           "            UnaryOperation: Not\n"
+                           "              Expression\n"
+                           "                BooleanLiteralValue: True\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          UnaryOperation: Not\n"
+                           "            Expression\n"
+                           "              BinaryOperation: And\n"
+                           "                VariableName: x\n"
+                           "                BooleanLiteralValue: False\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n";
     ASSERT_EQ(expected, tree.dump());
 }

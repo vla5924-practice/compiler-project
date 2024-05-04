@@ -69,6 +69,8 @@ const char *const unaryOperationToString(UnaryOperation unOp) {
     switch (unOp) {
     case UnaryOperation::Not:
         return "Not";
+    case UnaryOperation::Negative:
+        return "Negative";
     case UnaryOperation::Unknown:
         return "Unknown";
     }

@@ -35,6 +35,7 @@ enum class BinaryOperation {
 enum class UnaryOperation {
     Unknown,
     Not,
+    Negative,
 };
 
 enum class NodeType {
