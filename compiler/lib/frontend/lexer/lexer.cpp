@@ -24,6 +24,7 @@ std::unordered_map<std::string_view, Keyword> keywords = {
     {"or", Keyword::Or},          {"and", Keyword::And},
     {"not", Keyword::Not},        {"in", Keyword::In},
     {"True", Keyword::True},      {"None", Keyword::None},
+    {"list", Keyword::List},
 };
 
 std::unordered_map<std::string_view, Operator> operators = {
