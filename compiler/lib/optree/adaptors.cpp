@@ -111,8 +111,8 @@ ElseOp IfOp::elseOp() const {
     return {op->body.size() == 2 ? op->body.back() : nullptr};
 }
 
-void InputOp::init(const Type::Ptr &inputType) {
-    op->addResult(inputType);
+void InputOp::init(const Value::Ptr &dst) {
+    op->addOperand(dst);
 }
 
 void LoadOp::init(const Type::Ptr &resultType, const Value::Ptr &src) {
@@ -140,6 +140,11 @@ void ModuleOp::init() {
 
 void PrintOp::init(const Value::Ptr &valueToPrint) {
     op->addOperand(valueToPrint);
+}
+
+void PrintOp::init(const std::vector<Value::Ptr> &valuesToPrint) {
+    for (const auto &value : valuesToPrint)
+        op->addOperand(value);
 }
 
 void ReturnOp::init() {

@@ -100,8 +100,7 @@ void createInputOp(const Node::Ptr &varNameNode, const utils::SourceRef &inputRe
         ctx.pushError(varNameNode, "variable cannot be modified: " + varNameNode->str());
         return;
     }
-    auto inputOp = ctx.insert<InputOp>(inputRef, var.value->type->as<PointerType>().pointee);
-    ctx.insert<StoreOp>(inputRef, var.value, inputOp.value());
+    ctx.insert<InputOp>(inputRef, var.value);
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx);
@@ -338,8 +337,10 @@ Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
             ctx.pushError(node, "print() statement cannot be within an expression context");
             throw ctx.errors;
         }
+        std::vector<Value::Ptr> arguments;
         for (auto &argNode : node->lastChild()->children)
-            ctx.insert<PrintOp>(argNode->ref, visitNode(argNode, ctx));
+            arguments.emplace_back(visitNode(argNode, ctx));
+        ctx.insert<PrintOp>(node->ref, arguments);
         return {};
     }
     if (name == "input") {
