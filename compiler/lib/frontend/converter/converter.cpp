@@ -24,14 +24,6 @@
 
 #include "converter/converter_context.hpp"
 
-#if __has_builtin(__builtin_unreachable)
-#define UNREACHABLE(MSG)                                                                                               \
-    assert(false && (MSG));                                                                                            \
-    __builtin_unreachable()
-#else
-#define UNREACHABLE(MSG) assert(false && (MSG))
-#endif
-
 using namespace optree;
 using namespace converter;
 
@@ -218,7 +210,7 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
             processNode(elNode->lastChild(), ctx);
             ctx.goParent();
         } else {
-            UNREACHABLE("Unexpected NodeType inside IfStatement");
+            COMPILER_UNREACHABLE("Unexpected NodeType inside IfStatement");
         }
     }
     while (depth-- > 0)
@@ -324,7 +316,7 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.insert<StoreOp>(node->ref, lhs, rhs);
         return rhs;
     default:
-        UNREACHABLE("Unexpected ast::BinaryOperation value in visitBinaryOperation");
+        COMPILER_UNREACHABLE("Unexpected ast::BinaryOperation value in visitBinaryOperation");
     }
 }
 
@@ -392,7 +384,7 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
         processIfStatement(node, ctx);
         return;
     default:
-        UNREACHABLE("Unexpected ast::NodeType value in processNode");
+        COMPILER_UNREACHABLE("Unexpected ast::NodeType value in processNode");
     }
 }
 
@@ -415,7 +407,7 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
     case NodeType::FunctionCall:
         return visitFunctionCall(node, ctx);
     default:
-        UNREACHABLE("Unexpected ast::NodeType value in visitNode");
+        COMPILER_UNREACHABLE("Unexpected ast::NodeType value in visitNode");
     }
 }
 

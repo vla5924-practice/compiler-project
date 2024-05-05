@@ -1,10 +1,19 @@
 #pragma once
 
+#include <cassert>
 #include <iterator>
 #include <memory>
 #include <ostream>
 #include <tuple>
 #include <type_traits>
+
+#if __has_builtin(__builtin_unreachable)
+#define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
+    assert(false && (MESSAGE));                                                                                        \
+    __builtin_unreachable()
+#else
+#define COMPILER_UNREACHABLE(MESSAGE) assert(false && (MESSAGE))
+#endif
 
 namespace utils {
 
