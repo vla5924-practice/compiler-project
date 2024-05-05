@@ -42,8 +42,6 @@ const char *const keywordToString(Keyword kw) {
         return "not";
     case Keyword::Or:
         return "or";
-    case Keyword::Range:
-        return "range";
     case Keyword::Return:
         return "return";
     case Keyword::Str:

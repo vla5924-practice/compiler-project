@@ -17,14 +17,13 @@ std::unordered_map<std::string_view, Keyword> keywords = {
     {"int", Keyword::Int},        {"float", Keyword::Float},
     {"str", Keyword::Str},        {"if", Keyword::If},
     {"else", Keyword::Else},      {"elif", Keyword::Elif},
-    {"range", Keyword::Range},    {"while", Keyword::While},
     {"for", Keyword::For},        {"break", Keyword::Break},
     {"import", Keyword::Import},  {"continue", Keyword::Continue},
     {"def", Keyword::Definition}, {"return", Keyword::Return},
     {"or", Keyword::Or},          {"and", Keyword::And},
     {"not", Keyword::Not},        {"in", Keyword::In},
     {"True", Keyword::True},      {"None", Keyword::None},
-    {"list", Keyword::List},
+    {"list", Keyword::List},      {"while", Keyword::While},
 };
 
 std::unordered_map<std::string_view, Operator> operators = {

@@ -1072,3 +1072,55 @@ TEST(Parser, can_parse_unary_in_if) {
                            "              IntegerLiteralValue: 1\n";
     ASSERT_EQ(expected, tree.dump());
 }
+
+TEST(Parser, can_parse_for_range_and_enumerate) {
+    StringVec source = {
+        "def main() -> None:", "    for i in range(0, 10, 1):",
+        "        x = 1",       "    for i, value in enumerate(mylist):",
+        "        x = 1",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      ForStatement\n"
+                           "        ForTargetList\n"
+                           "          VariableName: i\n"
+                           "        ForStartedList\n"
+                           "          Expression\n"
+                           "            FunctionCall\n"
+                           "              FunctionName: range\n"
+                           "              FunctionArguments\n"
+                           "                Expression\n"
+                           "                  IntegerLiteralValue: 0\n"
+                           "                Expression\n"
+                           "                  IntegerLiteralValue: 10\n"
+                           "                Expression\n"
+                           "                  IntegerLiteralValue: 1\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "      ForStatement\n"
+                           "        ForTargetList\n"
+                           "          VariableName: i\n"
+                           "          VariableName: value\n"
+                           "        ForStartedList\n"
+                           "          Expression\n"
+                           "            FunctionCall\n"
+                           "              FunctionName: enumerate\n"
+                           "              FunctionArguments\n"
+                           "                Expression\n"
+                           "                  VariableName: mylist\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n";
+    ASSERT_EQ(expected, tree.dump());
+}

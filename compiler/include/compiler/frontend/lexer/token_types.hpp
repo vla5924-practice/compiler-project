@@ -10,7 +10,6 @@ enum class Keyword {
     If,
     Else,
     Elif,
-    Range,
     While,
     For,
     Break,

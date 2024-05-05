@@ -65,6 +65,9 @@ enum class NodeType {
     WhileStatement,
     ListStatement,
     ListAccessor,
+    ForStatement,
+    ForTargetList,
+    ForStartedList,
 };
 
 } // namespace ast
