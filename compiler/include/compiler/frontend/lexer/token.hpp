@@ -64,10 +64,6 @@ struct Token {
         return type == TokenType::Special && spec() == value;
     }
 
-    bool is(const TokenType &value) const {
-        return type == value;
-    }
-
     std::string dump() const;
     void dump(std::ostream &stream) const;
 };

@@ -203,11 +203,11 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::ForStatement:
         stream << "ForStatement\n";
         break;
-    case NodeType::ForStartedList:
-        stream << "ForStartedList\n";
+    case NodeType::ForIterable:
+        stream << "ForIterable\n";
         break;
-    case NodeType::ForTargetList:
-        stream << "ForTargetList\n";
+    case NodeType::ForTargets:
+        stream << "ForTargets\n";
         break;
     default:
         stream << "Unknown\n";

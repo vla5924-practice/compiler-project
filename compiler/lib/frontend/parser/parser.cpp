@@ -693,10 +693,10 @@ void parseForStatement(ParserContext &ctx) {
     ctx.goNextToken();
     auto forNode = ctx.node;
     auto it = ctx.tokenIter;
-    auto forTargetList = ParserContext::pushChildNode(forNode, NodeType::ForTargetList, ctx.tokenIter->ref);
+    auto forTargets = ParserContext::pushChildNode(forNode, NodeType::ForTargets, ctx.tokenIter->ref);
     while (!it->is(Keyword::In) && !it->is(Special::EndOfExpression)) {
-        if (it->is(TokenType::Identifier)) {
-            auto targetNode = ParserContext::pushChildNode(forTargetList, NodeType::VariableName, ctx.tokenIter->ref);
+        if (it->type == TokenType::Identifier) {
+            auto targetNode = ParserContext::pushChildNode(forTargets, NodeType::VariableName, ctx.tokenIter->ref);
             targetNode->value = it->id();
             it++;
         } else if (it->is(Operator::Comma)) {
@@ -707,7 +707,7 @@ void parseForStatement(ParserContext &ctx) {
     }
     ctx.tokenIter = it;
     ctx.goNextToken();
-    ctx.node = ctx.pushChildNode(NodeType::ForStartedList);
+    ctx.node = ctx.pushChildNode(NodeType::ForIterable);
     ctx.node = ctx.pushChildNode(NodeType::Expression);
     ctx.propagate();
     ctx.goParentNode();
