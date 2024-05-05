@@ -702,7 +702,7 @@ void parseForStatement(ParserContext &ctx) {
         } else if (it->is(Operator::Comma)) {
             it++;
         } else {
-            ctx.pushError("Enexepted token here");
+            ctx.pushError("Unexpected token in a for statement");
         }
     }
     ctx.tokenIter = it;
