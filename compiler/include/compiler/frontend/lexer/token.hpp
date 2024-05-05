@@ -65,7 +65,7 @@ struct Token {
     }
 
     bool is(const TokenType &value) const {
-        return type == TokenType::Identifier;
+        return type == value;
     }
 
     std::string dump() const;

@@ -1124,3 +1124,13 @@ TEST(Parser, can_parse_for_range_and_enumerate) {
                            "              IntegerLiteralValue: 1\n";
     ASSERT_EQ(expected, tree.dump());
 }
+
+TEST(Parser, can_throw_error_when_for_loop_does_contain_colon) {
+    StringVec source = {
+        "def main() -> None:",
+        "    for i in range(0, 10, 1)",
+        "        x = 1",
+    };
+    TokenList tokens = Lexer::process(source);
+    ASSERT_ANY_THROW(Parser::process(tokens));
+}

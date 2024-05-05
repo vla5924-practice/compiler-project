@@ -711,6 +711,10 @@ void parseForStatement(ParserContext &ctx) {
     ctx.node = ctx.pushChildNode(NodeType::Expression);
     ctx.propagate();
     ctx.goParentNode();
+    if (!ctx.token().is(Special::Colon)) {
+        ctx.pushError("Colon expected here");
+        ctx.goNextExpression();
+    }
     ctx.node = ctx.pushChildNode(NodeType::BranchRoot);
     ctx.nestingLevel++;
     ctx.propagate();
