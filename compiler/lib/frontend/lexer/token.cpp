@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include "lexer/token_types.hpp"
+
 using namespace lexer;
 
 namespace {
