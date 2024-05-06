@@ -500,7 +500,7 @@ TEST(Lexer, list_expression) {
 }
 
 TEST(Lexer, for_range_and_enumerate_expression) {
-    StringVec source = {"for i in range(10)", "for i in enumerate(10)"};
+    StringVec source = {"for i in range(10)", "for i in enumerate(mylist)"};
     TokenList transformed = Lexer::process(source);
     TokenList expected;
     expected.emplace_back(Keyword::For);
@@ -516,7 +516,7 @@ TEST(Lexer, for_range_and_enumerate_expression) {
     expected.emplace_back(Keyword::In);
     expected.emplace_back(TokenType::Identifier, "enumerate");
     expected.emplace_back(Operator::LeftBrace);
-    expected.emplace_back(TokenType::IntegerLiteral, "10");
+    expected.emplace_back(TokenType::Identifier, "mylist");
     expected.emplace_back(Operator::RightBrace);
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
