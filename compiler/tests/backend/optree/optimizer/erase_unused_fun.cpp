@@ -41,27 +41,28 @@ TEST_F(EraseUnusedFunTest, asasas) {
         m.endBody();
         m.opInit<FunctionOp>("test3", m.tFunc({}, m.tNone)).withBody();
         v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(123));
-        v[1] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[0], v[1]);
-        v[2] = m.opInit<ArithCastOp>(ArithCastOpKind::IntToFloat, m.tF64, v[0]);
+        v[1] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[0], v[0]);
+        v[2] = m.opInit<ArithCastOp>(ArithCastOpKind::IntToFloat, m.tF64, v[1]);
         v[3] = m.opInit<LogicBinaryOp>(LogicBinOpKind::LessEqualI, v[0], v[1]);
         m.opInit<ReturnOp>();
         m.endBody();
     }
     {
         auto &&[m, v] = getExpected();
-         m.opInit<FunctionOp>("main", m.tFunc({}, m.tNone)).withBody();
+        m.opInit<FunctionOp>("main", m.tFunc({}, m.tNone)).withBody();
         v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(123));
         v[1] = m.opInit<FunctionCallOp>("test3", m.tNone, std::vector<Value::Ptr>());
         m.opInit<ReturnOp>();
         m.endBody();
         m.opInit<FunctionOp>("test3", m.tFunc({}, m.tNone)).withBody();
         v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(123));
-        v[1] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[0], v[1]);
-        v[2] = m.opInit<ArithCastOp>(ArithCastOpKind::IntToFloat, m.tF64, v[0]);
+        v[1] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[0], v[0]);
+        v[2] = m.opInit<ArithCastOp>(ArithCastOpKind::IntToFloat, m.tF64, v[1]);
         v[3] = m.opInit<LogicBinaryOp>(LogicBinOpKind::LessEqualI, v[0], v[1]);
         m.opInit<ReturnOp>();
         m.endBody();
     }
+
     runOptimizer();
     assertSameOpTree();
 }

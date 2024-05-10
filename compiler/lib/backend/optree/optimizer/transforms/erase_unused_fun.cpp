@@ -15,39 +15,39 @@ namespace {
 struct EraseUnusedFun : public Transform<ModuleOp, FunctionOp> {
     using Transform::Transform;
 
+    mutable std::unordered_set<std::string> currentCalledFunctions = {"main"};
     mutable std::unordered_set<std::string> calledFunctions = {"main"};
-    mutable std::list<Operation::Ptr> erasedFunctions = {};
 
-    bool isFunctionName(const Operation::Ptr &op, const std::string &functionName) const {
-        return op->attributes[0].as<std::string>() == functionName;
+    bool inCurrentCalledList(const Operation::Ptr &op) const {
+        return currentCalledFunctions.contains(op->attributes[0].as<std::string>());
     }
 
     bool inCalledList(const Operation::Ptr &op) const {
         return calledFunctions.contains(op->attributes[0].as<std::string>());
     }
 
-    bool inErasedList(const Operation::Ptr &op) const {
-        return std::find(erasedFunctions.cbegin(), erasedFunctions.cend(), op) != erasedFunctions.cend();
-    }
+    void getInnerFunctionCallNames(const Operation::Ptr &op) const {
+        for (auto &child : op->body) {
+            if (child->is<FunctionCallOp>()) {
+                currentCalledFunctions.emplace(child->attributes[0].as<std::string>());
+            }
+            getInnerFunctionCallNames(child);
+        }
+    };
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
-        std::cout << op->name << " "
-                  << "\n";
         if (op->is<ModuleOp>()) {
             for (auto &moduleChild : op->body) {
-                if (moduleChild->is<FunctionOp>() && inCalledList(moduleChild)) {
-                    calledFunctions.emplace("main");
-                    for (auto &child : moduleChild->body) {
-                        if (child->is<FunctionCallOp>()) {
-                            calledFunctions.emplace(child->attributes[0].as<std::string>());
-                        }
-                    }
+                if (moduleChild->is<FunctionOp>() && inCurrentCalledList(moduleChild)) {
+                    getInnerFunctionCallNames(moduleChild);
+                    builder.update(op, [](){});
+                    calledFunctions.emplace(moduleChild->attributes[0].as<std::string>());
+                    currentCalledFunctions.erase(moduleChild->attributes[0].as<std::string>());
                 }
             }
         }
 
         if (op->is<FunctionOp>() && !inCalledList(op)) {
-            erasedFunctions.emplace_back(op);
             builder.erase(op);
             op->parent->body.erase(op->position);
         }
