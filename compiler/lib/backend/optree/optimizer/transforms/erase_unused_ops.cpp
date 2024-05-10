@@ -19,8 +19,10 @@ struct EraseUnusedOps : public Transform<ConstantOp, ArithBinaryOp, ArithCastOp,
         bool unused = true;
         for (const auto &result : op->results)
             unused &= result->uses.empty();
-        if (unused)
+        if (unused) {
             builder.erase(op);
+            op->parent->body.erase(op->position);
+        }
     }
 };
 

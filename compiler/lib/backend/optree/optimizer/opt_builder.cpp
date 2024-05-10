@@ -37,7 +37,7 @@ void OptBuilder::erase(const Operation::Ptr &op) {
         setInsertPointAfter(op);
     for (auto &op : utils::reversed(op->body))
         erase(op);
-    op->erase();
+    op->clear();
     notifier.onErase(op);
 }
 

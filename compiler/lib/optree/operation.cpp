@@ -115,9 +115,10 @@ void Operation::addToBody(const Operation::Ptr &op) {
     op->parent = shared_from_this();
 }
 
-void Operation::erase() {
-    for (auto &innerOp : utils::advanceEarly(body.rbegin(), body.rend()))
-        innerOp->erase();
+void Operation::clear() {
+    for (auto &innerOp : utils::advanceEarly(body.rbegin(), body.rend())) {
+        innerOp->clear();
+    }
     for (const auto &result : results) {
         if (!result->uses.empty())
             throw std::logic_error("Operation cannot be erased since its results still have uses");
@@ -133,9 +134,9 @@ void Operation::erase() {
     }
     operands.clear();
     attributes.clear();
+    body.clear();
     if (!parent)
         return;
-    parent->body.erase(position);
 }
 
 Operation::Ptr Operation::clone() {
