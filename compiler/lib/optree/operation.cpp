@@ -115,9 +115,9 @@ void Operation::addToBody(const Operation::Ptr &op) {
     op->parent = shared_from_this();
 }
 
-void Operation::clear() {
-    for (auto &innerOp : utils::advanceEarly(body.rbegin(), body.rend())) {
-        innerOp->clear();
+void Operation::erase() {
+    while (!body.empty()) {
+        body.back()->erase();
     }
     for (const auto &result : results) {
         if (!result->uses.empty())
@@ -134,9 +134,9 @@ void Operation::clear() {
     }
     operands.clear();
     attributes.clear();
-    body.clear();
     if (!parent)
         return;
+    parent->body.erase(position);
 }
 
 Operation::Ptr Operation::clone() {

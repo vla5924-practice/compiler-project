@@ -36,7 +36,7 @@ class OptBuilder : public Builder {
     void insert(const Operation::Ptr &op) override;
     Operation::Ptr clone(const Operation::Ptr &op);
     void erase(const Operation::Ptr &op);
-    void update(const Operation::Ptr &op, const std::function<void()> &actor);
+    void update(const Operation::Ptr &op, const std::function<void()> &actor = {});
     void replace(const Operation::Ptr &op, const Operation::Ptr &newOp);
 
   private:

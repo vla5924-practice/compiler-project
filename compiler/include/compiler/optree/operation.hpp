@@ -165,7 +165,7 @@ struct Operation : public std::enable_shared_from_this<Operation> {
     Value::Ptr addInward(const Type::Ptr &type);
 
     void addToBody(const Ptr &op);
-    void clear();
+    void erase();
 
     Ptr clone();
     Ptr cloneWithoutBody();
