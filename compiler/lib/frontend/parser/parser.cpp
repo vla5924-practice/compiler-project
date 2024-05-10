@@ -467,6 +467,8 @@ void parseBranchRoot(ParserContext &ctx) {
             ctx.node = ctx.pushChildNode(NodeType::IfStatement);
         } else if (currToken.is(Keyword::While)) {
             ctx.node = ctx.pushChildNode(NodeType::WhileStatement);
+        } else if (currToken.is(Keyword::For)) {
+            ctx.node = ctx.pushChildNode(NodeType::ForStatement);
         } else if (isVariableDeclaration(ctx.tokenIter, ctx.tokenEnd)) {
             ctx.node = ctx.pushChildNode(NodeType::VariableDeclaration);
         } else if (currToken.is(Keyword::Elif) || currToken.is(Keyword::Else)) {
@@ -640,7 +642,6 @@ void parseVariableDeclaration(ParserContext &ctx) {
     auto node = ctx.pushChildNode(NodeType::TypeName);
     node->value = TypeRegistry::typeId(varType);
     bool isListType = varType.is(Keyword::List);
-
     if (isListType) {
         const Token &leftBrace = (std::advance(ctx.tokenIter, 1), ctx.token());
         const Token &varTypeList = (std::advance(ctx.tokenIter, 1), ctx.token());
@@ -687,12 +688,43 @@ void parseWhileStatement(ParserContext &ctx) {
     ctx.propagate();
 }
 
+void parseForStatement(ParserContext &ctx) {
+    assert(ctx.tokenIter->is(Keyword::For));
+    ctx.goNextToken();
+    auto forNode = ctx.node;
+    auto it = ctx.tokenIter;
+    auto forTargets = ParserContext::pushChildNode(forNode, NodeType::ForTargets, ctx.tokenIter->ref);
+    while (!it->is(Keyword::In) && !it->is(Special::EndOfExpression)) {
+        if (it->type == TokenType::Identifier) {
+            auto targetNode = ParserContext::pushChildNode(forTargets, NodeType::VariableName, ctx.tokenIter->ref);
+            targetNode->value = it->id();
+            it++;
+        } else if (it->is(Operator::Comma)) {
+            it++;
+        } else {
+            ctx.pushError("Unexpected token in a for statement");
+        }
+    }
+    ctx.tokenIter = it;
+    ctx.goNextToken();
+    ctx.node = ctx.pushChildNode(NodeType::ForIterable);
+    ctx.node = ctx.pushChildNode(NodeType::Expression);
+    ctx.propagate();
+    ctx.goParentNode();
+    if (!ctx.token().is(Special::Colon)) {
+        ctx.pushError("Colon expected here");
+        ctx.goNextExpression();
+    }
+    ctx.node = ctx.pushChildNode(NodeType::BranchRoot);
+    ctx.nestingLevel++;
+    ctx.propagate();
+}
+
 void parseListStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Operator::RectLeftBrace));
     while (!ctx.token().is(Operator::RectRightBrace)) {
         ctx.goNextToken();
         auto it = ctx.tokenIter;
-
         while (!it->is(Operator::Comma) && !it->is(Operator::RectRightBrace))
             it++;
         const auto &tokenIterBegin = ctx.tokenIter;
@@ -727,6 +759,7 @@ static std::unordered_map<NodeType, std::function<void(ParserContext &)>> subpar
     SUBPARSER(VariableDeclaration),
     SUBPARSER(WhileStatement),
     SUBPARSER(ListStatement),
+    SUBPARSER(ForStatement),
 };
 // clang-format on
 

@@ -1072,3 +1072,133 @@ TEST(Parser, can_parse_unary_in_if) {
                            "              IntegerLiteralValue: 1\n";
     ASSERT_EQ(expected, tree.dump());
 }
+
+TEST(Parser, can_parse_for_range) {
+    StringVec source = {
+        "def main() -> None:", "    for i in range(0, 10, iter_step()):",
+        "        x = 1",       "    for i in range(0, mylist[10]):",
+        "        x = 1",       "    for i in range(1+2*3):",
+        "        x = 1",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      ForStatement\n"
+                           "        ForTargets\n"
+                           "          VariableName: i\n"
+                           "        ForIterable\n"
+                           "          Expression\n"
+                           "            FunctionCall\n"
+                           "              FunctionName: range\n"
+                           "              FunctionArguments\n"
+                           "                Expression\n"
+                           "                  IntegerLiteralValue: 0\n"
+                           "                Expression\n"
+                           "                  IntegerLiteralValue: 10\n"
+                           "                Expression\n"
+                           "                  FunctionCall\n"
+                           "                    FunctionName: iter_step\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "      ForStatement\n"
+                           "        ForTargets\n"
+                           "          VariableName: i\n"
+                           "        ForIterable\n"
+                           "          Expression\n"
+                           "            FunctionCall\n"
+                           "              FunctionName: range\n"
+                           "              FunctionArguments\n"
+                           "                Expression\n"
+                           "                  IntegerLiteralValue: 0\n"
+                           "                Expression\n"
+                           "                  ListAccessor\n"
+                           "                    VariableName: mylist\n"
+                           "                    Expression\n"
+                           "                      IntegerLiteralValue: 10\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "      ForStatement\n"
+                           "        ForTargets\n"
+                           "          VariableName: i\n"
+                           "        ForIterable\n"
+                           "          Expression\n"
+                           "            FunctionCall\n"
+                           "              FunctionName: range\n"
+                           "              FunctionArguments\n"
+                           "                Expression\n"
+                           "                  BinaryOperation: Add\n"
+                           "                    IntegerLiteralValue: 1\n"
+                           "                    BinaryOperation: Mult\n"
+                           "                      IntegerLiteralValue: 2\n"
+                           "                      IntegerLiteralValue: 3\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_for_enumerate) {
+    StringVec source = {
+        "def main() -> None:", "    for i, value in enumerate(mylist):", "        x = 1", "    for elem in mylist:",
+        "        x = 1",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      ForStatement\n"
+                           "        ForTargets\n"
+                           "          VariableName: i\n"
+                           "          VariableName: value\n"
+                           "        ForIterable\n"
+                           "          Expression\n"
+                           "            FunctionCall\n"
+                           "              FunctionName: enumerate\n"
+                           "              FunctionArguments\n"
+                           "                Expression\n"
+                           "                  VariableName: mylist\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n"
+                           "      ForStatement\n"
+                           "        ForTargets\n"
+                           "          VariableName: elem\n"
+                           "        ForIterable\n"
+                           "          Expression\n"
+                           "            VariableName: mylist\n"
+                           "        BranchRoot\n"
+                           "          Expression\n"
+                           "            BinaryOperation: Assign\n"
+                           "              VariableName: x\n"
+                           "              IntegerLiteralValue: 1\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_throw_error_when_for_loop_does_contain_colon) {
+    StringVec source = {
+        "def main() -> None:",
+        "    for i in range(0, 10, 1)",
+        "        x = 1",
+    };
+    TokenList tokens = Lexer::process(source);
+    ASSERT_ANY_THROW(Parser::process(tokens));
+}
