@@ -12,7 +12,7 @@ using namespace optree::optimizer;
 
 namespace {
 
-struct EraseUnusedFun : public Transform<ModuleOp, FunctionOp> {
+struct EraseUnusedFunctions : public Transform<ModuleOp, FunctionOp> {
     using Transform::Transform;
 
     mutable std::unordered_set<std::string> currentCalledFunctions = {"main"};
@@ -60,7 +60,7 @@ namespace optree {
 namespace optimizer {
 
 BaseTransform::Ptr createEraseUnusedFunctions() {
-    return std::make_shared<EraseUnusedFun>();
+    return std::make_shared<EraseUnusedFunctions>();
 }
 
 } // namespace optimizer

@@ -11,22 +11,22 @@
 using namespace optree;
 using namespace optree::optimizer;
 
-class EraseUnusedFunTest : public TransformTestBase {
+class EraseUnusedFunctionsTest : public TransformTestBase {
     virtual void setupOptimizer(Optimizer &opt) const override {
         opt.add(createEraseUnusedFunctions());
     }
 
   public:
-    EraseUnusedFunTest() = default;
-    ~EraseUnusedFunTest() = default;
+    EraseUnusedFunctionsTest() = default;
+    ~EraseUnusedFunctionsTest() = default;
 };
 
-TEST_F(EraseUnusedFunTest, can_run_on_empty_optree) {
+TEST_F(EraseUnusedFunctionsTest, can_run_on_empty_optree) {
     runOptimizer();
     assertSameOpTree();
 }
 
-TEST_F(EraseUnusedFunTest, asasas) {
+TEST_F(EraseUnusedFunctionsTest, asasas) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("main", m.tFunc({}, m.tNone)).withBody();

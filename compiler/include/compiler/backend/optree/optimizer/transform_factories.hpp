@@ -8,6 +8,5 @@ namespace optimizer {
 BaseTransform::Ptr createEraseUnusedOps();
 BaseTransform::Ptr createEraseUnusedFunctions();
 
-
 } // namespace optimizer
 } // namespace optree
