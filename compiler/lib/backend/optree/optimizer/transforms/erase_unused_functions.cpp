@@ -35,7 +35,7 @@ struct EraseUnusedFunctions : public Transform<ModuleOp, FunctionOp> {
         }
     };
 
-    static void addFunction(const std::string& name) {
+    static void addFunction(const std::string &name) {
         calledFunctions.emplace(name);
         currentCalledFunctions.erase(name);
     };
