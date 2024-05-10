@@ -27,7 +27,7 @@ TEST_F(EraseUnusedFunTest, can_run_on_empty_optree) {
 }
 
 TEST_F(EraseUnusedFunTest, asasas) {
-   {
+    {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("main", m.tFunc({}, m.tNone)).withBody();
         v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(123));

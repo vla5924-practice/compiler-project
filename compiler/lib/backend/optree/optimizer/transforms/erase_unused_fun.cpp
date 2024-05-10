@@ -40,7 +40,7 @@ struct EraseUnusedFun : public Transform<ModuleOp, FunctionOp> {
             for (auto &moduleChild : op->body) {
                 if (moduleChild->is<FunctionOp>() && inCurrentCalledList(moduleChild)) {
                     getInnerFunctionCallNames(moduleChild);
-                    builder.update(op, [](){});
+                    builder.update(op, []() {});
                     calledFunctions.emplace(moduleChild->attributes[0].as<std::string>());
                     currentCalledFunctions.erase(moduleChild->attributes[0].as<std::string>());
                 }
