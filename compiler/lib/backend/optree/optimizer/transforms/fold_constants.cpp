@@ -127,7 +127,7 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                     UNREACHABLE("Unexpected op kind");
                 }
             } else if (valueType->is<IntegerType>()) {
-                double value = valueOp.value().as<double>();
+                int64_t value = valueOp.value().as<int64_t>();
                 switch (op.kind()) {
                 case ArithCastOpKind::IntToFloat:
                     folded = static_cast<double>(value);
@@ -150,7 +150,20 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
         auto type = op.result()->type;
         auto valType = op.lhs()->type;
         bool folded;
-        if (valType->is<IntegerType>()) {
+        if (valType->is<BoolType>()) {
+            bool lhs = lhsOp.value().as<bool>();
+            bool rhs = rhsOp.value().as<bool>();
+            switch (op.kind()) {
+            case LogicBinOpKind::AndI:
+                folded = lhs && rhs;
+                break;
+            case LogicBinOpKind::OrI:
+                folded = lhs || rhs;
+                break;
+            default:
+                UNREACHABLE("Unexpected op kind");
+            }
+        } else if (valType->is<IntegerType>()) {
             int64_t lhs = lhsOp.value().as<int64_t>();
             int64_t rhs = rhsOp.value().as<int64_t>();
             switch (op.kind()) {
@@ -196,19 +209,6 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                 break;
             case LogicBinOpKind::GreaterF:
                 folded = lhs > rhs;
-                break;
-            default:
-                UNREACHABLE("Unexpected op kind");
-            }
-        } else if (valType->is<BoolType>()) {
-            bool lhs = lhsOp.value().as<bool>();
-            bool rhs = rhsOp.value().as<bool>();
-            switch (op.kind()) {
-            case LogicBinOpKind::AndI:
-                folded = lhs && rhs;
-                break;
-            case LogicBinOpKind::OrI:
-                folded = lhs || rhs;
                 break;
             default:
                 UNREACHABLE("Unexpected op kind");
