@@ -1,13 +1,15 @@
-#include "optimizer/transform.hpp"
-
-#include "compiler/optree/adaptors.hpp"
-#include "compiler/optree/operation.hpp"
-#include "optimizer/opt_builder.hpp"
 #include <deque>
 #include <map>
 #include <memory>
 #include <string>
 #include <unordered_set>
+
+#include "compiler/optree/adaptors.hpp"
+#include "compiler/optree/operation.hpp"
+#include "compiler/utils/helpers.hpp"
+
+#include "optimizer/opt_builder.hpp"
+#include "optimizer/transform.hpp"
 
 using namespace optree;
 using namespace optree::optimizer;
@@ -16,13 +18,13 @@ namespace {
 
 struct EraseUnusedFunctions : public Transform<ModuleOp> {
     using Transform::Transform;
-    using CallEdges = std::multimap<std::string, std::string>;
+    using CallEdges = std::map<std::string, std::list<std::string>>;
 
     void getInnerFunctionCallNames(const Operation::Ptr &op, const std::string &parentName, CallEdges &edges) const {
         for (auto &child : op->body) {
             auto funcOp = child->as<FunctionCallOp>();
             if (funcOp) {
-                edges.emplace(parentName, funcOp.name());
+                edges[parentName].emplace_back(funcOp.name());
             }
             getInnerFunctionCallNames(child, parentName, edges);
         }
@@ -35,21 +37,22 @@ struct EraseUnusedFunctions : public Transform<ModuleOp> {
             if (funcOp)
                 getInnerFunctionCallNames(moduleChild, funcOp.name(), edges);
         }
-        auto range = edges.equal_range("main");
+        auto mainFunctions = edges["main"];
         std::unordered_set<std::string> usedFunctions = {"main"};
-        std::deque<std::pair<std::string, std::string>> queue(range.first, range.second);
+        std::deque<std::string> queue(mainFunctions.begin(), mainFunctions.end());
         while (!queue.empty()) {
-            if (!usedFunctions.contains(queue.front().second)) {
-                usedFunctions.emplace(queue.front().second);
-                auto innerRange = edges.equal_range(queue.front().second);
-                queue.insert(queue.end(), innerRange.first, innerRange.second);
+            auto name = queue.front();
+            if (!usedFunctions.contains(name)) {
+                usedFunctions.emplace(name);
+                auto innerFunctions = edges[name];
+                queue.insert(queue.end(), innerFunctions.begin(), innerFunctions.end());
             }
             queue.pop_front();
         }
 
-        for (auto it : utils::advanceEarly(op->body.begin(), op->body.end())) {
-            if (!usedFunctions.contains(it->as<FunctionOp>().name())) {
-                builder.erase(it);
+        for (const auto &op : utils::advanceEarly(op->body.begin(), op->body.end())) {
+            if (!usedFunctions.contains(op->as<FunctionOp>().name())) {
+                builder.erase(op);
             }
         }
     }
