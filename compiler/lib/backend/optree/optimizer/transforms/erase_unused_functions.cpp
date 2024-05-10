@@ -3,6 +3,8 @@
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/operation.hpp"
 #include "optimizer/opt_builder.hpp"
+#include <deque>
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -12,47 +14,44 @@ using namespace optree::optimizer;
 
 namespace {
 
-struct EraseUnusedFunctions : public Transform<ModuleOp, FunctionOp> {
+struct EraseUnusedFunctions : public Transform<ModuleOp> {
     using Transform::Transform;
+    using CallEdges = std::multimap<std::string, std::string>;
 
-    inline static std::unordered_set<std::string> currentCalledFunctions = {"main"};
-    inline static std::unordered_set<std::string> calledFunctions = {"main"};
-
-    static bool inCurrentCalledList(const Operation::Ptr &op) {
-        return currentCalledFunctions.contains(op->attr(0).as<std::string>());
-    }
-
-    static bool inCalledList(const Operation::Ptr &op) {
-        return calledFunctions.contains(op->attr(0).as<std::string>());
-    }
-
-    static void getInnerFunctionCallNames(const Operation::Ptr &op) {
+    void getInnerFunctionCallNames(const Operation::Ptr &op, const std::string &parentName,
+                                   CallEdges &edges) const {
         for (auto &child : op->body) {
-            if (child->is<FunctionCallOp>()) {
-                currentCalledFunctions.emplace(child->attr(0).as<std::string>());
+            auto funcOp = child->as<FunctionCallOp>();
+            if (funcOp) {
+                edges.emplace(parentName, funcOp.name());
             }
-            getInnerFunctionCallNames(child);
+            getInnerFunctionCallNames(child, parentName, edges);
         }
-    };
-
-    static void addFunction(const std::string &name) {
-        calledFunctions.emplace(name);
-        currentCalledFunctions.erase(name);
     };
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
-        if (op->is<ModuleOp>()) {
-            for (auto &moduleChild : op->body) {
-                if (moduleChild->is<FunctionOp>() && inCurrentCalledList(moduleChild)) {
-                    getInnerFunctionCallNames(moduleChild);
-                    builder.update(op);
-                    addFunction(moduleChild->attr(0).as<std::string>());
-                }
+        CallEdges edges = {};
+        for (auto &moduleChild : op->body) {
+            auto funcOp = moduleChild->as<FunctionOp>();
+            if (funcOp)
+                getInnerFunctionCallNames(moduleChild, funcOp.name(), edges);
+        }
+        auto range = edges.equal_range("main");
+        std::unordered_set<std::string> usedFunctions = {"main"};
+        std::deque<std::pair<std::string, std::string>> queue(range.first, range.second);
+        while (!queue.empty()) {
+            if (!usedFunctions.contains(queue.front().second)) {
+                usedFunctions.emplace(queue.front().second);
+                auto innerRange = edges.equal_range(queue.front().second);
+                queue.insert(queue.end(), innerRange.first, innerRange.second);
             }
+            queue.pop_front();
         }
 
-        if (op->is<FunctionOp>() && !inCalledList(op)) {
-            builder.erase(op);
+        for (auto it : utils::advanceEarly(op->body.begin(), op->body.end())) {
+            if (!usedFunctions.contains(it->as<FunctionOp>().name())) {
+                builder.erase(it);
+            }
         }
     }
 };
