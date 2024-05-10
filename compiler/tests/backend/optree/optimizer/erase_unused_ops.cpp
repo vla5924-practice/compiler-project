@@ -96,7 +96,6 @@ TEST_F(EraseUnusedOpsTest, can_keep_irrelevant_ops) {
     m.opInit<FunctionOp>("test", m.tFunc({m.tPtr(m.tI64)}, m.tNone)).inward(v[0], 0).withBody();
     v[1] = m.opInit<AllocateOp>(m.tPtr(m.tI64));
     v[2] = m.opInit<LoadOp>(v[0]);
-    v[3] = m.opInit<InputOp>(m.tI64);
     m.opInit<ReturnOp>();
     m.endBody();
 

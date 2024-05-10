@@ -24,14 +24,6 @@
 
 #include "converter/converter_context.hpp"
 
-#if __has_builtin(__builtin_unreachable)
-#define UNREACHABLE(MSG)                                                                                               \
-    assert(false && (MSG));                                                                                            \
-    __builtin_unreachable()
-#else
-#define UNREACHABLE(MSG) assert(false && (MSG))
-#endif
-
 using namespace optree;
 using namespace converter;
 
@@ -108,8 +100,7 @@ void createInputOp(const Node::Ptr &varNameNode, const utils::SourceRef &inputRe
         ctx.pushError(varNameNode, "variable cannot be modified: " + varNameNode->str());
         return;
     }
-    auto inputOp = ctx.insert<InputOp>(inputRef, var.value->type->as<PointerType>().pointee);
-    ctx.insert<StoreOp>(inputRef, var.value, inputOp.value());
+    ctx.insert<InputOp>(inputRef, var.value);
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx);
@@ -218,7 +209,7 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
             processNode(elNode->lastChild(), ctx);
             ctx.goParent();
         } else {
-            UNREACHABLE("Unexpected NodeType inside IfStatement");
+            COMPILER_UNREACHABLE("Unexpected NodeType inside IfStatement");
         }
     }
     while (depth-- > 0)
@@ -324,7 +315,7 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.insert<StoreOp>(node->ref, lhs, rhs);
         return rhs;
     default:
-        UNREACHABLE("Unexpected ast::BinaryOperation value in visitBinaryOperation");
+        COMPILER_UNREACHABLE("Unexpected ast::BinaryOperation value in visitBinaryOperation");
     }
 }
 
@@ -346,8 +337,10 @@ Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
             ctx.pushError(node, "print() statement cannot be within an expression context");
             throw ctx.errors;
         }
+        std::vector<Value::Ptr> arguments;
         for (auto &argNode : node->lastChild()->children)
-            ctx.insert<PrintOp>(argNode->ref, visitNode(argNode, ctx));
+            arguments.emplace_back(visitNode(argNode, ctx));
+        ctx.insert<PrintOp>(node->ref, arguments);
         return {};
     }
     if (name == "input") {
@@ -392,7 +385,7 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
         processIfStatement(node, ctx);
         return;
     default:
-        UNREACHABLE("Unexpected ast::NodeType value in processNode");
+        COMPILER_UNREACHABLE("Unexpected ast::NodeType value in processNode");
     }
 }
 
@@ -415,7 +408,7 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
     case NodeType::FunctionCall:
         return visitFunctionCall(node, ctx);
     default:
-        UNREACHABLE("Unexpected ast::NodeType value in visitNode");
+        COMPILER_UNREACHABLE("Unexpected ast::NodeType value in visitNode");
     }
 }
 
