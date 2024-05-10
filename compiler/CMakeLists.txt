@@ -20,7 +20,7 @@ set(COMPILER_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(COMPILER_LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 
 set(ENABLE_CODEGEN "" CACHE STRING "Enables low-level code generation")
-set(AVAILABLE_CODEGEN "ast_to_llvmir")
+set(AVAILABLE_CODEGEN "ast_to_llvmir;optree_to_llvmir")
 if("${ENABLE_CODEGEN}^" STREQUAL "OFF^")
     message(WARNING "All codegen backends were disabled because ENABLE_CODEGEN option was set to OFF. "
                     "Consider omitting its setting or using an empty string instead.")
