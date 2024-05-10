@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "node_type.hpp"
+#include "types.hpp"
 
 using namespace ast;
 
@@ -68,6 +69,8 @@ const char *const unaryOperationToString(UnaryOperation unOp) {
     switch (unOp) {
     case UnaryOperation::Not:
         return "Not";
+    case UnaryOperation::Negative:
+        return "Negative";
     case UnaryOperation::Unknown:
         return "Unknown";
     }
@@ -84,6 +87,8 @@ const char *const typeIdToString(TypeId typeId) {
         return "BoolType";
     case StrType:
         return "StrType";
+    case ListType:
+        return "ListType";
     case NoneType:
         return "NoneType";
     }
@@ -188,6 +193,12 @@ void Node::dump(std::ostream &stream, int depth) const {
         break;
     case NodeType::WhileStatement:
         stream << "WhileStatement\n";
+        break;
+    case NodeType::ListStatement:
+        stream << "ListStatement\n";
+        break;
+    case NodeType::ListAccessor:
+        stream << "ListAccessor\n";
         break;
     default:
         stream << "Unknown\n";

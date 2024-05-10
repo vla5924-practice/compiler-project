@@ -262,17 +262,16 @@ struct PrintOp;
 struct InputOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Input")
 
-    void init(const Type::Ptr &inputType);
+    void init(const Value::Ptr &dst);
 
-    OPTREE_ADAPTOR_RESULT(value, 0)
+    OPTREE_ADAPTOR_OPERAND(dst, setDst, 0)
 };
 
 struct PrintOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Print")
 
     void init(const Value::Ptr &valueToPrint);
-
-    OPTREE_ADAPTOR_OPERAND(value, setValue, 0)
+    void init(const std::vector<Value::Ptr> &valuesToPrint);
 };
 
 } // namespace optree

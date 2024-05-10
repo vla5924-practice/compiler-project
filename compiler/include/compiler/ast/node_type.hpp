@@ -35,6 +35,7 @@ enum class BinaryOperation {
 enum class UnaryOperation {
     Unknown,
     Not,
+    Negative,
 };
 
 enum class NodeType {
@@ -62,6 +63,8 @@ enum class NodeType {
     VariableDeclaration,
     VariableName,
     WhileStatement,
+    ListStatement,
+    ListAccessor,
 };
 
 } // namespace ast
