@@ -18,8 +18,7 @@ struct EraseUnusedFunctions : public Transform<ModuleOp> {
     using Transform::Transform;
     using CallEdges = std::multimap<std::string, std::string>;
 
-    void getInnerFunctionCallNames(const Operation::Ptr &op, const std::string &parentName,
-                                   CallEdges &edges) const {
+    void getInnerFunctionCallNames(const Operation::Ptr &op, const std::string &parentName, CallEdges &edges) const {
         for (auto &child : op->body) {
             auto funcOp = child->as<FunctionCallOp>();
             if (funcOp) {
