@@ -200,6 +200,15 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::ListAccessor:
         stream << "ListAccessor\n";
         break;
+    case NodeType::ForStatement:
+        stream << "ForStatement\n";
+        break;
+    case NodeType::ForIterable:
+        stream << "ForIterable\n";
+        break;
+    case NodeType::ForTargets:
+        stream << "ForTargets\n";
+        break;
     default:
         stream << "Unknown\n";
     }

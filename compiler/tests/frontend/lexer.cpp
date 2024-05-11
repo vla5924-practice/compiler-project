@@ -31,10 +31,6 @@ TEST(Lexer, can_detect_else) {
     SINGLE_TOKEN_TEST_IMPL("else", Keyword::Else);
 }
 
-TEST(Lexer, can_detect_range) {
-    SINGLE_TOKEN_TEST_IMPL("range", Keyword::Range);
-}
-
 TEST(Lexer, can_detect_for) {
     SINGLE_TOKEN_TEST_IMPL("for", Keyword::For);
 }
@@ -499,6 +495,29 @@ TEST(Lexer, list_expression) {
     expected.emplace_back(Operator::Comma);
     expected.emplace_back(TokenType::IntegerLiteral, "3");
     expected.emplace_back(Operator::RectRightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, for_range_and_enumerate_expression) {
+    StringVec source = {"for i in range(10)", "for i in enumerate(mylist)"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Keyword::For);
+    expected.emplace_back(TokenType::Identifier, "i");
+    expected.emplace_back(Keyword::In);
+    expected.emplace_back(TokenType::Identifier, "range");
+    expected.emplace_back(Operator::LeftBrace);
+    expected.emplace_back(TokenType::IntegerLiteral, "10");
+    expected.emplace_back(Operator::RightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    expected.emplace_back(Keyword::For);
+    expected.emplace_back(TokenType::Identifier, "i");
+    expected.emplace_back(Keyword::In);
+    expected.emplace_back(TokenType::Identifier, "enumerate");
+    expected.emplace_back(Operator::LeftBrace);
+    expected.emplace_back(TokenType::Identifier, "mylist");
+    expected.emplace_back(Operator::RightBrace);
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
 }
