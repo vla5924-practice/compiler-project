@@ -1,11 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <string>
-#include <type_traits>
 #include <vector>
 
-#include "compiler/optree/attribute.hpp"
 #include "compiler/optree/base_adaptor.hpp"
 #include "compiler/optree/definitions.hpp"
 #include "compiler/optree/operation.hpp"

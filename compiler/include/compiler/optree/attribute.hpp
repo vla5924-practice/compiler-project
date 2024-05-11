@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <ostream>
+#include <string>
 #include <variant>
 
 #include "compiler/optree/definitions.hpp"
