@@ -7,12 +7,18 @@
 #include <tuple>
 #include <type_traits>
 
-#if __has_builtin(__builtin_unreachable)
+#if defined(_MSC_VER) && !defined(__clang__) // MSVC
 #define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
-    assert(false && (MESSAGE));                                                                                        \
-    __builtin_unreachable()
-#else
-#define COMPILER_UNREACHABLE(MESSAGE) assert(false && (MESSAGE))
+    do {                                                                                                               \
+        assert(false && (MESSAGE));                                                                                    \
+        __assume(false);                                                                                               \
+    } while (0)
+#else // GCC, Clang
+#define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
+    do {                                                                                                               \
+        assert(false && (MESSAGE));                                                                                    \
+        __builtin_unreachable();                                                                                       \
+    } while (0)
 #endif
 
 namespace utils {
