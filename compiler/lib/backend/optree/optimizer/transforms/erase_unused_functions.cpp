@@ -1,4 +1,5 @@
 #include <deque>
+#include <list>
 #include <map>
 #include <memory>
 #include <string>
@@ -18,13 +19,13 @@ namespace {
 
 struct EraseUnusedFunctions : public Transform<ModuleOp> {
     using Transform::Transform;
-    using CallEdges = std::map<std::string, std::list<std::string>>;
+    using CallEdges = std::map<std::string, std::unordered_set<std::string>>;
 
     void getInnerFunctionCallNames(const Operation::Ptr &op, const std::string &parentName, CallEdges &edges) const {
         for (auto &child : op->body) {
             auto funcOp = child->as<FunctionCallOp>();
             if (funcOp) {
-                edges[parentName].emplace_back(funcOp.name());
+                edges[parentName].emplace(funcOp.name());
             }
             getInnerFunctionCallNames(child, parentName, edges);
         }
@@ -37,14 +38,14 @@ struct EraseUnusedFunctions : public Transform<ModuleOp> {
             if (funcOp)
                 getInnerFunctionCallNames(moduleChild, funcOp.name(), edges);
         }
-        auto mainFunctions = edges["main"];
+        auto &mainFunctions = edges["main"];
         std::unordered_set<std::string> usedFunctions = {"main"};
         std::deque<std::string> queue(mainFunctions.begin(), mainFunctions.end());
         while (!queue.empty()) {
             auto name = queue.front();
             if (!usedFunctions.contains(name)) {
                 usedFunctions.emplace(name);
-                auto innerFunctions = edges[name];
+                auto &innerFunctions = edges[name];
                 queue.insert(queue.end(), innerFunctions.begin(), innerFunctions.end());
             }
             queue.pop_front();
