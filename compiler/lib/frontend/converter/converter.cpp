@@ -20,6 +20,7 @@
 #include "compiler/optree/types.hpp"
 #include "compiler/optree/value.hpp"
 #include "compiler/utils/helpers.hpp"
+#include "compiler/utils/language.hpp"
 #include "compiler/utils/source_ref.hpp"
 
 #include "converter/converter_context.hpp"
@@ -30,6 +31,10 @@ using namespace converter;
 using ast::Node;
 using ast::NodeType;
 using ast::SyntaxTree;
+
+namespace language = utils::language;
+
+namespace {
 
 Type::Ptr convertType(ast::TypeId typeId) {
     switch (typeId) {
@@ -83,7 +88,7 @@ bool isRhsInAssignment(const Node::Ptr &node) {
 }
 
 bool isFunctionCallInputNode(const Node::Ptr &node) {
-    return node->type == NodeType::FunctionCall && node->firstChild()->str() == "input";
+    return node->type == NodeType::FunctionCall && node->firstChild()->str() == language::funcInput;
 }
 
 bool isAssignment(ast::BinaryOperation binOp) {
@@ -335,7 +340,7 @@ Value::Ptr visitVariableName(const Node::Ptr &node, ConverterContext &ctx) {
 
 Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
     const std::string &name = node->firstChild()->str();
-    if (name == "print") {
+    if (name == language::funcPrint) {
         if (node->parent->type != NodeType::Expression) {
             ctx.pushError(node, "print() statement cannot be within an expression context");
             throw ctx.errors;
@@ -346,7 +351,7 @@ Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.insert<PrintOp>(node->ref, arguments);
         return {};
     }
-    if (name == "input") {
+    if (name == language::funcInput) {
         ctx.pushError(node, "input() statement must be a right-handed operand of an isolated assignment expression");
         throw ctx.errors;
     }
@@ -414,6 +419,8 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in visitNode");
     }
 }
+
+} // namespace
 
 Program Converter::process(const SyntaxTree &syntaxTree) {
     ConverterContext ctx;

@@ -4,8 +4,12 @@
 #include <cassert>
 #include <iostream>
 
+#include "compiler/utils/language.hpp"
+
 using namespace ast;
 using namespace ir_generator;
+
+namespace language = utils::language;
 
 namespace {
 
@@ -23,8 +27,6 @@ bool isLLVMPointer(llvm::Value *value) {
     return value->getType()->isPointerTy();
 }
 
-constexpr const char *const PRINT_FUNCTION_NAME = "print";
-constexpr const char *const INPUT_FUNCTION_NAME = "input";
 constexpr const char *const PRINTF_FUNCTION_NAME = "printf";
 constexpr const char *const SCANF_FUNCTION_NAME = "scanf";
 
@@ -91,8 +93,8 @@ static const std::unordered_map<std::string, std::string> placeholders = {
 };
 
 const std::unordered_map<std::string, IRGenerator::NodeVisitor> IRGenerator::builtInFunctions = {
-    {PRINT_FUNCTION_NAME, &IRGenerator::visitPrintFunctionCall},
-    {INPUT_FUNCTION_NAME, &IRGenerator::visitInputFunctionCall},
+    {language::funcPrint, &IRGenerator::visitPrintFunctionCall},
+    {language::funcInput, &IRGenerator::visitInputFunctionCall},
 };
 
 IRGenerator::IRGenerator(const std::string &moduleName, bool emitDebugInfo)
@@ -405,7 +407,7 @@ llvm::Value *IRGenerator::visitVariableName(Node *node) {
 }
 
 llvm::Value *IRGenerator::visitPrintFunctionCall(Node *node) {
-    assert(node && node->type == NodeType::FunctionCall && node->firstChild()->str() == PRINT_FUNCTION_NAME);
+    assert(node && node->type == NodeType::FunctionCall && node->firstChild()->str() == language::funcPrint);
 
     auto argsNode = node->lastChild();
     assert(argsNode->children.size() == 1u); // print requires only one argument
@@ -427,7 +429,7 @@ llvm::Value *IRGenerator::visitPrintFunctionCall(Node *node) {
 }
 
 llvm::Value *IRGenerator::visitInputFunctionCall(Node *node) {
-    assert(node && node->type == NodeType::FunctionCall && node->firstChild()->str() == INPUT_FUNCTION_NAME);
+    assert(node && node->type == NodeType::FunctionCall && node->firstChild()->str() == language::funcInput);
 
     TypeId returnType = node->lastChild()->typeId();
     llvm::Type *llvmType = createLLVMType(returnType);
