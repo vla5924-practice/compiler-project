@@ -90,6 +90,20 @@ jobs:
           cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN='ast_to_llvmir;optree_to_llvmir'
           cmake --build build --parallel
 
+  build-msvc:
+    name: Build on Windows MSVC
+    runs-on: windows-latest
+    needs: code-style-check
+    steps:
+      - name: Initialize repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Build
+        run: |
+          cmake -S compiler -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+
   unit-test:
     name: Unit test
     runs-on: ubuntu-latest
