@@ -37,9 +37,9 @@ TEST_F(DeclarativeTest, can_insert_function_with_body) {
     m.endBody();
     // clang-format on
     assertDump("Module () -> ()\n"
-               "  Function {string : myfunc, Type : func((int(64), float(64)) -> none)} () -> () [#0 : int(64), #1 : "
+               "  Function {str : myfunc, Type : func((int(64), float(64)) -> none)} () -> () [#0 : int(64), #1 : "
                "float(64)]\n"
-               "    Constant {int64_t : 123} () -> (#2 : int(64))\n"
+               "    Constant {int : 123} () -> (#2 : int(64))\n"
                "    Allocate () -> (#3 : ptr(int(64)))\n"
                "    ArithBinary {ArithBinOpKind : 1} (#2 : int(64), #1 : float(64)) -> (#4 : int(64))\n"
                "    Store (#3 : ptr(int(64)), #4 : int(64)) -> ()\n"
@@ -49,7 +49,7 @@ TEST_F(DeclarativeTest, can_insert_function_with_body) {
 TEST_F(DeclarativeTest, can_insert_with_adapted_init) {
     // clang-format off
     m.opInit<FunctionOp>("myfunc", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v[0], 0).inward(v[1], 1).withBody();
-        v[2] = m.opInit<ConstantOp>(m.tI64, int64_t(456L));
+        v[2] = m.opInit<ConstantOp>(m.tI64, 456L);
         v[3] = m.opInit<AllocateOp>(m.tPtr(m.tI64));
         v[4] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[2], v[1]);
         m.opInit<StoreOp>(v[3], v[4]);
@@ -57,9 +57,9 @@ TEST_F(DeclarativeTest, can_insert_with_adapted_init) {
     m.endBody();
     // clang-format on
     assertDump("Module () -> ()\n"
-               "  Function {string : myfunc, Type : func((int(64), float(64)) -> none)} () -> () [#0 : int(64), #1 : "
+               "  Function {str : myfunc, Type : func((int(64), float(64)) -> none)} () -> () [#0 : int(64), #1 : "
                "float(64)]\n"
-               "    Constant {int64_t : 456} () -> (#2 : int(64))\n"
+               "    Constant {int : 456} () -> (#2 : int(64))\n"
                "    Allocate () -> (#3 : ptr(int(64)))\n"
                "    ArithBinary {ArithBinOpKind : 1} (#2 : int(64), #1 : float(64)) -> (#4 : int(64))\n"
                "    Store (#3 : ptr(int(64)), #4 : int(64)) -> ()\n"
@@ -87,8 +87,8 @@ TEST_F(DeclarativeTest, can_insert_nested_operations) {
     m.endBody();
     // clang-format on
     assertDump("Module () -> ()\n"
-               "  Function {string : myfunc, Type : func((float(64)) -> none)} () -> () [#0 : float(64)]\n"
-               "    Constant {double : 7.89} () -> (#1 : float(64))\n"
+               "  Function {str : myfunc, Type : func((float(64)) -> none)} () -> () [#0 : float(64)]\n"
+               "    Constant {float : 7.89} () -> (#1 : float(64))\n"
                "    Allocate () -> (#2 : ptr(float(64)))\n"
                "    LogicBinary {LogicBinOpKind : 12} (#0 : float(64), #1 : float(64)) -> (#3 : int(8))\n"
                "    If (#3 : int(8)) -> ()\n"

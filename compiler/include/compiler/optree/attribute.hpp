@@ -1,20 +1,24 @@
 #pragma once
 
-#include <cstdint>
 #include <memory>
 #include <ostream>
-#include <string>
 #include <variant>
 
 #include "compiler/optree/definitions.hpp"
 #include "compiler/optree/types.hpp"
+#include "compiler/utils/helpers.hpp"
 
 namespace optree {
 
 struct Attribute {
-    std::variant<std::monostate, int64_t, double, bool, std::string, Type::Ptr, ArithBinOpKind, ArithCastOpKind,
-                 LogicBinOpKind, LogicUnaryOpKind>
-        storage;
+    using Storage = std::variant<
+        //
+        std::monostate, NativeInt, NativeBool, NativeFloat, NativeStr, Type::Ptr, ArithBinOpKind, ArithCastOpKind,
+        LogicBinOpKind, LogicUnaryOpKind
+        //
+        >;
+
+    Storage storage;
 
     Attribute() = default;
     Attribute(const Attribute &) = default;
@@ -25,7 +29,18 @@ struct Attribute {
     Attribute &operator=(Attribute &&) = default;
 
     template <typename VariantType>
-    explicit Attribute(const VariantType &value) : storage(value){};
+    explicit Attribute(const VariantType &value) {
+        if constexpr (Attribute::canHold<VariantType>())
+            set(value);
+        else if constexpr (std::is_integral_v<VariantType>)
+            set(static_cast<NativeInt>(value));
+        else if constexpr (std::is_floating_point_v<VariantType>)
+            set(static_cast<NativeFloat>(value));
+        else if constexpr (std::is_constructible_v<std::string, VariantType>)
+            set(std::string(value));
+        else
+            throw std::bad_variant_access();
+    }
 
     template <typename VariantType>
     bool is() const noexcept {
@@ -72,6 +87,11 @@ struct Attribute {
     }
 
     void dump(std::ostream &stream) const;
+
+    template <typename T>
+    static constexpr bool canHold() {
+        return utils::canHoldAlternative<T, Storage>;
+    }
 };
 
 } // namespace optree

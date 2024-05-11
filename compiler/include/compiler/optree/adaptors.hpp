@@ -2,8 +2,10 @@
 
 #include <cstdint>
 #include <string>
+#include <type_traits>
 #include <vector>
 
+#include "compiler/optree/attribute.hpp"
 #include "compiler/optree/base_adaptor.hpp"
 #include "compiler/optree/definitions.hpp"
 #include "compiler/optree/operation.hpp"
@@ -71,10 +73,11 @@ struct ReturnOp : Adaptor {
 struct ConstantOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Constant")
 
-    void init(const Type::Ptr &type, int64_t value);
-    void init(const Type::Ptr &type, bool value);
-    void init(const Type::Ptr &type, double value);
-    void init(const Type::Ptr &type, const std::string &value);
+    template <typename T>
+    void init(const Type::Ptr &type, const T &value) {
+        op->results.emplace_back(Value::make(type, op));
+        op->addAttr(value);
+    }
 
     OPTREE_ADAPTOR_ATTRIBUTE_OPAQUE(value, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
