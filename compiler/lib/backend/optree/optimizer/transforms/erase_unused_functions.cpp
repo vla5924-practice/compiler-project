@@ -41,7 +41,7 @@ struct EraseUnusedFunctions : public Transform<ModuleOp> {
         std::unordered_set<std::string> usedFunctions = {"main"};
         std::deque<std::string> queue(mainFunctions.begin(), mainFunctions.end());
         while (!queue.empty()) {
-            auto name = queue.front();
+            auto &name = queue.front();
             if (!usedFunctions.contains(name)) {
                 usedFunctions.emplace(name);
                 auto &innerFunctions = edges[name];
