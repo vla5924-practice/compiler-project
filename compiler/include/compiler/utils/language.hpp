@@ -13,6 +13,7 @@ inline const std::string funcMain = "main";
 inline const std::string funcPrint = "print";
 inline const std::string funcInput = "input";
 inline const std::string funcRange = "range";
+inline const std::string funcEnumerate = "enumerate";
 
 // ----------------------------------------------------------------------------
 // Reserved decorator names
