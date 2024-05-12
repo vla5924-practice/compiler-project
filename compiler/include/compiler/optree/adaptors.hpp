@@ -77,18 +77,6 @@ struct ConstantOp : Adaptor {
         op->addAttr(value);
     }
 
-    template <typename T>
-    void init(const Type::Ptr &type, const T &value) {
-        if constexpr (std::is_same_v<std::remove_cvref_t<T>, bool>)
-            init(type, value);
-        else if constexpr (std::is_integral_v<T>)
-            init(type, static_cast<int64_t>(value));
-        else if constexpr (std::is_floating_point_v<T>)
-            init(type, static_cast<double>(value));
-        else
-            init(type, value);
-    }
-
     OPTREE_ADAPTOR_ATTRIBUTE_OPAQUE(value, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
 };

@@ -1,6 +1,3 @@
-#include "optimizer/transform.hpp"
-
-#include <cstdint>
 #include <memory>
 
 #include "compiler/optree/adaptors.hpp"
@@ -11,6 +8,7 @@
 #include "compiler/utils/helpers.hpp"
 
 #include "optimizer/opt_builder.hpp"
+#include "optimizer/transform.hpp"
 
 using namespace optree;
 using namespace optree::optimizer;
@@ -27,9 +25,9 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
             return;
         auto type = op.result()->type;
         if (type->is<IntegerType>()) {
-            int64_t folded;
-            int64_t lhs = lhsOp.value().as<int64_t>();
-            int64_t rhs = rhsOp.value().as<int64_t>();
+            NativeInt folded;
+            auto lhs = lhsOp.value().as<NativeInt>();
+            auto rhs = rhsOp.value().as<NativeInt>();
             switch (op.kind()) {
             case ArithBinOpKind::AddI:
                 folded = lhs + rhs;
@@ -50,9 +48,9 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
             builder.replace(op, newOp);
             return;
         } else if (type->is<FloatType>()) {
-            double folded;
-            double lhs = lhsOp.value().as<double>();
-            double rhs = rhsOp.value().as<double>();
+            NativeFloat folded;
+            auto lhs = lhsOp.value().as<NativeFloat>();
+            auto rhs = rhsOp.value().as<NativeFloat>();
             switch (op.kind()) {
             case ArithBinOpKind::AddF:
                 folded = lhs + rhs;
@@ -82,9 +80,9 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
         auto valueType = op.value()->type;
         auto type = op.result()->type;
         if (type->is<IntegerType>()) {
-            int64_t folded;
+            NativeInt folded;
             if (valueType->is<IntegerType>()) {
-                int64_t value = valueOp.value().as<int64_t>();
+                auto value = valueOp.value().as<NativeInt>();
                 switch (op.kind()) {
                 case ArithCastOpKind::ExtI:
                 case ArithCastOpKind::TruncI:
@@ -94,10 +92,10 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                     COMPILER_UNREACHABLE("Unexpected op kind");
                 }
             } else if (valueType->is<FloatType>()) {
-                double value = valueOp.value().as<double>();
+                auto value = valueOp.value().as<NativeFloat>();
                 switch (op.kind()) {
                 case ArithCastOpKind::FloatToInt:
-                    folded = static_cast<int64_t>(value);
+                    folded = static_cast<NativeInt>(value);
                     break;
                 default:
                     COMPILER_UNREACHABLE("Unexpected op kind");
@@ -107,9 +105,9 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
             builder.replace(op, newOp);
             return;
         } else if (type->is<FloatType>()) {
-            double folded;
+            NativeFloat folded;
             if (valueType->is<FloatType>()) {
-                double value = valueOp.value().as<double>();
+                auto value = valueOp.value().as<NativeFloat>();
                 switch (op.kind()) {
                 case ArithCastOpKind::ExtF:
                 case ArithCastOpKind::TruncF:
@@ -119,10 +117,10 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                     COMPILER_UNREACHABLE("Unexpected op kind");
                 }
             } else if (valueType->is<IntegerType>()) {
-                int64_t value = valueOp.value().as<int64_t>();
+                auto value = valueOp.value().as<NativeInt>();
                 switch (op.kind()) {
                 case ArithCastOpKind::IntToFloat:
-                    folded = static_cast<double>(value);
+                    folded = static_cast<NativeFloat>(value);
                     break;
                 default:
                     COMPILER_UNREACHABLE("Unexpected op kind");
@@ -141,10 +139,10 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
             return;
         auto type = op.result()->type;
         auto valType = op.lhs()->type;
-        bool folded;
+        NativeBool folded;
         if (valType->is<BoolType>()) {
-            bool lhs = lhsOp.value().as<bool>();
-            bool rhs = rhsOp.value().as<bool>();
+            auto lhs = lhsOp.value().as<NativeBool>();
+            auto rhs = rhsOp.value().as<NativeBool>();
             switch (op.kind()) {
             case LogicBinOpKind::AndI:
                 folded = lhs && rhs;
@@ -156,8 +154,8 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                 COMPILER_UNREACHABLE("Unexpected op kind");
             }
         } else if (valType->is<IntegerType>()) {
-            int64_t lhs = lhsOp.value().as<int64_t>();
-            int64_t rhs = rhsOp.value().as<int64_t>();
+            auto lhs = lhsOp.value().as<NativeInt>();
+            auto rhs = rhsOp.value().as<NativeInt>();
             switch (op.kind()) {
             case LogicBinOpKind::Equal:
                 folded = lhs == rhs;
@@ -181,8 +179,8 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
                 COMPILER_UNREACHABLE("Unexpected op kind");
             }
         } else if (valType->is<FloatType>()) {
-            double lhs = lhsOp.value().as<double>();
-            double rhs = rhsOp.value().as<double>();
+            auto lhs = lhsOp.value().as<NativeFloat>();
+            auto rhs = rhsOp.value().as<NativeFloat>();
             switch (op.kind()) {
             case LogicBinOpKind::Equal:
                 folded = lhs == rhs;
@@ -216,8 +214,8 @@ struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryO
         if (!valueOp)
             return;
         auto type = op.result()->type;
-        bool folded;
-        bool value = valueOp.value().as<bool>();
+        NativeBool folded;
+        auto value = valueOp.value().as<NativeBool>();
         switch (op.kind()) {
         case LogicUnaryOpKind::Not:
             folded = !value;
