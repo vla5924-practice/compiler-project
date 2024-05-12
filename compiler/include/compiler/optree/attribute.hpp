@@ -12,8 +12,8 @@
 namespace optree {
 
 struct Attribute {
-    std::variant<std::monostate, int64_t, double, bool, std::string, Type::Ptr, ArithBinOpKind, ArithCastOpKind,
-                 LogicBinOpKind, LogicUnaryOpKind>
+    std::variant<std::monostate, NativeInt, NativeBool, NativeFloat, NativeStr, Type::Ptr, ArithBinOpKind,
+                 ArithCastOpKind, LogicBinOpKind, LogicUnaryOpKind>
         storage;
 
     Attribute() = default;

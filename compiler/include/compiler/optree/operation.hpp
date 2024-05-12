@@ -130,7 +130,7 @@ struct Operation : public std::enable_shared_from_this<Operation> {
 
     template <typename AdaptorType>
     bool is() const {
-        return specId == AdaptorType::getSpecId();
+        return AdaptorType::implementsSpecById(specId);
     }
 
     template <typename AdaptorType>
