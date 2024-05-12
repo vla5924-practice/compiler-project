@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <type_traits>
 #include <vector>
 
 #include "compiler/optree/base_adaptor.hpp"
