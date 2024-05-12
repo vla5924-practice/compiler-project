@@ -1,3 +1,6 @@
+#include <cstdint>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "compiler/ast/declarative.hpp"
@@ -6,6 +9,7 @@
 #include "compiler/frontend/converter/converter.hpp"
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/declarative.hpp"
+#include "compiler/utils/error_buffer.hpp"
 
 using namespace optree;
 using ast::DeclarativeTree;
@@ -13,6 +17,10 @@ using ast::NodeType;
 using converter::Converter;
 
 class ConverterTest : public ::testing::Test {
+    void convert() {
+        converted = Converter::process(t.makeTree()).root;
+    }
+
   protected:
     // Input syntax tree
     DeclarativeTree t;
@@ -24,21 +32,30 @@ class ConverterTest : public ::testing::Test {
     // Actual operation tree after conversion
     Operation::Ptr converted;
 
+    void assertCorrectConversion() {
+        ASSERT_NO_THROW(convert());
+        ASSERT_EQ(m.dump(), converted->dump());
+    }
+
+    void assertConversionError(const std::string &message) {
+        try {
+            convert();
+        } catch (ErrorBuffer &errors) {
+            auto fullMessage = errors.message();
+            ASSERT_TRUE(fullMessage.find(message) != std::string::npos)
+                << "expected string '" << message << "' not found in error message:\n"
+                << fullMessage;
+            return;
+        }
+        FAIL() << "conversion must fail with string '" << message << "' in error message but it passed";
+    }
+
   public:
     ConverterTest() : t(NodeType::ProgramRoot), m(), v(m.values()), converted(){};
     ~ConverterTest() = default;
-
-    void convert() {
-        converted = Converter::process(t.makeTree()).root;
-    }
-
-    auto assertCorrectConversion() const {
-        ASSERT_EQ(m.dump(), converted->dump());
-    }
 };
 
 TEST_F(ConverterTest, can_process_empty_program) {
-    convert();
     assertCorrectConversion();
 }
 
@@ -103,14 +120,13 @@ TEST_F(ConverterTest, can_process_function_definition) {
     m.opInit<ReturnOp>();
     m.endBody();
 
-    convert();
     assertCorrectConversion();
 }
 
 TEST_F(ConverterTest, can_process_variable_declaration) {
     // clang-format off
     t.node(NodeType::FunctionDefinition).withChildren();
-        t.node(NodeType::FunctionName, "func1");
+        t.node(NodeType::FunctionName, "test");
         t.node(NodeType::FunctionArguments).withChildren();
             t.node(NodeType::FunctionArgument).withChildren();
                 t.node(NodeType::TypeName, ast::IntType);
@@ -142,7 +158,7 @@ TEST_F(ConverterTest, can_process_variable_declaration) {
     t.endChildren();
     // clang-format on
 
-    m.opInit<FunctionOp>("func1", m.tFunc({m.tI64}, m.tNone)).inward(v["w"], 0).withBody();
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64}, m.tNone)).inward(v["w"], 0).withBody();
     v["x"] = m.opInit<AllocateOp>(m.tPtr(m.tI64));
     v["y"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
     v["y_init"] = m.opInit<ConstantOp>(m.tF64, 1.2);
@@ -152,14 +168,13 @@ TEST_F(ConverterTest, can_process_variable_declaration) {
     m.opInit<ReturnOp>();
     m.endBody();
 
-    convert();
     assertCorrectConversion();
 }
 
 TEST_F(ConverterTest, can_process_expression) {
     // clang-format off
     t.node(NodeType::FunctionDefinition).withChildren();
-        t.node(NodeType::FunctionName, "func1");
+        t.node(NodeType::FunctionName, "test");
         t.node(NodeType::FunctionArguments).withChildren();
             t.node(NodeType::FunctionArgument).withChildren();
                 t.node(NodeType::TypeName, ast::IntType);
@@ -220,7 +235,7 @@ TEST_F(ConverterTest, can_process_expression) {
     t.endChildren();
     // clang-format on
 
-    m.opInit<FunctionOp>("func1", m.tFunc({m.tI64, m.tI64, m.tF64}, m.tNone))
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64, m.tF64}, m.tNone))
         .inward(v["x"], 0)
         .inward(v["y"], 1)
         .inward(v["z"], 2)
@@ -244,14 +259,13 @@ TEST_F(ConverterTest, can_process_expression) {
     m.opInit<ReturnOp>();
     m.endBody();
 
-    convert();
     assertCorrectConversion();
 }
 
 TEST_F(ConverterTest, can_process_expression_with_implicit_type_conversion) {
     // clang-format off
     t.node(NodeType::FunctionDefinition).withChildren();
-        t.node(NodeType::FunctionName, "func1");
+        t.node(NodeType::FunctionName, "test");
         t.node(NodeType::FunctionArguments).withChildren();
             t.node(NodeType::FunctionArgument).withChildren();
                 t.node(NodeType::TypeName, ast::IntType);
@@ -304,7 +318,7 @@ TEST_F(ConverterTest, can_process_expression_with_implicit_type_conversion) {
     t.endChildren();
     // clang-format on
 
-    m.opInit<FunctionOp>("func1", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
     v["a"] = m.opInit<AllocateOp>(m.tPtr(m.tI64));
     v[0] = m.opInit<ConstantOp>(m.tF64, 3.0);
     v[1] = m.opInit<ArithCastOp>(ArithCastOpKind::FloatToInt, m.tI64, v[0]);
@@ -327,14 +341,73 @@ TEST_F(ConverterTest, can_process_expression_with_implicit_type_conversion) {
     m.opInit<ReturnOp>();
     m.endBody();
 
-    convert();
+    assertCorrectConversion();
+}
+
+TEST_F(ConverterTest, can_process_print) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments).withChildren();
+            t.node(NodeType::FunctionArgument).withChildren();
+                t.node(NodeType::TypeName, ast::IntType);
+                t.node(NodeType::VariableName, "x");
+            t.endChildren();
+        t.endChildren();
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::VariableDeclaration).withChildren();
+                t.node(NodeType::TypeName, ast::FloatType);
+                t.node(NodeType::VariableName, "y");
+            t.endChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::FunctionCall).withChildren();
+                    t.node(NodeType::FunctionName, "print");
+                    t.node(NodeType::FunctionArguments).withChildren();
+                        t.node(NodeType::Expression).withChildren();
+                            t.node(NodeType::VariableName, "x");
+                        t.endChildren();
+                    t.endChildren();
+                t.endChildren();
+            t.endChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::FunctionCall).withChildren();
+                    t.node(NodeType::FunctionName, "print");
+                    t.node(NodeType::FunctionArguments).withChildren();
+                        t.node(NodeType::Expression).withChildren();
+                            t.node(NodeType::IntegerLiteralValue, 7);
+                        t.endChildren();
+                        t.node(NodeType::Expression).withChildren();
+                            t.node(NodeType::VariableName, "y");
+                        t.endChildren();
+                        t.node(NodeType::Expression).withChildren();
+                            t.node(NodeType::StringLiteralValue, "str");
+                        t.endChildren();
+                    t.endChildren();
+                t.endChildren();
+            t.endChildren();
+            t.node(NodeType::ReturnStatement);
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64}, m.tNone)).inward(v["x"], 0).withBody();
+    v["y"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+    m.opInit<PrintOp>(v["x"]);
+    v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(7));
+    v[1] = m.opInit<LoadOp>(v["y"]);
+    v[2] = m.opInit<ConstantOp>(m.tStr, std::string("str"));
+    m.op<PrintOp>(v[0], v[1], v[2]);
+    m.opInit<ReturnOp>();
+    m.endBody();
+
     assertCorrectConversion();
 }
 
 TEST_F(ConverterTest, can_process_input) {
     // clang-format off
     t.node(NodeType::FunctionDefinition).withChildren();
-        t.node(NodeType::FunctionName, "func1");
+        t.node(NodeType::FunctionName, "test");
         t.node(NodeType::FunctionArguments);
         t.node(NodeType::FunctionReturnType, ast::NoneType);
         t.node(NodeType::BranchRoot).withChildren();
@@ -364,7 +437,7 @@ TEST_F(ConverterTest, can_process_input) {
     t.endChildren();
     // clang-format on
 
-    m.opInit<FunctionOp>("func1", m.tFunc(m.tNone)).withBody();
+    m.opInit<FunctionOp>("test", m.tFunc(m.tNone)).withBody();
     v["x"] = m.opInit<AllocateOp>(m.tPtr(m.tI64));
     v["y"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
     m.opInit<InputOp>(v["y"]);
@@ -372,14 +445,192 @@ TEST_F(ConverterTest, can_process_input) {
     m.opInit<ReturnOp>();
     m.endBody();
 
-    convert();
+    assertCorrectConversion();
+}
+
+TEST_F(ConverterTest, can_process_function_call) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "int_to_float");
+        t.node(NodeType::FunctionArguments).withChildren();
+            t.node(NodeType::FunctionArgument).withChildren();
+                t.node(NodeType::TypeName, ast::IntType);
+                t.node(NodeType::VariableName, "x");
+            t.endChildren();
+        t.endChildren();
+        t.node(NodeType::FunctionReturnType, ast::FloatType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::ReturnStatement).withChildren();
+                t.node(NodeType::Expression).withChildren();
+                    t.node(NodeType::FloatingPointLiteralValue, 1.2);
+                t.endChildren();
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "float_to_none");
+        t.node(NodeType::FunctionArguments).withChildren();
+            t.node(NodeType::FunctionArgument).withChildren();
+                t.node(NodeType::TypeName, ast::FloatType);
+                t.node(NodeType::VariableName, "x");
+            t.endChildren();
+        t.endChildren();
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::ReturnStatement);
+        t.endChildren();
+    t.endChildren();
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "none_to_int");
+        t.node(NodeType::FunctionArguments);
+        t.node(NodeType::FunctionReturnType, ast::IntType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::ReturnStatement).withChildren();
+                t.node(NodeType::Expression).withChildren();
+                    t.node(NodeType::IntegerLiteralValue, 1);
+                t.endChildren();
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "many_to_int");
+        t.node(NodeType::FunctionArguments).withChildren();
+            t.node(NodeType::FunctionArgument).withChildren();
+                t.node(NodeType::TypeName, ast::IntType);
+                t.node(NodeType::VariableName, "x");
+            t.endChildren();
+            t.node(NodeType::FunctionArgument).withChildren();
+                t.node(NodeType::TypeName, ast::FloatType);
+                t.node(NodeType::VariableName, "y");
+            t.endChildren();
+            t.node(NodeType::FunctionArgument).withChildren();
+                t.node(NodeType::TypeName, ast::StrType);
+                t.node(NodeType::VariableName, "z");
+            t.endChildren();
+        t.endChildren();
+        t.node(NodeType::FunctionReturnType, ast::IntType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::ReturnStatement).withChildren();
+                t.node(NodeType::Expression).withChildren();
+                    t.node(NodeType::IntegerLiteralValue, 3);
+                t.endChildren();
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments).withChildren();
+            t.node(NodeType::FunctionArgument).withChildren();
+                t.node(NodeType::TypeName, ast::IntType);
+                t.node(NodeType::VariableName, "x");
+            t.endChildren();
+            t.node(NodeType::FunctionArgument).withChildren();
+                t.node(NodeType::TypeName, ast::FloatType);
+                t.node(NodeType::VariableName, "y");
+            t.endChildren();
+        t.endChildren();
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::VariableDeclaration).withChildren();
+                t.node(NodeType::TypeName, ast::FloatType);
+                t.node(NodeType::VariableName, "z");
+                t.node(NodeType::Expression).withChildren();
+                    t.node(NodeType::BinaryOperation, ast::BinaryOperation::Div).withChildren();
+                        t.node(NodeType::FunctionCall).withChildren();
+                            t.node(NodeType::FunctionName, "int_to_float");
+                            t.node(NodeType::FunctionArguments).withChildren();
+                                t.node(NodeType::Expression).withChildren();
+                                    t.node(NodeType::IntegerLiteralValue, 4);
+                                t.endChildren();
+                            t.endChildren();
+                        t.endChildren();
+                        t.node(NodeType::FloatingPointLiteralValue, 8.9);
+                    t.endChildren();
+                t.endChildren();
+            t.endChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::FunctionCall).withChildren();
+                    t.node(NodeType::FunctionName, "float_to_none");
+                    t.node(NodeType::FunctionArguments).withChildren();
+                        t.node(NodeType::Expression).withChildren();
+                            t.node(NodeType::BinaryOperation, ast::BinaryOperation::Add).withChildren();
+                                t.node(NodeType::FloatingPointLiteralValue, 5.6);
+                                t.node(NodeType::VariableName, "y");
+                            t.endChildren();
+                        t.endChildren();
+                    t.endChildren();
+                t.endChildren();
+            t.endChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::BinaryOperation, ast::BinaryOperation::Sub).withChildren();
+                    t.node(NodeType::FunctionCall).withChildren();
+                        t.node(NodeType::FunctionName, "none_to_int");
+                    t.endChildren();
+                    t.node(NodeType::FunctionCall).withChildren();
+                        t.node(NodeType::FunctionName, "many_to_int");
+                        t.node(NodeType::FunctionArguments).withChildren();
+                            t.node(NodeType::Expression).withChildren();
+                                t.node(NodeType::BinaryOperation, ast::BinaryOperation::Mult).withChildren();
+                                    t.node(NodeType::IntegerLiteralValue, 7);
+                                    t.node(NodeType::VariableName, "x");
+                                t.endChildren();
+                            t.endChildren();
+                            t.node(NodeType::Expression).withChildren();
+                                t.node(NodeType::VariableName, "y");
+                            t.endChildren();
+                            t.node(NodeType::Expression).withChildren();
+                                t.node(NodeType::StringLiteralValue, "str");
+                            t.endChildren();
+                        t.endChildren();
+                    t.endChildren();
+                t.endChildren();
+            t.endChildren();
+            t.node(NodeType::ReturnStatement);
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    m.opInit<FunctionOp>("int_to_float", m.tFunc({m.tI64}, m.tF64)).withBody();
+    v[0] = m.opInit<ConstantOp>(m.tF64, 1.2);
+    m.opInit<ReturnOp>(v[0]);
+    m.endBody();
+    m.opInit<FunctionOp>("float_to_none", m.tFunc({m.tF64}, m.tNone)).withBody();
+    m.opInit<ReturnOp>();
+    m.endBody();
+    m.opInit<FunctionOp>("none_to_int", m.tFunc(m.tI64)).withBody();
+    v[1] = m.opInit<ConstantOp>(m.tI64, int64_t(1));
+    m.opInit<ReturnOp>(v[1]);
+    m.endBody();
+    m.opInit<FunctionOp>("many_to_int", m.tFunc({m.tI64, m.tF64, m.tStr}, m.tI64)).withBody();
+    v[2] = m.opInit<ConstantOp>(m.tI64, int64_t(3));
+    m.opInit<ReturnOp>(v[2]);
+    m.endBody();
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+    v[10] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+    v[11] = m.opInit<ConstantOp>(m.tI64, int64_t(4));
+    v[12] = m.opInit<FunctionCallOp>("int_to_float", m.tF64).operand(v[11]);
+    v[13] = m.opInit<ConstantOp>(m.tF64, 8.9);
+    v[14] = m.opInit<ArithBinaryOp>(ArithBinOpKind::DivF, v[12], v[13]);
+    m.opInit<StoreOp>(v[10], v[14]);
+    v[15] = m.opInit<ConstantOp>(m.tF64, 5.6);
+    v[16] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[15], v["y"]);
+    m.opInit<FunctionCallOp>("float_to_none", m.tNone).operand(v[16]);
+    v[17] = m.opInit<FunctionCallOp>("none_to_int", m.tI64);
+    v[18] = m.opInit<ConstantOp>(m.tI64, int64_t(7));
+    v[19] = m.opInit<ArithBinaryOp>(ArithBinOpKind::MulI, v[18], v["x"]);
+    v[20] = m.opInit<ConstantOp>(m.tStr, std::string("str"));
+    v[21] = m.opInit<FunctionCallOp>("many_to_int", m.tI64).operands(v[19], v["y"], v[20]);
+    v[22] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubI, v[17], v[21]);
+    m.opInit<ReturnOp>();
+    m.endBody();
+
     assertCorrectConversion();
 }
 
 TEST_F(ConverterTest, can_process_if_statement) {
     // clang-format off
     t.node(NodeType::FunctionDefinition).withChildren();
-        t.node(NodeType::FunctionName, "func1");
+        t.node(NodeType::FunctionName, "test");
         t.node(NodeType::FunctionArguments).withChildren();
             t.node(NodeType::FunctionArgument).withChildren();
                 t.node(NodeType::TypeName, ast::IntType);
@@ -413,7 +664,7 @@ TEST_F(ConverterTest, can_process_if_statement) {
     t.endChildren();
     // clang-format on
 
-    m.opInit<FunctionOp>("func1", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
     v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(1));
     v[1] = m.opInit<LogicBinaryOp>(LogicBinOpKind::Equal, v["x"], v[0]);
     m.op<IfOp>(v[1]).withBody();
@@ -425,14 +676,13 @@ TEST_F(ConverterTest, can_process_if_statement) {
     m.opInit<ReturnOp>();
     m.endBody();
 
-    convert();
     assertCorrectConversion();
 }
 
 TEST_F(ConverterTest, can_process_if_else_statement) {
     // clang-format off
     t.node(NodeType::FunctionDefinition).withChildren();
-        t.node(NodeType::FunctionName, "func1");
+        t.node(NodeType::FunctionName, "test");
         t.node(NodeType::FunctionArguments).withChildren();
             t.node(NodeType::FunctionArgument).withChildren();
                 t.node(NodeType::TypeName, ast::IntType);
@@ -476,7 +726,7 @@ TEST_F(ConverterTest, can_process_if_else_statement) {
     t.endChildren();
     // clang-format on
 
-    m.opInit<FunctionOp>("func1", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
     v[0] = m.opInit<ConstantOp>(m.tF64, 4.5);
     v[1] = m.opInit<LogicBinaryOp>(LogicBinOpKind::LessF, v["y"], v[0]);
     m.op<IfOp>(v[1]).withBody();
@@ -492,14 +742,13 @@ TEST_F(ConverterTest, can_process_if_else_statement) {
     m.opInit<ReturnOp>();
     m.endBody();
 
-    convert();
     assertCorrectConversion();
 }
 
 TEST_F(ConverterTest, can_process_if_elif_statement) {
     // clang-format off
     t.node(NodeType::FunctionDefinition).withChildren();
-        t.node(NodeType::FunctionName, "func1");
+        t.node(NodeType::FunctionName, "test");
         t.node(NodeType::FunctionArguments).withChildren();
             t.node(NodeType::FunctionArgument).withChildren();
                 t.node(NodeType::TypeName, ast::IntType);
@@ -549,7 +798,7 @@ TEST_F(ConverterTest, can_process_if_elif_statement) {
     t.endChildren();
     // clang-format on
 
-    m.opInit<FunctionOp>("func1", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
     v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(8));
     v[1] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v["x"], v[0]);
     m.op<IfOp>(v[1]).withBody();
@@ -571,14 +820,13 @@ TEST_F(ConverterTest, can_process_if_elif_statement) {
     m.opInit<ReturnOp>();
     m.endBody();
 
-    convert();
     assertCorrectConversion();
 }
 
 TEST_F(ConverterTest, can_process_if_elif_else_statement) {
     // clang-format off
     t.node(NodeType::FunctionDefinition).withChildren();
-        t.node(NodeType::FunctionName, "func1");
+        t.node(NodeType::FunctionName, "test");
         t.node(NodeType::FunctionArguments).withChildren();
             t.node(NodeType::FunctionArgument).withChildren();
                 t.node(NodeType::TypeName, ast::IntType);
@@ -638,7 +886,7 @@ TEST_F(ConverterTest, can_process_if_elif_else_statement) {
     t.endChildren();
     // clang-format on
 
-    m.opInit<FunctionOp>("func1", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
     v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(8));
     v[1] = m.opInit<LogicBinaryOp>(LogicBinOpKind::LessEqualI, v["x"], v[0]);
     m.op<IfOp>(v[1]).withBody();
@@ -664,6 +912,195 @@ TEST_F(ConverterTest, can_process_if_elif_else_statement) {
     m.opInit<ReturnOp>();
     m.endBody();
 
-    convert();
     assertCorrectConversion();
+}
+
+TEST_F(ConverterTest, can_process_while_statement) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments).withChildren();
+            t.node(NodeType::FunctionArgument).withChildren();
+                t.node(NodeType::TypeName, ast::IntType);
+                t.node(NodeType::VariableName, "x");
+            t.endChildren();
+        t.endChildren();
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::WhileStatement).withChildren();
+                t.node(NodeType::Expression).withChildren();
+                    t.node(NodeType::BinaryOperation, ast::BinaryOperation::GreaterEqual).withChildren();
+                        t.node(NodeType::VariableName, "x");
+                        t.node(NodeType::IntegerLiteralValue, 1);
+                    t.endChildren();
+                t.endChildren();
+                t.node(NodeType::BranchRoot).withChildren();
+                    t.node(NodeType::Expression).withChildren();
+                        t.node(NodeType::BinaryOperation, ast::BinaryOperation::Mult).withChildren();
+                            t.node(NodeType::IntegerLiteralValue, 2);
+                            t.node(NodeType::VariableName, "x");
+                        t.endChildren();
+                    t.endChildren();
+                t.endChildren();
+            t.endChildren();
+            t.node(NodeType::ReturnStatement);
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64}, m.tNone)).inward(v["x"], 0).withBody();
+    m.op<WhileOp>().withBody();
+    m.op<ConditionOp>().withBody();
+    v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(1));
+    v[1] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualI, v["x"], v[0]);
+    m.endBody();
+    v[2] = m.opInit<ConstantOp>(m.tI64, int64_t(2));
+    m.opInit<ArithBinaryOp>(ArithBinOpKind::MulI, v[2], v["x"]);
+    m.endBody();
+    m.opInit<ReturnOp>();
+    m.endBody();
+
+    assertCorrectConversion();
+}
+
+TEST_F(ConverterTest, raises_error_on_undefined_variable_reference) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments);
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::VariableName, "x");
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    assertConversionError("variable was not declared");
+}
+
+TEST_F(ConverterTest, raises_error_on_variable_redeclaration) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments);
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::VariableDeclaration).withChildren();
+                t.node(NodeType::TypeName, ast::IntType);
+                t.node(NodeType::VariableName, "x");
+            t.endChildren();
+            t.node(NodeType::VariableDeclaration).withChildren();
+                t.node(NodeType::TypeName, ast::FloatType);
+                t.node(NodeType::VariableName, "x");
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    assertConversionError("variable is already declared");
+}
+
+TEST_F(ConverterTest, raises_error_on_assignment_to_rvalue) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments);
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::BinaryOperation, ast::BinaryOperation::Assign).withChildren();
+                    t.node(NodeType::IntegerLiteralValue, 2);
+                    t.node(NodeType::IntegerLiteralValue, 3);
+                t.endChildren();
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    assertConversionError("left-handed operand of an assignment expression must be a variable name");
+}
+
+TEST_F(ConverterTest, raises_error_on_print_in_expression) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments);
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::BinaryOperation, ast::BinaryOperation::Add).withChildren();
+                    t.node(NodeType::IntegerLiteralValue, 2);
+                    t.node(NodeType::FunctionCall).withChildren();
+                        t.node(NodeType::FunctionName, "print");
+                    t.endChildren();
+                t.endChildren();
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    assertConversionError("print() statement cannot be within an expression context");
+}
+
+TEST_F(ConverterTest, raises_error_on_input_in_expression) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments);
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::BinaryOperation, ast::BinaryOperation::Add).withChildren();
+                    t.node(NodeType::IntegerLiteralValue, 2);
+                    t.node(NodeType::FunctionCall).withChildren();
+                        t.node(NodeType::FunctionName, "input");
+                    t.endChildren();
+                t.endChildren();
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    assertConversionError("input() statement must be a right-handed operand of an isolated assignment expression");
+}
+
+TEST_F(ConverterTest, raises_error_on_call_to_undefined_function) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments);
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::FunctionCall).withChildren();
+                    t.node(NodeType::FunctionName, "func");
+                t.endChildren();
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    assertConversionError("call to undefined function");
+}
+
+TEST_F(ConverterTest, raises_error_on_non_numeric_values_in_expression) {
+    // clang-format off
+    t.node(NodeType::FunctionDefinition).withChildren();
+        t.node(NodeType::FunctionName, "test");
+        t.node(NodeType::FunctionArguments);
+        t.node(NodeType::FunctionReturnType, ast::NoneType);
+        t.node(NodeType::BranchRoot).withChildren();
+            t.node(NodeType::Expression).withChildren();
+                t.node(NodeType::BinaryOperation, ast::BinaryOperation::Div).withChildren();
+                    t.node(NodeType::StringLiteralValue, "str");
+                    t.node(NodeType::IntegerLiteralValue, 2);
+                t.endChildren();
+            t.endChildren();
+        t.endChildren();
+    t.endChildren();
+    // clang-format on
+
+    assertConversionError("unexpected expression type");
 }

@@ -267,14 +267,19 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         return error.str();
     };
     if (isAssignment(binOp)) {
-        if (!lhsType->is<PointerType>())
+        if (lhsType->is<PointerType>())
+            lhsType = lhsType->as<PointerType>().pointee;
+        else
             ctx.pushError(node, "left-handed operand of an assignment expression must be a variable name");
-        lhsType = lhsType->as<PointerType>().pointee;
     }
-    if (!utils::isAny<IntegerType, FloatType>(lhsType))
+    if (!utils::isAny<IntegerType, FloatType>(lhsType)) {
         ctx.pushError(node, typeError(lhsType));
-    if (!utils::isAny<IntegerType, FloatType>(rhsType))
+        throw ctx.errors;
+    }
+    if (!utils::isAny<IntegerType, FloatType>(rhsType)) {
         ctx.pushError(node, typeError(rhsType));
+        throw ctx.errors;
+    }
     if (*lhsType != *rhsType) {
         auto needsType = deduceTargetCastType(lhsType, rhsType, isAssignment(binOp));
         if (auto castOp = insertNumericCastOp(needsType, lhs, ctx.builder, lhsNode->ref))
