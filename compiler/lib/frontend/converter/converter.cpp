@@ -20,6 +20,7 @@
 #include "compiler/optree/types.hpp"
 #include "compiler/optree/value.hpp"
 #include "compiler/utils/helpers.hpp"
+#include "compiler/utils/language.hpp"
 #include "compiler/utils/source_ref.hpp"
 
 #include "converter/converter_context.hpp"
@@ -30,6 +31,10 @@ using namespace converter;
 using ast::Node;
 using ast::NodeType;
 using ast::SyntaxTree;
+
+namespace language = utils::language;
+
+namespace {
 
 Type::Ptr convertType(ast::TypeId typeId) {
     switch (typeId) {
@@ -83,7 +88,7 @@ bool isRhsInAssignment(const Node::Ptr &node) {
 }
 
 bool isFunctionCallInputNode(const Node::Ptr &node) {
-    return node->type == NodeType::FunctionCall && node->firstChild()->str() == "input";
+    return node->type == NodeType::FunctionCall && node->firstChild()->str() == language::funcInput;
 }
 
 bool isAssignment(ast::BinaryOperation binOp) {
@@ -222,20 +227,23 @@ Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 Value::Ptr visitIntegerLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    auto value = static_cast<int64_t>(node->intNum());
+    auto value = static_cast<NativeInt>(node->intNum());
     return ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), value).result();
 }
 
 Value::Ptr visitBooleanLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(node->ref, TypeStorage::boolType(), node->boolean()).result();
+    auto value = static_cast<NativeBool>(node->boolean());
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::boolType(), value).result();
 }
 
 Value::Ptr visitFloatingPointLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(node->ref, TypeStorage::floatType(), node->fpNum()).result();
+    auto value = static_cast<NativeFloat>(node->fpNum());
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::floatType(), value).result();
 }
 
 Value::Ptr visitStringLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(node->ref, TypeStorage::strType(), node->str()).result();
+    auto value = static_cast<NativeStr>(node->str());
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::strType(), value).result();
 }
 
 Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
@@ -332,7 +340,7 @@ Value::Ptr visitVariableName(const Node::Ptr &node, ConverterContext &ctx) {
 
 Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
     const std::string &name = node->firstChild()->str();
-    if (name == "print") {
+    if (name == language::funcPrint) {
         if (node->parent->type != NodeType::Expression) {
             ctx.pushError(node, "print() statement cannot be within an expression context");
             throw ctx.errors;
@@ -343,7 +351,7 @@ Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.insert<PrintOp>(node->ref, arguments);
         return {};
     }
-    if (name == "input") {
+    if (name == language::funcInput) {
         ctx.pushError(node, "input() statement must be a right-handed operand of an isolated assignment expression");
         throw ctx.errors;
     }
@@ -411,6 +419,8 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in visitNode");
     }
 }
+
+} // namespace
 
 Program Converter::process(const SyntaxTree &syntaxTree) {
     ConverterContext ctx;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -72,10 +71,11 @@ struct ReturnOp : Adaptor {
 struct ConstantOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Constant")
 
-    void init(const Type::Ptr &type, int64_t value);
-    void init(const Type::Ptr &type, bool value);
-    void init(const Type::Ptr &type, double value);
-    void init(const Type::Ptr &type, const std::string &value);
+    template <typename T>
+    void init(const Type::Ptr &type, const T &value) {
+        op->results.emplace_back(Value::make(type, op));
+        op->addAttr(value);
+    }
 
     template <typename T>
     void init(const Type::Ptr &type, const T &value) {
