@@ -261,8 +261,10 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         error << "unexpected expression type: " << prettyTypeName(type) << ", supported types are: int, bool, float";
         return error.str();
     };
-    if (!utils::isAny<IntegerType, FloatType>(lhsType))
-        ctx.pushError(node, typeError(lhsType));
+    if (!utils::isAny<IntegerType, FloatType>(lhsType)) {
+        if (!lhsType->is<PointerType>() || !utils::isAny<IntegerType, FloatType>(lhsType->as<PointerType>().pointee))
+            ctx.pushError(node, typeError(lhsType));
+    }
     if (!utils::isAny<IntegerType, FloatType>(rhsType))
         ctx.pushError(node, typeError(rhsType));
     if (lhsType != rhsType) {
