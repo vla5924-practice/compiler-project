@@ -232,20 +232,23 @@ Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 Value::Ptr visitIntegerLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    auto value = static_cast<int64_t>(node->intNum());
+    auto value = static_cast<NativeInt>(node->intNum());
     return ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), value).result();
 }
 
 Value::Ptr visitBooleanLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(node->ref, TypeStorage::boolType(), node->boolean()).result();
+    auto value = static_cast<NativeBool>(node->boolean());
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::boolType(), value).result();
 }
 
 Value::Ptr visitFloatingPointLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(node->ref, TypeStorage::floatType(), node->fpNum()).result();
+    auto value = static_cast<NativeFloat>(node->fpNum());
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::floatType(), value).result();
 }
 
 Value::Ptr visitStringLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(node->ref, TypeStorage::strType(), node->str()).result();
+    auto value = static_cast<NativeStr>(node->str());
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::strType(), value).result();
 }
 
 Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {

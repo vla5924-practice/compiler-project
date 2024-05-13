@@ -30,7 +30,7 @@ TEST_F(EraseUnusedOpsTest, can_erase_unused_ops) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v[0], 0).inward(v[1], 1).withBody();
-        v[2] = m.opInit<ConstantOp>(m.tI64, int64_t(123));
+        v[2] = m.opInit<ConstantOp>(m.tI64, 123);
         v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[0], v[1]);
         v[4] = m.opInit<ArithCastOp>(ArithCastOpKind::IntToFloat, m.tF64, v[0]);
         v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::LessEqualI, v[0], v[1]);
@@ -52,7 +52,7 @@ TEST_F(EraseUnusedOpsTest, can_erase_chain_of_unused_ops) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64}, m.tNone)).inward(v[0], 0).withBody();
-        v[1] = m.opInit<ConstantOp>(m.tI64, int64_t(123));
+        v[1] = m.opInit<ConstantOp>(m.tI64, 123);
         v[2] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[0], v[1]);
         v[3] = m.opInit<ArithCastOp>(ArithCastOpKind::IntToFloat, m.tF64, v[2]);
         m.opInit<ReturnOp>();
@@ -72,7 +72,7 @@ TEST_F(EraseUnusedOpsTest, can_keep_used_ops) {
     auto &&[m, v] = getActual();
 
     m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v[0], 0).inward(v[1], 1).withBody();
-    v[2] = m.opInit<ConstantOp>(m.tI64, int64_t(123));
+    v[2] = m.opInit<ConstantOp>(m.tI64, 123);
     v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[0], v[1]);
     v[4] = m.opInit<ArithCastOp>(ArithCastOpKind::IntToFloat, m.tF64, v[0]);
     v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::LessEqualI, v[0], v[1]);

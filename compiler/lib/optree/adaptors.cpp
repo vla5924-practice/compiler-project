@@ -1,6 +1,5 @@
 #include "adaptors.hpp"
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -45,26 +44,6 @@ Value::Ptr ConditionOp::terminator() const {
     if (op->body.empty())
         return {};
     return op->body.back()->result(0);
-}
-
-void ConstantOp::init(const Type::Ptr &type, int64_t value) {
-    op->results.emplace_back(Value::make(type, op));
-    op->addAttr(value);
-}
-
-void ConstantOp::init(const Type::Ptr &type, bool value) {
-    op->results.emplace_back(Value::make(type, op));
-    op->addAttr(value);
-}
-
-void ConstantOp::init(const Type::Ptr &type, double value) {
-    op->results.emplace_back(Value::make(type, op));
-    op->addAttr(value);
-}
-
-void ConstantOp::init(const Type::Ptr &type, const std::string &value) {
-    op->results.emplace_back(Value::make(type, op));
-    op->addAttr(value);
 }
 
 void ElseOp::init() {
