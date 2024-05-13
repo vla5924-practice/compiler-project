@@ -7,6 +7,7 @@
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/operation.hpp"
 #include "compiler/utils/helpers.hpp"
+#include "compiler/utils/language.hpp"
 
 #include "optimizer/opt_builder.hpp"
 #include "optimizer/transform.hpp"
@@ -37,8 +38,8 @@ struct EraseUnusedFunctions : public Transform<ModuleOp> {
             if (funcOp)
                 getInnerFunctionCallNames(moduleChild, funcOp.name(), edges);
         }
-        auto &mainFunctions = edges["main"];
-        std::unordered_set<std::string> usedFunctions = {"main"};
+        auto &mainFunctions = edges[utils::language::funcMain];
+        std::unordered_set<std::string> usedFunctions = {utils::language::funcMain};
         std::deque<std::string> queue(mainFunctions.begin(), mainFunctions.end());
         while (!queue.empty()) {
             auto &name = queue.front();
@@ -50,7 +51,7 @@ struct EraseUnusedFunctions : public Transform<ModuleOp> {
             queue.pop_front();
         }
 
-        for (const auto &op : utils::advanceEarly(op->body.begin(), op->body.end())) {
+        for (const auto &op : utils::advanceEarly(op->body)) {
             if (!usedFunctions.contains(op->as<FunctionOp>().name())) {
                 builder.erase(op);
             }
