@@ -1,11 +1,9 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <ostream>
 #include <string>
 #include <string_view>
-#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -132,16 +130,7 @@ class DeclarativeModule {
 
     template <typename T>
     DeclarativeModule &attr(const T &value) {
-        if constexpr (std::is_same_v<std::remove_cvref_t<T>, bool>)
-            current->addAttr(value);
-        else if constexpr (std::is_same_v<std::remove_cvref_t<T>, const char *>)
-            current->addAttr(std::string(value));
-        else if constexpr (std::is_integral_v<T>)
-            current->addAttr(static_cast<int64_t>(value));
-        else if constexpr (std::is_floating_point_v<T>)
-            current->addAttr(static_cast<double>(value));
-        else
-            current->addAttr(value);
+        current->addAttr(value);
         return *this;
     }
 

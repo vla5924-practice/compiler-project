@@ -6,13 +6,20 @@
 #include <ostream>
 #include <tuple>
 #include <type_traits>
+#include <variant>
 
-#if __has_builtin(__builtin_unreachable)
+#if defined(_MSC_VER) && !defined(__clang__) // MSVC
 #define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
-    assert(false && (MESSAGE));                                                                                        \
-    __builtin_unreachable()
-#else
-#define COMPILER_UNREACHABLE(MESSAGE) assert(false && (MESSAGE))
+    do {                                                                                                               \
+        assert(false && (MESSAGE));                                                                                    \
+        __assume(false);                                                                                               \
+    } while (0)
+#else // GCC, Clang
+#define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
+    do {                                                                                                               \
+        assert(false && (MESSAGE));                                                                                    \
+        __builtin_unreachable();                                                                                       \
+    } while (0)
 #endif
 
 namespace utils {
@@ -137,7 +144,20 @@ class ZippedRanges {
     }
 };
 
+template <typename RequiredType, typename VariantType>
+struct CanHoldAlternative;
+
+template <typename RequiredType, typename... SupportedTypes>
+struct CanHoldAlternative<RequiredType, std::variant<SupportedTypes...>>
+    : std::disjunction<std::is_same<RequiredType, SupportedTypes>...> {};
+
 } // namespace detail
+
+template <typename RequiredType, typename... AllowedTypes>
+constexpr bool typeOneOf = std::disjunction_v<std::is_same<RequiredType, AllowedTypes>...>;
+
+template <typename RequiredType, typename VariantType>
+constexpr bool canHoldAlternative = detail::CanHoldAlternative<std::remove_cvref_t<RequiredType>, VariantType>::value;
 
 template <typename Range, typename UnaryPred, typename NullaryPred>
 void interleave(const Range &values, const UnaryPred &printValue, const NullaryPred &printSep) {
@@ -159,6 +179,12 @@ void interleaveComma(std::ostream &stream, const Range &values, const UnaryPred 
 template <typename Iterator>
 auto advanceEarly(Iterator begin, Iterator end) {
     return detail::AdvanceEarlyRange<Iterator>(begin, end);
+}
+
+template <typename Range>
+auto advanceEarly(Range &&range) {
+    using Iterator = decltype(std::begin(range));
+    return detail::AdvanceEarlyRange<Iterator>(std::begin(range), std::end(range));
 }
 
 template <typename Range>

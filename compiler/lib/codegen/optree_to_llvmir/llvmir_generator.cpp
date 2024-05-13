@@ -216,14 +216,14 @@ void LLVMIRGenerator::visit(const ConstantOp &op) {
     if (type->is<BoolType>())
         return result(llvm::ConstantInt::get(convertType(type), op.value().as<bool>()));
     if (type->is<IntegerType>()) {
-        auto num = op.value().as<int64_t>();
+        auto num = static_cast<int64_t>(op.value().as<NativeInt>());
         auto *value = llvm::ConstantInt::get(convertType(type), reinterpret_cast<uint64_t &>(num), /*IsSigned*/ true);
         return result(value);
     }
     if (type->is<FloatType>())
-        return result(llvm::ConstantFP::get(convertType(type), op.value().as<double>()));
+        return result(llvm::ConstantFP::get(convertType(type), static_cast<double>(op.value().as<NativeFloat>())));
     if (type->is<StrType>())
-        return result(getGlobalString(op.value().as<std::string>()));
+        return result(getGlobalString(op.value().as<NativeStr>()));
     COMPILER_UNREACHABLE("unexpected result type in ConstantOp");
 }
 
