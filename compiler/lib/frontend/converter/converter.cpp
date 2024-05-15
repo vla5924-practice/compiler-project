@@ -170,6 +170,11 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
             return;
         }
         auto defValue = visitNode(defNode, ctx);
+        const auto &defType = defValue->type;
+        if (*type != *defType) {
+            if (auto castOp = insertNumericCastOp(type, defValue, ctx.builder, defNode->ref))
+                defValue = castOp.result();
+        }
         ctx.insert<StoreOp>(defNode->ref, allocOp.result(), defValue);
     }
 }
@@ -257,18 +262,28 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
     }
     auto lhs = visitNode(lhsNode, ctx);
     auto rhs = visitNode(rhsNode, ctx);
-    const Type::Ptr &lhsType = lhs->type;
+    Type::Ptr lhsType = lhs->type;
     const Type::Ptr &rhsType = rhs->type;
     auto typeError = [](const Type::Ptr &type) {
         std::stringstream error;
         error << "unexpected expression type: " << prettyTypeName(type) << ", supported types are: int, bool, float";
         return error.str();
     };
-    if (!utils::isAny<IntegerType, FloatType>(lhsType))
+    if (isAssignment(binOp)) {
+        if (lhsType->is<PointerType>())
+            lhsType = lhsType->as<PointerType>().pointee;
+        else
+            ctx.pushError(node, "left-handed operand of an assignment expression must be a variable name");
+    }
+    if (!utils::isAny<IntegerType, FloatType>(lhsType)) {
         ctx.pushError(node, typeError(lhsType));
-    if (!utils::isAny<IntegerType, FloatType>(rhsType))
+        throw ctx.errors;
+    }
+    if (!utils::isAny<IntegerType, FloatType>(rhsType)) {
         ctx.pushError(node, typeError(rhsType));
-    if (lhsType != rhsType) {
+        throw ctx.errors;
+    }
+    if (*lhsType != *rhsType) {
         auto needsType = deduceTargetCastType(lhsType, rhsType, isAssignment(binOp));
         if (auto castOp = insertNumericCastOp(needsType, lhs, ctx.builder, lhsNode->ref))
             lhs = castOp.result();
