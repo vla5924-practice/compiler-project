@@ -116,8 +116,9 @@ void Operation::addToBody(const Operation::Ptr &op) {
 }
 
 void Operation::erase() {
-    for (auto &innerOp : utils::advanceEarly(body.rbegin(), body.rend()))
-        innerOp->erase();
+    while (!body.empty()) {
+        body.back()->erase();
+    }
     for (const auto &result : results) {
         if (!result->uses.empty())
             throw std::logic_error("Operation cannot be erased since its results still have uses");

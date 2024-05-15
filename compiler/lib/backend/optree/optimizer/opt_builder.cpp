@@ -35,14 +35,16 @@ Operation::Ptr OptBuilder::clone(const Operation::Ptr &op) {
 void OptBuilder::erase(const Operation::Ptr &op) {
     if (op->parent)
         setInsertPointAfter(op);
-    for (auto &op : utils::reversed(op->body))
-        erase(op);
+    while (!op->body.empty()) {
+        erase(op->body.back());
+    }
     op->erase();
     notifier.onErase(op);
 }
 
 void OptBuilder::update(const Operation::Ptr &op, const std::function<void()> &actor) {
-    actor();
+    if (actor)
+        actor();
     notifier.onUpdate(op);
 }
 

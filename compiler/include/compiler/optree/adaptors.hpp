@@ -51,8 +51,8 @@ struct FunctionOp : Adaptor {
 struct FunctionCallOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "FunctionCall")
 
-    void init(const std::string &name, const Type::Ptr &resultType, const std::vector<Value::Ptr> &arguments);
-    void init(const FunctionOp &callee, const std::vector<Value::Ptr> &arguments);
+    void init(const std::string &name, const Type::Ptr &resultType, const std::vector<Value::Ptr> &arguments = {});
+    void init(const FunctionOp &callee, const std::vector<Value::Ptr> &arguments = {});
 
     OPTREE_ADAPTOR_ATTRIBUTE(name, setName, std::string, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
