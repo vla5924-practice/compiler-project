@@ -1,0 +1,10 @@
+#pragma once
+
+namespace cli {
+
+constexpr const char *version = "@VERSION_MAJOR@.@VERSION_MINOR@@VERSION_SUFFIX@";
+constexpr const char *versionMajor = "@VERSION_MAJOR@";
+constexpr const char *versionMinor = "@VERSION_MINOR@";
+constexpr const char *versionSuffix = "@VERSION_SUFFIX@";
+
+} // namespace cli
