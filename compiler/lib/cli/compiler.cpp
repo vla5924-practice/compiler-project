@@ -107,8 +107,7 @@ int Compiler::runPreprocessor() {
         return 3;
     }
     if (opt.debug) {
-        std::cerr << "PREPROCESSOR:\n";
-        dumping::dump(source);
+        std::cerr << "PREPROCESSOR:\n" << dumping::dump(source);
     }
     measuredTimes[stage::preprocessor] = timer.elapsed();
     return 0;
@@ -125,8 +124,7 @@ int Compiler::runLexer() {
         return 3;
     }
     if (opt.debug) {
-        std::cerr << "LEXER:\n";
-        dumping::dump(tokens);
+        std::cerr << "LEXER:\n" << dumping::dump(tokens);
     }
     measuredTimes[stage::lexer] = timer.elapsed();
     return 0;
@@ -217,9 +215,17 @@ int Compiler::runAstLLVMIRGenerator() {
         std::cerr << "LLVMIR GENERATOR:\n";
         std::cerr << generator.dump();
     }
+    bool printOutput = opt.output == "-";
     if (!opt.compile) {
-        generator.writeToFile(opt.output);
+        if (printOutput)
+            std::cout << generator.dump();
+        else
+            generator.writeToFile(opt.output);
         return 0;
+    }
+    if (printOutput) {
+        std::cerr << "Unable to print binary file to stdout\n";
+        return 3;
     }
 
     TemporaryDirectory tempDir;
@@ -238,8 +244,7 @@ int Compiler::runAstLLVMIRGenerator() {
         bool cmdFailed = (std::system(llcCmd.c_str()) || std::system(clangCmd.c_str()));
         if (cmdFailed)
             return 3;
-        else
-            std::filesystem::copy_file(exeFile, opt.output);
+        std::filesystem::copy_file(exeFile, opt.output);
     } catch (std::exception &e) {
         std::cerr << e.what();
         return 3;
@@ -284,15 +289,15 @@ int Compiler::runOptreeLLVMIRGenerator() {
         std::cerr << "LLVMIR GENERATOR:\n";
         std::cerr << generator.dump();
     }
+    bool printOutput = opt.output == "-";
     if (!opt.compile) {
-        auto output = opt.output.value_or("-");
-        if (output == "-")
+        if (printOutput)
             std::cout << generator.dump();
         else
-            generator.dumpToFile(output);
+            generator.dumpToFile(opt.output);
         return 0;
     }
-    if (!opt.output.has_value()) {
+    if (printOutput) {
         std::cerr << "Unable to print binary file to stdout\n";
         return 3;
     }
@@ -313,7 +318,7 @@ int Compiler::runOptreeLLVMIRGenerator() {
         bool cmdFailed = (std::system(llcCmd.c_str()) || std::system(clangCmd.c_str()));
         if (cmdFailed)
             return 3;
-        std::filesystem::copy_file(exeFile, opt.output.value());
+        std::filesystem::copy_file(exeFile, opt.output);
     } catch (std::exception &e) {
         std::cerr << e.what();
         return 3;
@@ -324,6 +329,11 @@ int Compiler::runOptreeLLVMIRGenerator() {
 #endif
 
 int Compiler::run() {
+    if (opt.debug) {
+        std::cerr << "Provided options: ";
+        opt.dump();
+        std::cerr << '\n';
+    }
     RETURN_IF_NONZERO(readFiles());
     RETURN_IF_NONZERO(runPreprocessor());
     RETURN_IF_STOPAFTER(opt, stage::preprocessor);
@@ -343,8 +353,10 @@ int Compiler::run() {
     } else if (opt.path == compilation_path::optree) {
         RETURN_IF_NONZERO(runConverter());
         RETURN_IF_STOPAFTER(opt, stage::converter);
-        RETURN_IF_NONZERO(runOptreeOptimizer());
-        RETURN_IF_STOPAFTER(opt, stage::optimizer);
+        if (opt.optimize) {
+            RETURN_IF_NONZERO(runOptreeOptimizer());
+            RETURN_IF_STOPAFTER(opt, stage::optimizer);
+        }
 #ifdef ENABLE_CODEGEN_OPTREE_TO_LLVMIR
         RETURN_IF_NONZERO(runOptreeLLVMIRGenerator());
         RETURN_IF_STOPAFTER(opt, stage::codegen);

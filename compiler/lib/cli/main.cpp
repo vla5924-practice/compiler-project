@@ -12,10 +12,6 @@ int main(int argc, char *argv[]) {
         std::cerr << err.what() << "\n";
         return 1;
     }
-    if (opt.help) {
-        std::cerr << opt.helpMessage;
-        return 0;
-    }
 
     Compiler compiler(opt);
     int ret = compiler.run();

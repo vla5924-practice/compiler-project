@@ -55,21 +55,21 @@ constexpr std::string_view optree = "optree";
 } // namespace compilation_path
 
 struct Options {
-    bool help;
-    bool version;
     bool debug;
     std::string path;
     bool time;
+    bool optimize;
     std::optional<std::string> stopAfter;
-    std::optional<std::string> optimize;
 #ifdef LLVMIR_CODEGEN_ENABLED
     bool compile;
     std::string clang;
     std::string llc;
-    std::optional<std::string> output;
+    std::string output;
 #endif
     std::vector<std::string> files;
     std::string helpMessage;
+
+    void dump() const;
 };
 
 class OptionsError : public std::exception {

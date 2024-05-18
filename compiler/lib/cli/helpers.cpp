@@ -8,7 +8,11 @@ namespace cli {
 
 TemporaryDirectory::TemporaryDirectory() {
     char tmpnamResult[L_tmpnam] = {0};
+#if defined(_MSC_VER)
     tmpnam_s(tmpnamResult);
+#else
+    tmpnam(tmpnamResult);
+#endif
     dir = tmpnamResult;
     std::filesystem::create_directory(dir);
 }
