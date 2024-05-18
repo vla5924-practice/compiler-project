@@ -3,17 +3,13 @@
 #include <exception>
 #include <iostream>
 #include <iterator>
-#include <numeric>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 #ifdef ENABLE_CODEGEN_AST_TO_LLVMIR
 #include <cstdlib>
 #include <filesystem>
-#include <random>
-#include <sstream>
 #endif
 
 #include "compiler/backend/ast/optimizer/optimizer.hpp"
@@ -289,8 +285,16 @@ int Compiler::runOptreeLLVMIRGenerator() {
         std::cerr << generator.dump();
     }
     if (!opt.compile) {
-        generator.dumpToFile(opt.output);
+        auto output = opt.output.value_or("-");
+        if (output == "-")
+            std::cout << generator.dump();
+        else
+            generator.dumpToFile(output);
         return 0;
+    }
+    if (!opt.output.has_value()) {
+        std::cerr << "Unable to print binary file to stdout\n";
+        return 3;
     }
 
     TemporaryDirectory tempDir;
@@ -309,8 +313,7 @@ int Compiler::runOptreeLLVMIRGenerator() {
         bool cmdFailed = (std::system(llcCmd.c_str()) || std::system(clangCmd.c_str()));
         if (cmdFailed)
             return 3;
-        else
-            std::filesystem::copy_file(exeFile, opt.output);
+        std::filesystem::copy_file(exeFile, opt.output.value());
     } catch (std::exception &e) {
         std::cerr << e.what();
         return 3;

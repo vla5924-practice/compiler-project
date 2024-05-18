@@ -15,6 +15,7 @@ namespace cli {
 namespace arg {
 
 constexpr std::string_view help = "--help";
+constexpr std::string_view version = "--version";
 constexpr std::string_view debug = "--debug";
 constexpr std::string_view optimize = "--optimize";
 constexpr std::string_view time = "--time";
@@ -55,6 +56,7 @@ constexpr std::string_view optree = "optree";
 
 struct Options {
     bool help;
+    bool version;
     bool debug;
     std::string path;
     bool time;
@@ -64,7 +66,7 @@ struct Options {
     bool compile;
     std::string clang;
     std::string llc;
-    std::string output;
+    std::optional<std::string> output;
 #endif
     std::vector<std::string> files;
     std::string helpMessage;

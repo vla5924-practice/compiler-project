@@ -7,8 +7,9 @@
 namespace cli {
 
 Options parseArguments(int argc, const char *const argv[]) {
-    argparse::ArgumentParser program("compiler", version, argparse::default_arguments::none);
+    argparse::ArgumentParser program("compiler", version);
     program.add_argument("-h", arg::help).help("show help message and exit").flag();
+    program.add_argument(arg::version).help("show version info").flag();
     program.add_argument(arg::debug).help("print debug info").flag();
     program.add_argument(arg::path)
         .help("compilation path")
@@ -30,10 +31,7 @@ Options parseArguments(int argc, const char *const argv[]) {
     program.add_argument(arg::llc).help("path to llc executable").default_value("llc");
     program.add_argument("-o", arg::output).help("output file");
 #endif
-    program.add_argument(arg::files)
-        .help("source files (separated by spaces)")
-        .required()
-        .nargs(argparse::nargs_pattern::at_least_one);
+    program.add_argument(arg::files).help("source files (separated by spaces)").remaining();
 
     try {
         program.parse_args(argc, argv);
@@ -54,7 +52,8 @@ Options parseArguments(int argc, const char *const argv[]) {
     options.compile = program.get<bool>(arg::compile);
     options.clang = program.get<std::string>(arg::clang);
     options.llc = program.get<std::string>(arg::llc);
-    options.output = program.get<std::string>(arg::output);
+    if (program.is_used(arg::output))
+        options.output = program.get<std::string>(arg::output);
 #endif
     options.files = program.get<std::vector<std::string>>(arg::files);
     options.helpMessage = program.help().str();
