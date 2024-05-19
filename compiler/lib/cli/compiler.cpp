@@ -23,6 +23,7 @@
 #include "compiler/frontend/parser/parser.hpp"
 #include "compiler/frontend/preprocessor/preprocessor.hpp"
 #include "compiler/utils/error_buffer.hpp"
+#include "compiler/utils/helpers.hpp"
 #include "compiler/utils/source_files.hpp"
 #include "compiler/utils/timer.hpp"
 
@@ -134,7 +135,11 @@ int Compiler::readFiles() {
     }
     try {
         for (const std::string &path : opt.files) {
-            SourceFile other = utils::readFile(path);
+            if (!std::filesystem::exists(path)) {
+                std::cerr << "File is non-existent: " << path << '\n';
+                return 2;
+            }
+            SourceFile other = utils::readFile(std::filesystem::canonical(path).string());
             source.insert(source.end(), std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()));
             if (opt.debug)
                 std::cerr << "Read file " << path << "\n";
