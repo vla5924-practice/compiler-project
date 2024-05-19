@@ -42,6 +42,8 @@ enum class NodeType {
     BinaryOperation,
     BooleanLiteralValue,
     BranchRoot,
+    BreakStatement,
+    ContinueStatement,
     ElifStatement,
     ElseStatement,
     Expression,
@@ -59,6 +61,7 @@ enum class NodeType {
     IntegerLiteralValue,
     ListAccessor,
     ListStatement,
+    PassStatement,
     ProgramRoot,
     ReturnStatement,
     StringLiteralValue,
@@ -68,6 +71,7 @@ enum class NodeType {
     VariableDeclaration,
     VariableName,
     WhileStatement,
+    
 };
 
 } // namespace ast

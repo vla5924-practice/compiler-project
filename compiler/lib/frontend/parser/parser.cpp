@@ -433,6 +433,17 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
     return postfixForm;
 }
 
+void parseControlFlowStatement(ParserContext &ctx) {
+    assert(ctx.tokenIter->is(Keyword::Break) || ctx.tokenIter->is(Keyword::Continue) ||
+           ctx.tokenIter->is(Keyword::Pass));
+    ctx.goNextToken();
+    if (!ctx.token().is(Special::EndOfExpression)) {
+        ctx.pushError("Unexepted tokens after control flow keyword");
+    }
+    ctx.goParentNode();
+    ctx.goNextToken();
+}
+
 void parseBranchRoot(ParserContext &ctx) {
     while (ctx.nestingLevel > 0) {
         if (ctx.tokenIter == ctx.tokenEnd)
@@ -482,6 +493,18 @@ void parseBranchRoot(ParserContext &ctx) {
             }
         } else if (currToken.is(Keyword::Return)) {
             ctx.node = ctx.pushChildNode(NodeType::ReturnStatement);
+        } else if (currToken.is(Keyword::Continue)) {
+            ctx.node = ctx.pushChildNode(NodeType::ContinueStatement);
+            parseControlFlowStatement(ctx);
+            continue;
+        } else if (currToken.is(Keyword::Break)) {
+            ctx.node = ctx.pushChildNode(NodeType::BreakStatement);
+            parseControlFlowStatement(ctx);
+            continue;
+        } else if (currToken.is(Keyword::Pass)) {
+            ctx.node = ctx.pushChildNode(NodeType::PassStatement);
+            parseControlFlowStatement(ctx);
+            continue;
         } else {
             ctx.node = ctx.pushChildNode(NodeType::Expression);
         }

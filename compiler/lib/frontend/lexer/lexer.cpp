@@ -24,6 +24,7 @@ std::unordered_map<std::string_view, Keyword> keywords = {
     {"not", Keyword::Not},        {"in", Keyword::In},
     {"True", Keyword::True},      {"None", Keyword::None},
     {"list", Keyword::List},      {"while", Keyword::While},
+    {"pass", Keyword::Pass},
 };
 // clang-format on
 std::unordered_map<std::string_view, Operator> operators = {
