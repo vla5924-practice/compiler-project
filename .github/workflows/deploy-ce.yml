@@ -25,4 +25,4 @@ jobs:
           ./bin/cli --version
           ./bin/cli --help
       - name: Deploy binaries
-        run: cp -r bin /opt/compiler-explorer/
+        run: cp -r bin /opt/compiler-project/
