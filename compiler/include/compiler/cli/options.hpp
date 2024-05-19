@@ -14,16 +14,15 @@ namespace cli {
 
 namespace arg {
 
-constexpr std::string_view help = "--help";
-constexpr std::string_view version = "--version";
 constexpr std::string_view debug = "--debug";
 constexpr std::string_view optimize = "--optimize";
 constexpr std::string_view time = "--time";
 constexpr std::string_view stopAfter = "--stop-after";
-constexpr std::string_view path = "--path";
+constexpr std::string_view backend = "--backend";
 constexpr std::string_view files = "FILES";
 
 #ifdef LLVMIR_CODEGEN_ENABLED
+constexpr std::string_view codegen = "--codegen";
 constexpr std::string_view compile = "--compile";
 constexpr std::string_view clang = "--clang";
 constexpr std::string_view llc = "--llc";
@@ -47,20 +46,29 @@ constexpr std::string_view codegen = "codegen";
 
 } // namespace stage
 
-namespace compilation_path {
+namespace backend {
 
 constexpr std::string_view ast = "ast";
 constexpr std::string_view optree = "optree";
 
-} // namespace compilation_path
+} // namespace backend
+
+#ifdef LLVMIR_CODEGEN_ENABLED
+namespace codegen {
+
+constexpr std::string_view llvm = "llvm";
+
+} // namespace codegen
+#endif
 
 struct Options {
     bool debug;
-    std::string path;
+    std::string backend;
     bool time;
     bool optimize;
     std::optional<std::string> stopAfter;
 #ifdef LLVMIR_CODEGEN_ENABLED
+    std::string codegen;
     bool compile;
     std::string clang;
     std::string llc;
@@ -77,7 +85,7 @@ class OptionsError : public std::exception {
 
   public:
     OptionsError(const std::string &message) : message(message){};
-    ~OptionsError() = default;
+    ~OptionsError() override = default;
 
     OptionsError &operator=(const OptionsError &) noexcept = default;
 
@@ -86,6 +94,6 @@ class OptionsError : public std::exception {
     }
 };
 
-Options parseArguments(int argc, const char *const argv[]);
+Options parseArguments(int argc, const char *const *argv);
 
 } // namespace cli

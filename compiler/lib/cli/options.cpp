@@ -1,6 +1,9 @@
 #include "options.hpp"
 
 #include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include <argparse/argparse.hpp>
 
@@ -9,11 +12,12 @@
 namespace cli {
 
 void Options::dump() const {
-    std::cerr << "debug=" << debug << ", path=" << path << ", time=" << time << ", optimize=" << optimize;
+    std::cerr << "debug=" << debug << ", backend=" << backend << ", time=" << time << ", optimize=" << optimize;
     if (stopAfter.has_value())
         std::cerr << ", stopAfter=" << stopAfter.value();
 #ifdef LLVMIR_CODEGEN_ENABLED
-    std::cerr << ", compile=" << compile << ", clang=" << clang << ", llc=" << llc << ", output=" << output;
+    std::cerr << ", codegen=" << codegen << ", compile=" << compile << ", clang=" << clang << ", llc=" << llc
+              << ", output=" << output;
 #endif
     std::cerr << ", files=[ ";
     for (const auto &file : files)
@@ -21,13 +25,13 @@ void Options::dump() const {
     std::cerr << "]";
 }
 
-Options parseArguments(int argc, const char *const argv[]) {
+Options parseArguments(int argc, const char *const *argv) {
     argparse::ArgumentParser program("compiler", version);
     program.add_argument(arg::debug).help("print debug info (stages output)").flag();
-    program.add_argument(arg::path)
-        .help("compilation path")
-        .choices(compilation_path::ast, compilation_path::optree)
-        .default_value(std::string(compilation_path::optree));
+    program.add_argument(arg::backend)
+        .help("compilation backend")
+        .choices(backend::ast, backend::optree)
+        .default_value(std::string(backend::optree));
     program.add_argument(arg::time).help("print execution times of each stage").flag();
     program.add_argument(arg::stopAfter)
         .help("stop processing after specific stage")
@@ -39,6 +43,10 @@ Options parseArguments(int argc, const char *const argv[]) {
         );
     program.add_argument("-O", arg::optimize).help("perform optimizations").flag();
 #ifdef LLVMIR_CODEGEN_ENABLED
+    program.add_argument(arg::codegen)
+        .help("code generator")
+        .choices(codegen::llvm)
+        .default_value(std::string(codegen::llvm));
     program.add_argument("-c", arg::compile).help("produce an executable instead of LLVM IR code").flag();
     program.add_argument(arg::clang).help("path to clang executable").default_value("clang");
     program.add_argument(arg::llc).help("path to llc executable").default_value("llc");
@@ -57,12 +65,13 @@ Options parseArguments(int argc, const char *const argv[]) {
 
     Options options;
     options.debug = program.get<bool>(arg::debug);
-    options.path = program.get<std::string>(arg::path);
+    options.backend = program.get<std::string>(arg::backend);
     options.time = program.get<bool>(arg::time);
     options.optimize = program.get<bool>(arg::optimize);
     if (program.is_used(arg::stopAfter))
         options.stopAfter = program.get<std::string>(arg::stopAfter);
 #ifdef LLVMIR_CODEGEN_ENABLED
+    options.codegen = program.get<std::string>(arg::codegen);
     options.compile = program.get<bool>(arg::compile);
     options.clang = program.get<std::string>(arg::clang);
     options.llc = program.get<std::string>(arg::llc);

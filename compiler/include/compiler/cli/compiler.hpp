@@ -1,7 +1,8 @@
 #pragma once
 
-#include <string>
-#include <unordered_map>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include "compiler/ast/syntax_tree.hpp"
 #include "compiler/frontend/lexer/token.hpp"
@@ -14,7 +15,7 @@ namespace cli {
 
 class Compiler {
     const Options &opt;
-    std::unordered_map<std::string_view, long long> measuredTimes;
+    std::vector<std::pair<std::string_view, long long>> measuredTimes;
 
     utils::SourceFile source;
     lexer::TokenList tokens;

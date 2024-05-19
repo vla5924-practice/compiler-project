@@ -204,7 +204,7 @@ void LLVMIRGenerator::visit(const FunctionCallOp &op) {
 }
 
 void LLVMIRGenerator::visit(const ReturnOp &op) {
-    if (op->numResults() == 0)
+    if (op->numOperands() == 0)
         builder.CreateRetVoid();
     else
         builder.CreateRet(findValue(op.value()));

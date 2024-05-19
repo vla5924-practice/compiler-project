@@ -1,17 +1,22 @@
 #include "helpers.hpp"
 
+#include <array>
+#include <cstdio>
 #include <filesystem>
 #include <sstream>
-#include <stdio.h>
+#include <string>
+#include <vector>
 
 namespace cli {
 
 TemporaryDirectory::TemporaryDirectory() {
-    char tmpnamResult[L_tmpnam] = {0};
 #if defined(_MSC_VER)
-    tmpnam_s(tmpnamResult);
+    std::array<char, L_tmpnam_s> tmpnamArg;
+    tmpnam_s(tmpnamArg.data(), L_tmpnam_s);
+    char *tmpnamResult = tmpnamArg.data();
 #else
-    tmpnam(tmpnamResult);
+    std::array<char, L_tmpnam> tmpnamArg;
+    char *tmpnamResult = std::tmpnam(tmpnamArg.data());
 #endif
     dir = tmpnamResult;
     std::filesystem::create_directory(dir);
