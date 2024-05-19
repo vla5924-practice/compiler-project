@@ -40,7 +40,7 @@ std::string makeCommand(const std::vector<std::string> &args) {
     std::stringstream cmd;
     for (const auto &arg : args)
         cmd << wrapQuotes(arg) << ' ';
-    return cmd.str().c_str();
+    return cmd.str();
 }
 
 } // namespace cli

@@ -57,7 +57,7 @@ jobs:
           CC: gcc
           CXX: g++
         run: |
-          git rev-parse --short=7 HEAD
+          git config --global --add safe.directory $(pwd)
           cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN='ast_to_llvmir;optree_to_llvmir'
           cmake --build build --parallel
       - name: Archive binaries
