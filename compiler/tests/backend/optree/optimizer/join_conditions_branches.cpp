@@ -197,7 +197,7 @@ TEST_F(JoinConditionsBranchesTest, can_join_nested_if) {
     }
     {
         auto &&[m, v] = getExpected();
-                m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+        m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
         v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(8));
         v[1] = m.opInit<LogicBinaryOp>(LogicBinOpKind::LessEqualI, v["x"], v[0]);
         m.op<IfOp>(v[1]).withBody();
