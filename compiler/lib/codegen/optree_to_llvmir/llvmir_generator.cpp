@@ -8,6 +8,7 @@
 #include <system_error>
 #include <vector>
 
+#include <llvm/IR/CFG.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Type.h>
@@ -83,7 +84,20 @@ llvm::Type *LLVMIRGenerator::convertType(const Type::Ptr &type) {
 }
 
 llvm::BasicBlock *LLVMIRGenerator::createBlock() {
-    return llvm::BasicBlock::Create(context, "bb", currentFunction);
+    auto *bb = llvm::BasicBlock::Create(context, "bb", currentFunction);
+    basicBlocks.push_back(bb);
+    return bb;
+}
+
+void LLVMIRGenerator::eraseDeadBlocks() {
+    for (auto *&bb : basicBlocks) {
+        if (bb == nullptr)
+            continue;
+        if (llvm::pred_empty(bb) && !bb->isEntryBlock()) {
+            bb->eraseFromParent();
+            bb = nullptr;
+        }
+    }
 }
 
 llvm::Value *LLVMIRGenerator::normalizePredicate(const Value::Ptr &cond) {
@@ -208,6 +222,8 @@ void LLVMIRGenerator::visit(const ReturnOp &op) {
         builder.CreateRetVoid();
     else
         builder.CreateRet(findValue(op.value()));
+    auto *bb = createBlock();
+    builder.SetInsertPoint(bb);
 }
 
 void LLVMIRGenerator::visit(const ConstantOp &op) {
@@ -347,6 +363,7 @@ void LLVMIRGenerator::visit(const IfOp &op) {
     auto *thenBlock = createBlock();
     builder.SetInsertPoint(thenBlock);
     visit(op.thenOp());
+    auto *newThenBlock = builder.GetInsertBlock();
     auto *elseBlock = createBlock();
     auto *nextBlock = elseBlock;
     if (auto elseOp = op.elseOp()) {
@@ -355,7 +372,7 @@ void LLVMIRGenerator::visit(const IfOp &op) {
         nextBlock = createBlock();
         builder.CreateBr(nextBlock);
     }
-    builder.SetInsertPoint(thenBlock);
+    builder.SetInsertPoint(newThenBlock);
     builder.CreateBr(nextBlock);
     builder.SetInsertPoint(prevBlock);
     builder.CreateCondBr(normalizePredicate(op.cond()), thenBlock, elseBlock);
@@ -431,6 +448,7 @@ void LLVMIRGenerator::visit(const PrintOp &op) {
 
 void LLVMIRGenerator::process(const Program &program) {
     visit(program.root);
+    eraseDeadBlocks();
 }
 
 std::string LLVMIRGenerator::dump() const {

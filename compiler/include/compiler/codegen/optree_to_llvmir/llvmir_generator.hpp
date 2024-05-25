@@ -1,5 +1,6 @@
 #pragma once
 
+#include <deque>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -34,11 +35,13 @@ class LLVMIRGenerator {
     std::unordered_map<llvm::Value *, llvm::Type *> typedValues;
     std::unordered_map<std::string, llvm::Value *> globalStrings;
     std::unordered_map<std::string_view, llvm::FunctionCallee> externalFunctions;
+    std::deque<llvm::BasicBlock *> basicBlocks;
 
     llvm::Value *findValue(const Value::Ptr &value) const;
     void saveValue(const Value::Ptr &value, llvm::Value *llvmValue);
     llvm::Type *convertType(const Type::Ptr &type);
     llvm::BasicBlock *createBlock();
+    void eraseDeadBlocks();
     llvm::Value *normalizePredicate(const Value::Ptr &cond);
     llvm::Value *getGlobalString(const std::string &str);
     llvm::FunctionCallee getExternalFunction(std::string_view name);
