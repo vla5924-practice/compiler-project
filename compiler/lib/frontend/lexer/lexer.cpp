@@ -80,16 +80,16 @@ TokenList Lexer::processString(const SourceLine &source, ErrorBuffer &errors) {
     auto end_token = begin_token;
 
     for (auto i = begin_token; i != source.text.end(); i++) {
-        const char *j = ALLOWED_SYMBOLS;
-        for (; *j != '\0'; j++) {
-            if (*i == *j)
-                break;
-        }
-        if (*j == '\0') {
-            errors.push<LexerError>(ref.inSameLine(std::distance(source.text.begin(), i)),
-                                    std::string("Unexpected symbol ") + *i);
-            break;
-        }
+        // const char *j = ALLOWED_SYMBOLS;
+        // for (; *j != '\0'; j++) {
+        //     if (*i == *j)
+        //         break;
+        // }
+        // if (*j == '\0') {
+        //     errors.push<LexerError>(ref.inSameLine(std::distance(source.text.begin(), i)),
+        //                             std::string("Unexpected symbol ") + *i);
+        //     break;
+        // }
 
         if (isalpha(*i) || *i == '_') {
             end_token++;
@@ -115,11 +115,11 @@ TokenList Lexer::processString(const SourceLine &source, ErrorBuffer &errors) {
                         break;
                     }
                 }
-                auto pos = makeStringView(begin_token, end_token).find_first_not_of(ID_ALLOWED_SYMBOLS);
-                if (pos != std::string::npos) {
-                    errors.push<LexerError>(ref.inSameLine(std::distance(source.text.begin(), begin_token)),
-                                            "Identifier cannot contain special characters");
-                }
+                // auto pos = makeStringView(begin_token, end_token).find_first_not_of(ID_ALLOWED_SYMBOLS);
+                // if (pos != std::string::npos) {
+                //     errors.push<LexerError>(ref.inSameLine(std::distance(source.text.begin(), begin_token)),
+                //                             "Identifier cannot contain special characters");
+                // }
                 tokens.emplace_back(TokenType::Identifier, std::string(begin_token, end_token), source.makeRef(i));
             }
             begin_token = i;

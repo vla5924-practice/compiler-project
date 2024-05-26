@@ -67,30 +67,30 @@ IntegerLiteral         {DIGIT}+
 FloatLiteral           {DIGIT}+"."{DIGIT}*
 StringLiteral          {Quote1}|{Quote2}
 %%
-{Indentation}      yytext; values[last_index++] = simple_hash(yytext, sizeof("Indentation"));
-{Bool}             yytext; values[last_index++] = simple_hash(yytext, sizeof("Bool"));
-{False}            yytext; values[last_index++] = simple_hash(yytext, sizeof("False"));
-{Def}              yytext; values[last_index++] = simple_hash(yytext, sizeof("Def"));
-{Int}              yytext; values[last_index++] = simple_hash(yytext, sizeof("Int"));
-{Float}            yytext; values[last_index++] = simple_hash(yytext, sizeof("Float"));
-{Str}              yytext; values[last_index++] = simple_hash(yytext, sizeof("Str"));
-{If}               yytext; values[last_index++] = simple_hash(yytext, sizeof("If"));
-{Else}             yytext; values[last_index++] = simple_hash(yytext, sizeof("Else"));
-{Elif}             yytext; values[last_index++] = simple_hash(yytext, sizeof("Elif"));
-{Range}            yytext; values[last_index++] = simple_hash(yytext, sizeof("Range"));
-{While}            yytext; values[last_index++] = simple_hash(yytext, sizeof("While"));
-{For}              yytext; values[last_index++] = simple_hash(yytext, sizeof("For"));
-{Break}            yytext; values[last_index++] = simple_hash(yytext, sizeof("Break"));
-{Import}           yytext; values[last_index++] = simple_hash(yytext, sizeof("Import"));
-{Continue}         yytext; values[last_index++] = simple_hash(yytext, sizeof("Continue"));
-{Return}           yytext; values[last_index++] = simple_hash(yytext, sizeof("Return"));
-{Or}               yytext; values[last_index++] = simple_hash(yytext, sizeof("Or"));
-{And}              yytext; values[last_index++] = simple_hash(yytext, sizeof("And"));
-{Not}              yytext; values[last_index++] = simple_hash(yytext, sizeof("Not"));
-{In}               yytext; values[last_index++] = simple_hash(yytext, sizeof("In"));
-{True}             yytext; values[last_index++] = simple_hash(yytext, sizeof("True"));
-{None}             yytext; values[last_index++] = simple_hash(yytext, sizeof("None"));
-{Class}            yytext; values[last_index++] = simple_hash(yytext, sizeof("Class"));
+{Indentation}      /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Indentation"));
+{Bool}             /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Bool"));
+{False}            /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("False"));
+{Def}              /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Def"));
+{Int}              /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Int"));
+{Float}            /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Float"));
+{Str}              /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Str"));
+{If}               /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("If"));
+{Else}             /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Else"));
+{Elif}             /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Elif"));
+{Range}            /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Range"));
+{While}            /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("While"));
+{For}              /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("For"));
+{Break}            /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Break"));
+{Import}           /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Import"));
+{Continue}         /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Continue"));
+{Return}           /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Return"));
+{Or}               /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Or"));
+{And}              /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("And"));
+{Not}              /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Not"));
+{In}               /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("In"));
+{True}             /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("True"));
+{None}             /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("None"));
+{Class}            /*printf("%s", yytext);*/ values[last_index++] = simple_hash(yytext, sizeof("Class"));
 
 {Mod}              values[last_index++] = simple_hash(yytext, sizeof("Mod"));
 {Dot}              values[last_index++] = simple_hash(yytext, sizeof("Dot"));
@@ -161,19 +161,28 @@ StringLiteral          {Quote1}|{Quote2}
 unsigned int simple_hash(const char* s, int size)
 {
     unsigned int h = 0;
-    for (int i = 0; i < size; i++)
+    char* new_string = (char*)malloc(size);
+    for (int i = 0; i < size; i++) {
         h = 42 * h + s[i];
-    return h;
+        new_string[i] = s[i];
+    }
+
+    return size;
 }
 
 int main(int argc, char **argv)
 {
-    ++argv, --argc;  /* skip over program name */
-    if ( argc > 0 )
-            yyin = fopen( argv[0], "r" );
+;  /* skip over program name */
+    if ( argc > 1 )
+            yyin = fopen( argv[2], "r" );
     else
             yyin = stdin;
-    fp = fopen(argv[2], "w");
+    printf("%d\n", argc);
+    printf("Open: %s\n", argv[0]);
+    printf("Open: %s\n", argv[1]);
+    printf("Open: %s\n", argv[2]);
+    //fp = fopen(argv[2], "w");
+    FILE* fp_log = fopen(argv[3], "w");
     values = (unsigned int*)malloc(atoi(argv[1]) * sizeof(unsigned int));
     double start = 0.0; 
     double end = 0.0;
@@ -181,9 +190,9 @@ int main(int argc, char **argv)
     yylex();
     end = omp_get_wtime(); 
     char save_string[1024];
-    printf("Flex Elapsed time: %.*f \n", 6, (end - start) * 1000);
-    sprintf(save_string, "Flex Elapsed time: %.*f \n", 6, (end - start) * 1000);
-    fputs(save_string, fp);
-    fclose(fp);
+    printf("lexerflex Elapsed time: %.*f \n", 6, (end - start) * 1000);
+    sprintf(save_string, "lexerflex Elapsed time: %f \n", (end - start) * 1000);
+    fputs(save_string, fp_log);
+    fclose(fp_log);
     return 0;
 }

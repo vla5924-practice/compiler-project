@@ -12,7 +12,7 @@ def simple_lexems_generator(words_count: int, words_multiplier: int, output_fold
 
     lexems_keys = list(lexems.keys())
 
-    words_counts = [int(math.pow(words_multiplier, i)) for i in range(0, len(str(words_count)))]
+    words_counts = [int(math.pow(words_multiplier, i)) for i in range(0, len(str(words_count)))] + [2000000, 3000000, 4000000, 5000000]
     tests_paths = []
     for value in words_counts:
         generated_file_path = os.path.join(output_folder, f"{value}.py")

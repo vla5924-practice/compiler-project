@@ -13,7 +13,7 @@ def parse_args():
     parser.add_argument('--max-word-count', type=int, help="Maximum words in test file", default=1000000)
     parser.add_argument('--words-multiplier', type=int, help="Step for files", default=10)
     parser.add_argument("--parser", action="store_true")
-    parser.add_argument('--max-function-count', type=int, help="", default=100000)
+    parser.add_argument('--max-function-count', type=int, help="", default=50000)
 
     return parser.parse_args()
 

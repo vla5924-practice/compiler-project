@@ -24,7 +24,7 @@ def generate_function(function_count: int) -> str:
     return result
 
 def parser_generator(function_count: int, output: str):
-    function_count = [int(math.pow(10, i)) for i in range(0, len(str(function_count)))]
+    function_count = [int(math.pow(10, i)) for i in range(0, len(str(function_count)))] + [50000]
     for i in function_count:
         file_name = os.path.join(output, f"{i}.py")
         with open(file_name, 'w') as parser_file:
