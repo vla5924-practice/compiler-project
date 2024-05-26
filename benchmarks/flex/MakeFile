@@ -1,0 +1,9 @@
+
+all: flex
+	gcc lex.yy.c -o lexer -lfl -fopenmp
+
+flex: flex_lexer.l
+	flex flex_lexer.l
+
+clean:
+	rm -rf *.yy.c lexer
