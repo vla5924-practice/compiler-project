@@ -9,7 +9,7 @@ import tokenize
 from argparse import ArgumentParser
 from typing import Dict
 
-CLI_PATH = "./compiler/build/bin/Release/compiler.exe"
+CLI_PATH = "./compiler/build/bin/Debug/compiler.exe"
 
 def run_compiler(module: str, files: str, log_folder: str, compiler_path: str = CLI_PATH) -> Dict:
         times = {
@@ -18,16 +18,21 @@ def run_compiler(module: str, files: str, log_folder: str, compiler_path: str = 
         for filename in files:
             print(f"{module} proccesing {os.path.basename(filename)}")
             log_path = os.path.join(log_folder, os.path.basename(filename)) + ".log"
-            subprocess.run(f"{compiler_path} -l {log_path} -O --stop-after {module} --time {filename}")
+            print(f"{compiler_path} -O {filename} --time --stop-after {module}")
+            with open(log_path, 'w') as log_file:
+                result = subprocess.run(
+                    f"{compiler_path} -O {filename} --time  --stop-after {module}", 
+                    capture_output = True, text = True)
+                log_file.write(result.stderr)
             parsed = parse_compiler_log(log_path)
-            times[os.path.basename(filename)] = round(parsed[f"{module.upper()} (ms)"], 6)
+            times[os.path.basename(filename)] = round(parsed[f"{module.lower()} (ms)"], 6)
         return times
 
 
 def parse_compiler_log(log_path: str):
     with open(log_path, "r") as log_file:
         log = log_file.read()
-    finded_list = re.findall("([A-Z]*) (Elapsed time:) (\d.\d*)", log)
+    finded_list = re.findall("([a-z]*) (Elapsed time:) (\d.\d*)", log)
     return {
         f"{finded[0]} (ms)": float(finded[2])
         for finded in finded_list
