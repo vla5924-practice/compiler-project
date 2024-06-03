@@ -54,6 +54,8 @@ const char *const keywordToString(Keyword kw) {
         return "True";
     case Keyword::While:
         return "while";
+    case Keyword::Pass:
+        return "pass";
     }
     return "";
 }

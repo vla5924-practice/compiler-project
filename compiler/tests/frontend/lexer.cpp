@@ -99,6 +99,10 @@ TEST(Lexer, can_detect_none) {
     SINGLE_TOKEN_TEST_IMPL("None", Keyword::None);
 }
 
+TEST(Lexer, can_detect_pass) {
+    SINGLE_TOKEN_TEST_IMPL("pass", Keyword::Pass);
+}
+
 TEST(Lexer, can_detect_comma) {
     SINGLE_TOKEN_TEST_IMPL(",", Operator::Comma);
 }

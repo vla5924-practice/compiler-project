@@ -25,6 +25,7 @@ enum class Keyword {
     None,
     False,
     List,
+    Pass,
 };
 
 enum class Operator {

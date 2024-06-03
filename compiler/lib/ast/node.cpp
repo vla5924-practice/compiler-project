@@ -209,6 +209,15 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::ForTargets:
         stream << "ForTargets\n";
         break;
+    case NodeType::BreakStatement:
+        stream << "BreakStatement\n";
+        break;
+    case NodeType::ContinueStatement:
+        stream << "ContinueStatement\n";
+        break;
+    case NodeType::PassStatement:
+        stream << "PassStatement\n";
+        break;
     default:
         stream << "Unknown\n";
     }
