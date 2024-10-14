@@ -6,6 +6,7 @@
 
 #include "compiler/optree/operation.hpp"
 #include "compiler/optree/program.hpp"
+#include "compiler/utils/debug.hpp"
 
 #include "optimizer/opt_builder.hpp"
 #include "optimizer/transform.hpp"
@@ -13,6 +14,8 @@
 
 using namespace optree;
 using namespace optree::optimizer;
+
+using dbg = utils::DebugPrinter;
 
 namespace {
 
@@ -149,7 +152,9 @@ void Optimizer::process(Program &program) const {
                     continue;
                 OptBuilder builder(notifier);
                 builder.setInsertPointBefore(op);
+                COMPILER_DEBUG(dbg::get() << "Run " << transform->name() << " on " << op->dump() << "{\n");
                 transform->run(op, builder);
+                COMPILER_DEBUG(dbg::get() << "}\n\n");
             }
         }
     } while (mutated && ++iter < iterLimit);

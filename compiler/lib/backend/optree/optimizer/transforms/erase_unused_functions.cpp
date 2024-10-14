@@ -21,6 +21,10 @@ struct EraseUnusedFunctions : public Transform<ModuleOp> {
     using Transform::Transform;
     using CallEdges = std::map<std::string, std::unordered_set<std::string>>;
 
+    std::string_view name() const override {
+        return "EraseUnusedFunctions";
+    }
+
     void getInnerFunctionCallNames(const Operation::Ptr &op, const std::string &parentName, CallEdges &edges) const {
         for (auto &child : op->body) {
             auto funcOp = child->as<FunctionCallOp>();

@@ -18,6 +18,10 @@ namespace {
 struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryOp, LogicUnaryOp> {
     using Transform::Transform;
 
+    std::string_view name() const override {
+        return "FoldConstants";
+    }
+
     static void foldArithBinaryOp(const ArithBinaryOp &op, OptBuilder &builder) {
         auto lhsOp = getValueOwnerAs<ConstantOp>(op.lhs());
         auto rhsOp = getValueOwnerAs<ConstantOp>(op.rhs());

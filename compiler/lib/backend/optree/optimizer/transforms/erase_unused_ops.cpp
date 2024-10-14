@@ -15,6 +15,10 @@ namespace {
 struct EraseUnusedOps : public Transform<ConstantOp, ArithBinaryOp, ArithCastOp, LogicBinaryOp, LogicUnaryOp> {
     using Transform::Transform;
 
+    std::string_view name() const override {
+        return "EraseUnusedOps";
+    }
+
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
         bool unused = true;
         for (const auto &result : op->results)
