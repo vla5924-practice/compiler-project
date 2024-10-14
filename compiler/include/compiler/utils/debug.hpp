@@ -1,5 +1,6 @@
 #pragma once
 
+// Suppress security warning regarding some I/O functions on MSVC
 #pragma warning(disable : 4996)
 
 #include <cstdlib>

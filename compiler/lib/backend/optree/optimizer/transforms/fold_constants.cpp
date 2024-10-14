@@ -1,4 +1,5 @@
 #include <memory>
+#include <string_view>
 
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/definitions.hpp"
