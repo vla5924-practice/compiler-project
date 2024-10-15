@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string_view>
 
 #include "compiler/optree/operation.hpp"
 
@@ -17,6 +18,7 @@ struct BaseTransform {
     BaseTransform(BaseTransform &&) = default;
     virtual ~BaseTransform() = default;
 
+    virtual std::string_view name() const = 0;
     virtual bool canRun(const Operation::Ptr &op) const = 0;
     virtual void run(const Operation::Ptr &op, OptBuilder &builder) const = 0;
 };
