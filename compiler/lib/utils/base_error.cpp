@@ -1,6 +1,7 @@
 #include "base_error.hpp"
 
 #include <sstream>
+#include <string>
 
 using utils::SourceRef;
 
