@@ -138,6 +138,8 @@ jobs:
         run: ./bin/codegen_ast_to_llvmir_test
       - name: Run codegen tests (optree to LLVM IR)
         run: ./bin/codegen_optree_to_llvmir_test
+      - name: Run utility tests
+        run: ./bin/utils_test
 
   code-coverage:
     name: Code coverage

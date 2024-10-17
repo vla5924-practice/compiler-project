@@ -4,16 +4,16 @@
 
 using utils::SourceRef;
 
-BaseError::BaseError(const SourceRef &ref, const std::string &message) {
+BaseError::BaseError(const SourceRef &ref, const std::string &initMessage) {
     std::stringstream str;
-    str << "In line " << ref.line << " in column " << ref.column << " error:\n" << message;
-    what_str = str.str();
+    str << "In line " << ref.line << " in column " << ref.column << " error:\n" << initMessage;
+    message = str.str();
 }
 
-BaseError::BaseError(const std::string &message) {
-    what_str = "Error:\n" + message;
+BaseError::BaseError(const std::string &initMessage) {
+    message = "Error:\n" + initMessage;
 }
 
 const char *BaseError::what() const noexcept {
-    return what_str.c_str();
+    return message.data();
 }
