@@ -4,6 +4,7 @@ add_subdirectory(ast)
 add_subdirectory(optree)
 add_subdirectory(frontend)
 add_subdirectory(backend)
+add_subdirectory(utils)
 
 add_custom_target(tests
 DEPENDS
@@ -12,6 +13,7 @@ DEPENDS
     frontend_test
     backend_ast_test
     backend_optree_test
+    utils_test
 )
 
 add_custom_target(run_tests
@@ -21,6 +23,7 @@ DEPENDS
     run_frontend_test
     run_backend_ast_test
     run_backend_optree_test
+    run_utils_test
 )
 
 add_subdirectory(codegen)
