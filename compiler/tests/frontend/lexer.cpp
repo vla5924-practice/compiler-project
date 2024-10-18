@@ -31,10 +31,6 @@ TEST(Lexer, can_detect_else) {
     SINGLE_TOKEN_TEST_IMPL("else", Keyword::Else);
 }
 
-TEST(Lexer, can_detect_range) {
-    SINGLE_TOKEN_TEST_IMPL("range", Keyword::Range);
-}
-
 TEST(Lexer, can_detect_for) {
     SINGLE_TOKEN_TEST_IMPL("for", Keyword::For);
 }
@@ -101,6 +97,10 @@ TEST(Lexer, can_detect_in) {
 
 TEST(Lexer, can_detect_none) {
     SINGLE_TOKEN_TEST_IMPL("None", Keyword::None);
+}
+
+TEST(Lexer, can_detect_pass) {
+    SINGLE_TOKEN_TEST_IMPL("pass", Keyword::Pass);
 }
 
 TEST(Lexer, can_detect_comma) {
@@ -454,4 +454,74 @@ TEST(Lexer, raise_error_on_float_literal_with_alpha) {
 TEST(Lexer, raise_error_on_id_starting_with_special) {
     StringVec source = {"int @x"};
     ASSERT_THROW(Lexer::process(source), ErrorBuffer);
+}
+
+TEST(Lexer, rect_brace_expression) {
+    StringVec source = {"[]"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Operator::RectLeftBrace);
+    expected.emplace_back(Operator::RectRightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, rect_brace_expression_with_values) {
+    StringVec source = {"[1, 3.0, Z]"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Operator::RectLeftBrace);
+    expected.emplace_back(TokenType::IntegerLiteral, "1");
+    expected.emplace_back(Operator::Comma);
+    expected.emplace_back(TokenType::FloatingPointLiteral, "3.0");
+    expected.emplace_back(Operator::Comma);
+    expected.emplace_back(TokenType::Identifier, "Z");
+    expected.emplace_back(Operator::RectRightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, list_expression) {
+    StringVec source = {"mylist: list[int] = [1, 2, 3]"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::Identifier, "mylist");
+    expected.emplace_back(Special::Colon);
+    expected.emplace_back(Keyword::List);
+    expected.emplace_back(Operator::RectLeftBrace);
+    expected.emplace_back(Keyword::Int);
+    expected.emplace_back(Operator::RectRightBrace);
+    expected.emplace_back(Operator::Assign);
+    expected.emplace_back(Operator::RectLeftBrace);
+    expected.emplace_back(TokenType::IntegerLiteral, "1");
+    expected.emplace_back(Operator::Comma);
+    expected.emplace_back(TokenType::IntegerLiteral, "2");
+    expected.emplace_back(Operator::Comma);
+    expected.emplace_back(TokenType::IntegerLiteral, "3");
+    expected.emplace_back(Operator::RectRightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, for_range_and_enumerate_expression) {
+    StringVec source = {"for i in range(10)", "for i in enumerate(mylist)"};
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(Keyword::For);
+    expected.emplace_back(TokenType::Identifier, "i");
+    expected.emplace_back(Keyword::In);
+    expected.emplace_back(TokenType::Identifier, "range");
+    expected.emplace_back(Operator::LeftBrace);
+    expected.emplace_back(TokenType::IntegerLiteral, "10");
+    expected.emplace_back(Operator::RightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    expected.emplace_back(Keyword::For);
+    expected.emplace_back(TokenType::Identifier, "i");
+    expected.emplace_back(Keyword::In);
+    expected.emplace_back(TokenType::Identifier, "enumerate");
+    expected.emplace_back(Operator::LeftBrace);
+    expected.emplace_back(TokenType::Identifier, "mylist");
+    expected.emplace_back(Operator::RightBrace);
+    expected.emplace_back(Special::EndOfExpression);
+    ASSERT_EQ(expected, transformed);
 }

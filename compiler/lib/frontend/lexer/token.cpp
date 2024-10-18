@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include "lexer/token_types.hpp"
+
 using namespace lexer;
 
 namespace {
@@ -36,14 +38,14 @@ const char *const keywordToString(Keyword kw) {
         return "in";
     case Keyword::Int:
         return "int";
+    case Keyword::List:
+        return "list";
     case Keyword::None:
         return "None";
     case Keyword::Not:
         return "not";
     case Keyword::Or:
         return "or";
-    case Keyword::Range:
-        return "range";
     case Keyword::Return:
         return "return";
     case Keyword::Str:
@@ -52,6 +54,8 @@ const char *const keywordToString(Keyword kw) {
         return "True";
     case Keyword::While:
         return "while";
+    case Keyword::Pass:
+        return "pass";
     }
     return "";
 }

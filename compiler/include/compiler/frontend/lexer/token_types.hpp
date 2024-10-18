@@ -10,7 +10,6 @@ enum class Keyword {
     If,
     Else,
     Elif,
-    Range,
     While,
     For,
     Break,
@@ -25,6 +24,8 @@ enum class Keyword {
     True,
     None,
     False,
+    List,
+    Pass,
 };
 
 enum class Operator {

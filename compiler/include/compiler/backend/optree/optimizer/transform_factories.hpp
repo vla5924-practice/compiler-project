@@ -6,6 +6,8 @@ namespace optree {
 namespace optimizer {
 
 BaseTransform::Ptr createEraseUnusedOps();
+BaseTransform::Ptr createEraseUnusedFunctions();
+BaseTransform::Ptr createFoldConstants();
 
 } // namespace optimizer
 } // namespace optree

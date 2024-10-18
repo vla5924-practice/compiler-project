@@ -15,20 +15,20 @@ void Attribute::dump(std::ostream &stream) const {
         stream << "empty";
         return;
     }
-    if (is<int64_t>()) {
-        stream << "int64_t : " << as<int64_t>();
+    if (is<NativeInt>()) {
+        stream << "int : " << as<NativeInt>();
         return;
     }
-    if (is<double>()) {
-        stream << "double : " << as<double>();
+    if (is<NativeFloat>()) {
+        stream << "float : " << as<NativeFloat>();
         return;
     }
-    if (is<bool>()) {
-        stream << "bool : " << as<bool>();
+    if (is<NativeBool>()) {
+        stream << "bool : " << as<NativeBool>();
         return;
     }
-    if (is<std::string>()) {
-        stream << "string : " << as<std::string>();
+    if (is<NativeStr>()) {
+        stream << "str : " << as<NativeStr>();
         return;
     }
     if (is<Type::Ptr>()) {

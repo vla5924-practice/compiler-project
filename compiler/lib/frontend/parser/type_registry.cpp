@@ -1,4 +1,6 @@
 #include "parser/type_registry.hpp"
+#include "compiler/ast/types.hpp"
+#include "lexer/token_types.hpp"
 
 using ast::TypeId;
 using namespace lexer;
@@ -26,6 +28,8 @@ ast::TypeId TypeRegistry::typeId(const Token &token) {
         return ast::BoolType;
     if (token.is(Keyword::Str))
         return ast::StrType;
+    if (token.is(Keyword::List))
+        return ast::ListType;
     if (token.is(Keyword::None))
         return ast::NoneType;
     return ast::UnknownType;

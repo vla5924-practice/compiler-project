@@ -20,17 +20,10 @@
 #include "compiler/optree/types.hpp"
 #include "compiler/optree/value.hpp"
 #include "compiler/utils/helpers.hpp"
+#include "compiler/utils/language.hpp"
 #include "compiler/utils/source_ref.hpp"
 
 #include "converter/converter_context.hpp"
-
-#if __has_builtin(__builtin_unreachable)
-#define UNREACHABLE(MSG)                                                                                               \
-    assert(false && (MSG));                                                                                            \
-    __builtin_unreachable()
-#else
-#define UNREACHABLE(MSG) assert(false && (MSG))
-#endif
 
 using namespace optree;
 using namespace converter;
@@ -38,6 +31,10 @@ using namespace converter;
 using ast::Node;
 using ast::NodeType;
 using ast::SyntaxTree;
+
+namespace language = utils::language;
+
+namespace {
 
 Type::Ptr convertType(ast::TypeId typeId) {
     switch (typeId) {
@@ -91,7 +88,7 @@ bool isRhsInAssignment(const Node::Ptr &node) {
 }
 
 bool isFunctionCallInputNode(const Node::Ptr &node) {
-    return node->type == NodeType::FunctionCall && node->firstChild()->str() == "input";
+    return node->type == NodeType::FunctionCall && node->firstChild()->str() == language::funcInput;
 }
 
 bool isAssignment(ast::BinaryOperation binOp) {
@@ -108,8 +105,7 @@ void createInputOp(const Node::Ptr &varNameNode, const utils::SourceRef &inputRe
         ctx.pushError(varNameNode, "variable cannot be modified: " + varNameNode->str());
         return;
     }
-    auto inputOp = ctx.insert<InputOp>(inputRef, var.value->type->as<PointerType>().pointee);
-    ctx.insert<StoreOp>(inputRef, var.value, inputOp.value());
+    ctx.insert<InputOp>(inputRef, var.value);
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx);
@@ -122,7 +118,7 @@ void processProgramRoot(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.functions[name] = convertType(typeNode->typeId());
     }
     auto moduleOp = Operation::make<ModuleOp>();
-    ctx.goInto(moduleOp.op);
+    ctx.goInto(moduleOp);
     for (const auto &child : node->children)
         processNode(child, ctx);
 }
@@ -140,10 +136,10 @@ void processFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
     ++it;
     auto funcType = Type::make<FunctionType>(arguments, convertType((*it)->typeId()));
     auto funcOp = ctx.insert<FunctionOp>(node->ref, name, funcType);
-    ctx.goInto(funcOp.op);
+    ctx.goInto(funcOp);
     ctx.enterScope();
     for (size_t i = 0; i < argNames.size(); i++)
-        ctx.saveVariable(argNames[i], funcOp.op->inward(i), false);
+        ctx.saveVariable(argNames[i], funcOp->inward(i), false);
     ++it;
     processNode(*it, ctx);
     ctx.exitScope();
@@ -174,6 +170,11 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
             return;
         }
         auto defValue = visitNode(defNode, ctx);
+        const auto &defType = defValue->type;
+        if (*type != *defType) {
+            if (auto castOp = insertNumericCastOp(type, defValue, ctx.builder, defNode->ref))
+                defValue = castOp.result();
+        }
         ctx.insert<StoreOp>(defNode->ref, allocOp.result(), defValue);
     }
 }
@@ -187,7 +188,7 @@ void processReturnStatement(const Node::Ptr &node, ConverterContext &ctx) {
 
 void processWhileStatement(const Node::Ptr &node, ConverterContext &ctx) {
     auto whileOp = ctx.insert<WhileOp>(node->ref);
-    ctx.goInto(whileOp.conditionOp().op);
+    ctx.goInto(whileOp.conditionOp());
     processNode(node->firstChild(), ctx);
     ctx.goParent();
     processNode(node->lastChild(), ctx);
@@ -198,14 +199,14 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
     auto cond = visitNode(node->firstChild(), ctx);
     bool withElse = node->children.size() > 2;
     auto ifOp = ctx.insert<IfOp>(node->ref, cond, withElse);
-    ctx.goInto(ifOp.thenOp().op);
+    ctx.goInto(ifOp.thenOp());
     processNode(node->secondChild(), ctx);
     ctx.goParent();
     int depth = 0;
     auto elEnd = node->children.end();
     for (auto it = std::next(node->children.begin(), 2); it != elEnd; ++it) {
         depth++;
-        ctx.goInto(ifOp.elseOp().op);
+        ctx.goInto(ifOp.elseOp());
         const auto &elNode = *it;
         if (elNode->type == NodeType::ElseStatement) {
             processNode(elNode->firstChild(), ctx);
@@ -214,11 +215,11 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
             bool withElse = std::next(it) != elEnd;
             ifOp = ctx.insert<IfOp>(elNode->ref, cond, withElse);
             depth++;
-            ctx.goInto(ifOp.thenOp().op);
+            ctx.goInto(ifOp.thenOp());
             processNode(elNode->lastChild(), ctx);
             ctx.goParent();
         } else {
-            UNREACHABLE("Unexpected NodeType inside IfStatement");
+            COMPILER_UNREACHABLE("Unexpected NodeType inside IfStatement");
         }
     }
     while (depth-- > 0)
@@ -231,20 +232,23 @@ Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 Value::Ptr visitIntegerLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    auto value = static_cast<int64_t>(node->intNum());
+    auto value = static_cast<NativeInt>(node->intNum());
     return ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), value).result();
 }
 
 Value::Ptr visitBooleanLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(node->ref, TypeStorage::boolType(), node->boolean()).result();
+    auto value = static_cast<NativeBool>(node->boolean());
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::boolType(), value).result();
 }
 
 Value::Ptr visitFloatingPointLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(node->ref, TypeStorage::floatType(), node->fpNum()).result();
+    auto value = static_cast<NativeFloat>(node->fpNum());
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::floatType(), value).result();
 }
 
 Value::Ptr visitStringLiteralValue(const Node::Ptr &node, ConverterContext &ctx) {
-    return ctx.insert<ConstantOp>(node->ref, TypeStorage::strType(), node->str()).result();
+    auto value = static_cast<NativeStr>(node->str());
+    return ctx.insert<ConstantOp>(node->ref, TypeStorage::strType(), value).result();
 }
 
 Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
@@ -258,18 +262,28 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
     }
     auto lhs = visitNode(lhsNode, ctx);
     auto rhs = visitNode(rhsNode, ctx);
-    const Type::Ptr &lhsType = lhs->type;
+    Type::Ptr lhsType = lhs->type;
     const Type::Ptr &rhsType = rhs->type;
     auto typeError = [](const Type::Ptr &type) {
         std::stringstream error;
         error << "unexpected expression type: " << prettyTypeName(type) << ", supported types are: int, bool, float";
         return error.str();
     };
-    if (!utils::isAny<IntegerType, FloatType>(lhsType))
+    if (isAssignment(binOp)) {
+        if (lhsType->is<PointerType>())
+            lhsType = lhsType->as<PointerType>().pointee;
+        else
+            ctx.pushError(node, "left-handed operand of an assignment expression must be a variable name");
+    }
+    if (!utils::isAny<IntegerType, FloatType>(lhsType)) {
         ctx.pushError(node, typeError(lhsType));
-    if (!utils::isAny<IntegerType, FloatType>(rhsType))
+        throw ctx.errors;
+    }
+    if (!utils::isAny<IntegerType, FloatType>(rhsType)) {
         ctx.pushError(node, typeError(rhsType));
-    if (lhsType != rhsType) {
+        throw ctx.errors;
+    }
+    if (*lhsType != *rhsType) {
         auto needsType = deduceTargetCastType(lhsType, rhsType, isAssignment(binOp));
         if (auto castOp = insertNumericCastOp(needsType, lhs, ctx.builder, lhsNode->ref))
             lhs = castOp.result();
@@ -324,7 +338,7 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.insert<StoreOp>(node->ref, lhs, rhs);
         return rhs;
     default:
-        UNREACHABLE("Unexpected ast::BinaryOperation value in visitBinaryOperation");
+        COMPILER_UNREACHABLE("Unexpected ast::BinaryOperation value in visitBinaryOperation");
     }
 }
 
@@ -341,16 +355,18 @@ Value::Ptr visitVariableName(const Node::Ptr &node, ConverterContext &ctx) {
 
 Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
     const std::string &name = node->firstChild()->str();
-    if (name == "print") {
+    if (name == language::funcPrint) {
         if (node->parent->type != NodeType::Expression) {
             ctx.pushError(node, "print() statement cannot be within an expression context");
             throw ctx.errors;
         }
+        std::vector<Value::Ptr> arguments;
         for (auto &argNode : node->lastChild()->children)
-            ctx.insert<PrintOp>(argNode->ref, visitNode(argNode, ctx));
+            arguments.emplace_back(visitNode(argNode, ctx));
+        ctx.insert<PrintOp>(node->ref, arguments);
         return {};
     }
-    if (name == "input") {
+    if (name == language::funcInput) {
         ctx.pushError(node, "input() statement must be a right-handed operand of an isolated assignment expression");
         throw ctx.errors;
     }
@@ -392,7 +408,7 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
         processIfStatement(node, ctx);
         return;
     default:
-        UNREACHABLE("Unexpected ast::NodeType value in processNode");
+        COMPILER_UNREACHABLE("Unexpected ast::NodeType value in processNode");
     }
 }
 
@@ -415,16 +431,16 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
     case NodeType::FunctionCall:
         return visitFunctionCall(node, ctx);
     default:
-        UNREACHABLE("Unexpected ast::NodeType value in visitNode");
+        COMPILER_UNREACHABLE("Unexpected ast::NodeType value in visitNode");
     }
 }
+
+} // namespace
 
 Program Converter::process(const SyntaxTree &syntaxTree) {
     ConverterContext ctx;
     processNode(syntaxTree.root, ctx);
     if (!ctx.errors.empty())
         throw ctx.errors;
-    Program program;
-    program.root = ctx.op;
-    return program;
+    return {ctx.op};
 }

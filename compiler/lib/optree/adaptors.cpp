@@ -1,6 +1,5 @@
 #include "adaptors.hpp"
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -47,26 +46,6 @@ Value::Ptr ConditionOp::terminator() const {
     return op->body.back()->result(0);
 }
 
-void ConstantOp::init(const Type::Ptr &type, int64_t value) {
-    op->results.emplace_back(Value::make(type, op));
-    op->addAttr(value);
-}
-
-void ConstantOp::init(const Type::Ptr &type, bool value) {
-    op->results.emplace_back(Value::make(type, op));
-    op->addAttr(value);
-}
-
-void ConstantOp::init(const Type::Ptr &type, double value) {
-    op->results.emplace_back(Value::make(type, op));
-    op->addAttr(value);
-}
-
-void ConstantOp::init(const Type::Ptr &type, const std::string &value) {
-    op->results.emplace_back(Value::make(type, op));
-    op->addAttr(value);
-}
-
 void ElseOp::init() {
 }
 
@@ -111,8 +90,8 @@ ElseOp IfOp::elseOp() const {
     return {op->body.size() == 2 ? op->body.back() : nullptr};
 }
 
-void InputOp::init(const Type::Ptr &inputType) {
-    op->addResult(inputType);
+void InputOp::init(const Value::Ptr &dst) {
+    op->addOperand(dst);
 }
 
 void LoadOp::init(const Type::Ptr &resultType, const Value::Ptr &src) {
@@ -140,6 +119,11 @@ void ModuleOp::init() {
 
 void PrintOp::init(const Value::Ptr &valueToPrint) {
     op->addOperand(valueToPrint);
+}
+
+void PrintOp::init(const std::vector<Value::Ptr> &valuesToPrint) {
+    for (const auto &value : valuesToPrint)
+        op->addOperand(value);
 }
 
 void ReturnOp::init() {

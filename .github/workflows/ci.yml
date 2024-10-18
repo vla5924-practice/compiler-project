@@ -15,6 +15,7 @@ on:
       - '**/*.hpp'
       - '**/CMakeLists.txt'
       - '**/.clang-tidy'
+      - 'thirdparty/**'
   pull_request:
     branches:
       - main
@@ -24,6 +25,7 @@ on:
       - '**/*.hpp'
       - '**/CMakeLists.txt'
       - '**/.clang-tidy'
+      - 'thirdparty/**'
 
 jobs:
   code-style-check:
@@ -57,7 +59,8 @@ jobs:
           CC: gcc
           CXX: g++
         run: |
-          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN=ast_to_llvmir
+          git config --global --add safe.directory $(pwd)
+          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN='ast_to_llvmir;optree_to_llvmir'
           cmake --build build --parallel
       - name: Archive binaries
         run: tar cf binaries.tar -C build bin
@@ -87,7 +90,21 @@ jobs:
           CC: clang
           CXX: clang++
         run: |
-          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN=ast_to_llvmir
+          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN='ast_to_llvmir;optree_to_llvmir'
+          cmake --build build --parallel
+
+  build-msvc:
+    name: Build on Windows MSVC
+    runs-on: windows-latest
+    needs: code-style-check
+    steps:
+      - name: Initialize repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Build
+        run: |
+          cmake -S compiler -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel
 
   unit-test:
@@ -109,12 +126,18 @@ jobs:
         run: tar xf binaries.tar
       - name: Run AST interface tests
         run: ./bin/ast_test
+      - name: Run operation tree interface tests
+        run: ./bin/optree_test
       - name: Run frontend tests
         run: ./bin/frontend_test
       - name: Run AST-based backend tests
         run: ./bin/backend_ast_test
+      - name: Run optree-based backend tests
+        run: ./bin/backend_optree_test
       - name: Run codegen tests (AST to LLVM IR)
         run: ./bin/codegen_ast_to_llvmir_test
+      - name: Run codegen tests (optree to LLVM IR)
+        run: ./bin/codegen_optree_to_llvmir_test
 
   code-coverage:
     name: Code coverage
@@ -183,7 +206,7 @@ jobs:
           git fetch origin main
       - name: Build compilation database
         run: |
-          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN=ast_to_llvmir
+          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN='ast_to_llvmir;optree_to_llvmir'
           cmake --build build --parallel
       - name: Run clang-tidy analysis
         run: |

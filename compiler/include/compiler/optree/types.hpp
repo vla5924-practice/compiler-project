@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <ostream>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -66,6 +68,7 @@ struct NoneType : public Type {
 struct IntegerType : public Type {
     using NativeType = int64_t;
     using Ptr = std::shared_ptr<const IntegerType>;
+    using NativeType = int64_t;
 
     const unsigned width;
 
@@ -81,6 +84,7 @@ struct IntegerType : public Type {
 struct BoolType : public IntegerType {
     using NativeType = bool;
     using Ptr = std::shared_ptr<const BoolType>;
+    using NativeType = bool;
 
     static constinit const unsigned intWidth = 8U;
 
@@ -93,6 +97,7 @@ struct BoolType : public IntegerType {
 struct FloatType : public Type {
     using NativeType = double;
     using Ptr = std::shared_ptr<const FloatType>;
+    using NativeType = double;
 
     const unsigned width;
 
@@ -108,6 +113,7 @@ struct FloatType : public Type {
 struct StrType : public Type {
     using NativeType = std::string;
     using Ptr = std::shared_ptr<const StrType>;
+    using NativeType = std::string;
 
     const unsigned charWidth;
 

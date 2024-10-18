@@ -3,10 +3,14 @@
 #include <algorithm>
 #include <variant>
 
+#include "compiler/utils/language.hpp"
+
 #include "optimizer/optimizer_context.hpp"
 
 using namespace ast;
 using namespace optimizer;
+
+namespace language = utils::language;
 
 namespace {
 
@@ -591,7 +595,7 @@ void removeEmptyBranchRoots(Node::Ptr node) {
 void removeUnusedFunctions(SyntaxTree &tree) {
     tree.root->children.remove_if([&functions = tree.functions](Node::Ptr node) {
         const std::string &funcName = node->firstChild()->str();
-        return functions[funcName].useCount == 0 && funcName != "main";
+        return functions[funcName].useCount == 0 && funcName != language::funcMain;
     });
 }
 

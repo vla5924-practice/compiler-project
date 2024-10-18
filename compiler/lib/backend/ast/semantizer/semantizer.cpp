@@ -1,9 +1,12 @@
 #include "semantizer/semantizer.hpp"
 
 #include "compiler/ast/types.hpp"
+#include "compiler/utils/language.hpp"
 
 using namespace semantizer;
 using namespace ast;
+
+namespace language = utils::language;
 
 static std::vector<TypeId> getFunctionArguments(const std::list<Node::Ptr> &functionArguments, VariablesTable &table) {
     std::vector<TypeId> result;
@@ -131,7 +134,7 @@ static TypeId processUnknownTypeExpression(Node::Ptr &node, NodeType type, Seman
 
 static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
     const std::string &funcName = node->firstChild()->str();
-    bool isPrintFunction = (funcName == "print");
+    bool isPrintFunction = (funcName == language::funcPrint);
     if (isPrintFunction) {
         auto exprNode = node->lastChild()->lastChild();
         auto child = exprNode->firstChild();
@@ -141,7 +144,7 @@ static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
     }
     auto funcIter = ctx.functions.find(funcName);
     if (funcIter == ctx.functions.cend()) {
-        if (funcName == "input") {
+        if (funcName == language::funcInput) {
             funcIter = ctx.functions.emplace(funcName, Function(BuiltInTypes::NoneType)).first;
             TypeId type = ctx.findVariable(node->parent->firstChild());
             Node::Ptr returnTypeNode = std::make_shared<Node>(NodeType::FunctionReturnType, node);
@@ -205,7 +208,7 @@ static void processExpression(Node::Ptr &node, TypeId var_type, SemantizerContex
         if (child->type == NodeType::FunctionCall) {
             const std::string &funcName = child->firstChild()->str();
             TypeId retType = processFunctionCall(child, ctx);
-            if (retType != var_type && funcName != "input") {
+            if (retType != var_type && funcName != language::funcInput) {
                 pushTypeConversion(node, var_type);
             }
             continue;
@@ -339,7 +342,7 @@ static void parseFunctions(const std::list<Node::Ptr> &children, SemantizerConte
         }
     }
 
-    if (ctx.functions.find("main") == ctx.functions.end())
+    if (ctx.functions.find(language::funcMain) == ctx.functions.end())
         ctx.errors.push<SemantizerError>("Function 'main' is not declared, although it has to be");
 }
 

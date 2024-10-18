@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -31,7 +30,7 @@ struct ModuleOp : Adaptor {
         requires std::convertible_to<decltype(std::declval<AdaptorType>().name()), std::string>
     AdaptorType lookup(const std::string &name) const {
         for (const auto &childOp : op->body) {
-            if (AdaptorType adapted = Operation::as<AdaptorType>(childOp)) {
+            if (AdaptorType adapted = childOp->as<AdaptorType>()) {
                 if (adapted.name() == name)
                     return adapted;
             }
@@ -52,8 +51,8 @@ struct FunctionOp : Adaptor {
 struct FunctionCallOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "FunctionCall")
 
-    void init(const std::string &name, const Type::Ptr &resultType, const std::vector<Value::Ptr> &arguments);
-    void init(const FunctionOp &callee, const std::vector<Value::Ptr> &arguments);
+    void init(const std::string &name, const Type::Ptr &resultType, const std::vector<Value::Ptr> &arguments = {});
+    void init(const FunctionOp &callee, const std::vector<Value::Ptr> &arguments = {});
 
     OPTREE_ADAPTOR_ATTRIBUTE(name, setName, std::string, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
@@ -71,10 +70,11 @@ struct ReturnOp : Adaptor {
 struct ConstantOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Constant")
 
-    void init(const Type::Ptr &type, int64_t value);
-    void init(const Type::Ptr &type, bool value);
-    void init(const Type::Ptr &type, double value);
-    void init(const Type::Ptr &type, const std::string &value);
+    template <typename T>
+    void init(const Type::Ptr &type, const T &value) {
+        op->results.emplace_back(Value::make(type, op));
+        op->addAttr(value);
+    }
 
     OPTREE_ADAPTOR_ATTRIBUTE_OPAQUE(value, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
@@ -249,17 +249,16 @@ struct PrintOp;
 struct InputOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Input")
 
-    void init(const Type::Ptr &inputType);
+    void init(const Value::Ptr &dst);
 
-    OPTREE_ADAPTOR_RESULT(value, 0)
+    OPTREE_ADAPTOR_OPERAND(dst, setDst, 0)
 };
 
 struct PrintOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Print")
 
     void init(const Value::Ptr &valueToPrint);
-
-    OPTREE_ADAPTOR_OPERAND(value, setValue, 0)
+    void init(const std::vector<Value::Ptr> &valuesToPrint);
 };
 
 } // namespace optree

@@ -20,6 +20,7 @@ class Optimizer {
     Optimizer(Optimizer &&) = default;
     ~Optimizer() = default;
 
+    void add(const BaseTransform::Ptr &transform);
     void process(Program &program) const;
 };
 

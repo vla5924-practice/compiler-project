@@ -6,6 +6,10 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_definitions(NDEBUG)
+endif()
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
@@ -20,7 +24,16 @@ set(COMPILER_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(COMPILER_LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 
 set(ENABLE_CODEGEN "" CACHE STRING "Enables low-level code generation")
-set(AVAILABLE_CODEGEN "ast_to_llvmir")
+set(AVAILABLE_CODEGEN "ast_to_llvmir;optree_to_llvmir")
+if("${ENABLE_CODEGEN}^" STREQUAL "OFF^")
+    message(WARNING "All codegen backends were disabled because ENABLE_CODEGEN option was set to OFF. "
+                    "Consider omitting its setting or using an empty string instead.")
+    set(ENABLE_CODEGEN "")
+elseif("${ENABLE_CODEGEN}^" STREQUAL "ON^")
+    message(WARNING "All codegen backends were enabled because ENABLE_CODEGEN option was set to ON. "
+                    "Consider using the string '${AVAILABLE_CODEGEN}' instead.")
+    set(ENABLE_CODEGEN "${AVAILABLE_CODEGEN}")
+endif()
 
 option(ENABLE_CLI "Enables command-line interface application" ON)
 option(ENABLE_TESTS "Enables tests for components" ON)
