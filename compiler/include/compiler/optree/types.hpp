@@ -66,7 +66,6 @@ struct NoneType : public Type {
 };
 
 struct IntegerType : public Type {
-    using NativeType = int64_t;
     using Ptr = std::shared_ptr<const IntegerType>;
     using NativeType = int64_t;
 
@@ -82,7 +81,6 @@ struct IntegerType : public Type {
 };
 
 struct BoolType : public IntegerType {
-    using NativeType = bool;
     using Ptr = std::shared_ptr<const BoolType>;
     using NativeType = bool;
 
@@ -95,7 +93,6 @@ struct BoolType : public IntegerType {
 };
 
 struct FloatType : public Type {
-    using NativeType = double;
     using Ptr = std::shared_ptr<const FloatType>;
     using NativeType = double;
 
@@ -111,7 +108,6 @@ struct FloatType : public Type {
 };
 
 struct StrType : public Type {
-    using NativeType = std::string;
     using Ptr = std::shared_ptr<const StrType>;
     using NativeType = std::string;
 
