@@ -5,13 +5,17 @@
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/operation.hpp"
 #include "compiler/optree/program.hpp"
+#include "compiler/optree/helpers.hpp"
+#include "compiler/utils/helpers.hpp"
 
 #include "semantizer/semantizer_context.hpp"
 #include "semantizer/traits.hpp"
 
-#define VERIFY(ADAPTOR_CLASS_NAME)                                                                                     \
+#define VERIFY(ADAPTOR_CLASS_NAME, OP_NAME, CTX_NAME, VERIFIER_NAME)                                                   \
     template <>                                                                                                        \
-    bool verify<ADAPTOR_CLASS_NAME>(const ADAPTOR_CLASS_NAME &op, SemantizerContext &ctx)
+    bool verify<ADAPTOR_CLASS_NAME>([[maybe_unused]] const ADAPTOR_CLASS_NAME &OP_NAME,                                \
+                                    [[maybe_unused]] SemantizerContext &CTX_NAME,                                      \
+                                    [[maybe_unused]] TraitVerifier &VERIFIER_NAME)
 
 #define RETURN_ON_FAILURE(EXPR)                                                                                        \
     if (!(EXPR)) {                                                                                                     \
@@ -40,8 +44,6 @@ std::optional<Type::Ptr> valuesHaveSameType(ValueRange &&values) {
     return {type};
 }
 
-bool verify(const Operation::Ptr &op, SemantizerContext &ctx);
-
 bool verify(const Operation::Body &body, SemantizerContext &ctx) {
     bool verified = true;
     for (const auto &op : body)
@@ -50,19 +52,16 @@ bool verify(const Operation::Body &body, SemantizerContext &ctx) {
 }
 
 template <typename AdaptorType>
-bool verify(const AdaptorType &op, SemantizerContext &ctx) {
-    std::terminate();
-    return false;
+bool verify(const AdaptorType &, SemantizerContext &, TraitVerifier &) {
+    COMPILER_UNREACHABLE("unexpected call to non-concrete verify function");
 }
 
-VERIFY(ModuleOp) {
-    TraitVerifier verifier(op.op, ctx);
+VERIFY(ModuleOp, op, ctx, verifier) {
     verifier.verify<HasOperands>(0).verify<HasResults>(0).verify<HasInwards>(0).verify<HasAttributes>(0);
     return verifier && verify(op.op->body, ctx);
 }
 
-VERIFY(FunctionOp) {
-    TraitVerifier verifier(op.op, ctx);
+VERIFY(FunctionOp, op, ctx, verifier) {
     verifier.verify<HasOperands>(0)
         .verify<HasResults>(0)
         .verify<HasAttributes>(2)
@@ -79,8 +78,7 @@ VERIFY(FunctionOp) {
     return verifier;
 }
 
-VERIFY(FunctionCallOp) {
-    TraitVerifier verifier(op.op, ctx);
+VERIFY(FunctionCallOp, op, ctx, verifier) {
     verifier.verify<HasOperands>(0)
         .verify<HasInwards>(0)
         .verify<HasAttributes>(1)
@@ -104,8 +102,7 @@ VERIFY(FunctionCallOp) {
     return verifier;
 }
 
-VERIFY(ConstantOp) {
-    TraitVerifier verifier(op.op, ctx);
+VERIFY(ConstantOp, op, ctx, verifier) {
     verifier.verify<HasOperands>(0).verify<HasResults>(1).verify<HasAttributes>(1);
     RETURN_ON_FAILURE(verifier);
     const auto &attr = op.value();
@@ -125,14 +122,13 @@ VERIFY(ConstantOp) {
     return verifier;
 }
 
-VERIFY(BinaryOp) {
-    TraitVerifier verifier(op.op, ctx);
+VERIFY(BinaryOp, op, ctx, verifier) {
     verifier.verify<HasOperands>(2).verify<HasResults>(1).verify<HasInwards>(0);
     return verifier;
 }
 
-VERIFY(ArithBinaryOp) {
-    if (!verify(Operation::as<BinaryOp>(op.op), ctx))
+VERIFY(ArithBinaryOp, op, ctx, verifier) {
+    if (!verify(Operation::as<BinaryOp>(op.op), ctx, verifier))
         return false;
     TraitVerifier verifier(op.op, ctx);
     verifier.verify<HasAttributes>(1).verify<HasNthAttrOfType<ArithBinOpKind>>(0);
@@ -151,16 +147,17 @@ VERIFY(ArithBinaryOp) {
 }
 
 bool verify(const Operation::Ptr &op, SemantizerContext &ctx) {
+    TraitVerifier verifier(op, ctx);
     if (auto mop = Operation::as<ModuleOp>(op))
-        return verify(mop, ctx);
+        return verify(mop, ctx, verifier);
     if (auto fop = Operation::as<FunctionOp>(op))
-        return verify(fop, ctx);
+        return verify(fop, ctx, verifier);
     if (auto fop = Operation::as<FunctionCallOp>(op))
-        return verify(fop, ctx);
+        return verify(fop, ctx, verifier);
     if (auto fop = Operation::as<ConstantOp>(op))
-        return verify(fop, ctx);
+        return verify(fop, ctx, verifier);
     if (auto fop = Operation::as<ArithBinaryOp>(op))
-        return verify(fop, ctx);
+        return verify(fop, ctx, verifier);
     return false;
 }
 
@@ -172,7 +169,7 @@ void Semantizer::process(const Program &program) {
 
 void Semantizer::process(const Operation::Ptr &op) {
     SemantizerContext ctx;
-
+    verify(op, ctx);
     if (!ctx.errors.empty())
         throw ctx.errors;
 }

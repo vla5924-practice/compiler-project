@@ -34,38 +34,17 @@ class TraitVerifier {
         return verified();
     }
 
-    template <typename TraitType, typename... Args>
+    template <typename Trait, typename... Args>
+        requires std::same_as<decltype(Trait::verify(op, ctx, std::declval<Args>()...)), bool>
     TraitVerifier &verify(Args... args) {
-        if (acc) {
-            TraitType trait(op, ctx);
-            acc &= trait.verify(std::forward<Args>(args)...);
-        }
+        if (acc)
+            acc &= Trait::verify(op, ctx, std::forward<Args>(args)...);
         return *this;
     }
 };
 
-class Trait {
-  protected:
-    const Operation::Ptr &op;
-    SemantizerContext &ctx;
-
-  public:
-    Trait() = delete;
-    Trait(const Trait &) = delete;
-    Trait(Trait &&) = delete;
-    ~Trait() = default;
-
-    Trait(const Operation::Ptr &op, SemantizerContext &ctx) : op(op), ctx(ctx){};
-
-    bool verify() {
-        ctx.pushOpError(op) << "was not registered for verification: " << op->name;
-        return false;
-    }
-};
-
-struct HasOperands : Trait {
-    using Trait::Trait;
-    bool verify(size_t numOperands) {
+struct HasOperands {
+    static bool verify(const Operation::Ptr &op, SemantizerContext &ctx, size_t numOperands) {
         if (op->numOperands() != numOperands) {
             ctx.pushOpError(op) << "must have " << numOperands << " operands";
             return false;
@@ -74,9 +53,8 @@ struct HasOperands : Trait {
     }
 };
 
-struct HasResults : Trait {
-    using Trait::Trait;
-    bool verify(size_t numResults) {
+struct HasResults {
+    static bool verify(const Operation::Ptr &op, SemantizerContext &ctx, size_t numResults) {
         if (op->numResults() == numResults)
             return true;
         ctx.pushOpError(op) << "must have " << numResults << " results";
@@ -84,9 +62,8 @@ struct HasResults : Trait {
     }
 };
 
-struct HasResultOfType : Trait {
-    using Trait::Trait;
-    bool verify(const Type::Ptr &type) {
+struct HasResultOfType {
+    static bool verify(const Operation::Ptr &op, SemantizerContext &ctx, const Type::Ptr &type) {
         if (op->numResults() == 1 && op->result(0)->hasType(type))
             return true;
         ctx.pushOpError(op) << "must have one result of " << type;
@@ -94,9 +71,8 @@ struct HasResultOfType : Trait {
     }
 };
 
-struct HasInwards : Trait {
-    using Trait::Trait;
-    bool verify(size_t numInwards) {
+struct HasInwards {
+    static bool verify(const Operation::Ptr &op, SemantizerContext &ctx, size_t numInwards) {
         if (op->numInwards() == numInwards)
             return true;
         ctx.pushOpError(op) << "must have " << numInwards << " inwards";
@@ -104,9 +80,8 @@ struct HasInwards : Trait {
     }
 };
 
-struct HasAttributes : Trait {
-    using Trait::Trait;
-    bool verify(size_t numAttrs) {
+struct HasAttributes {
+    static bool verify(const Operation::Ptr &op, SemantizerContext &ctx, size_t numAttrs) {
         if (op->numAttrs() == numAttrs)
             return true;
         ctx.pushOpError(op) << "must have " << numAttrs << " attributes";
@@ -115,9 +90,8 @@ struct HasAttributes : Trait {
 };
 
 template <typename T>
-struct HasNthAttrOfType : Trait {
-    using Trait::Trait;
-    bool verify(size_t index) {
+struct HasNthAttrOfType {
+    static bool verify(const Operation::Ptr &op, SemantizerContext &ctx, size_t index) {
         if constexpr (std::is_base_of_v<Type, T>) {
             if (op->attr(index).isType<T>())
                 return true;
