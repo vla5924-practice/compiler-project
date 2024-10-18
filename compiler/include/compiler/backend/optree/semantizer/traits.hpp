@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "compiler/optree/operation.hpp"
 #include "compiler/optree/types.hpp"
 
@@ -53,6 +55,17 @@ struct HasOperands {
     }
 };
 
+struct HasOperandsOfType {
+    static bool verify(const Operation::Ptr &op, SemantizerContext &ctx, size_t numOperands, const Type::Ptr &type) {
+        if (op->numOperands() == numOperands &&
+            std::all_of(op->operands.begin(), op->operands.end(),
+                        [&](const Value::Ptr &operand) { return operand->hasType(type); }))
+            return true;
+        ctx.pushOpError(op) << "must have " << numOperands << " operands of " << type;
+        return false;
+    }
+};
+
 struct HasResults {
     static bool verify(const Operation::Ptr &op, SemantizerContext &ctx, size_t numResults) {
         if (op->numResults() == numResults)
@@ -76,6 +89,17 @@ struct HasInwards {
         if (op->numInwards() == numInwards)
             return true;
         ctx.pushOpError(op) << "must have " << numInwards << " inwards";
+        return false;
+    }
+};
+
+struct HasInwardsOfType {
+    static bool verify(const Operation::Ptr &op, SemantizerContext &ctx, size_t numInwards, const Type::Ptr &type) {
+        if (op->numInwards() == numInwards &&
+            std::all_of(op->inwards.begin(), op->inwards.end(),
+                        [&](const Value::Ptr &inward) { return inward->hasType(type); }))
+            return true;
+        ctx.pushOpError(op) << "must have " << numInwards << " inwards of " << type;
         return false;
     }
 };
