@@ -64,6 +64,14 @@ void FunctionOp::init(const std::string &name, const Type::Ptr &funcType) {
         op->addInward(argType);
 }
 
+size_t FunctionOp::numArguments() const {
+    return type().arguments.size();
+}
+
+size_t FunctionOp::numResults() const {
+    return type().result->is<NoneType>() ? 0U : 1U;
+}
+
 void FunctionCallOp::init(const std::string &name, const Type::Ptr &resultType,
                           const std::vector<Value::Ptr> &arguments) {
     op->operands = arguments;

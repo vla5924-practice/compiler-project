@@ -17,8 +17,9 @@ class ErrorBuffer : public std::exception {
     ~ErrorBuffer() = default;
 
     template <typename ErrorT, typename... Args>
-    void push(Args... args) {
-        buffer.emplace_back(std::make_shared<ErrorT>(args...));
+    ErrorT &push(Args... args) {
+        auto error = buffer.emplace_back(std::make_shared<ErrorT>(args...));
+        return dynamic_cast<ErrorT &>(*error.get());
     }
 
     std::string message() const {
