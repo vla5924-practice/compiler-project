@@ -1,7 +1,9 @@
 #pragma once
 
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 #include "compiler/utils/source_ref.hpp"
 
@@ -19,15 +21,15 @@ class BaseError : public std::exception {
     virtual const char *what() const noexcept;
 
     template <typename T>
-        requires std::same_as<decltype(message + std::declval<T>()), std::string>
+        requires std::same_as<decltype(message += std::declval<T>()), std::string &> && (!std::integral<T>)
     BaseError &operator<<(const T &value) {
         message += value;
         return *this;
     }
 
     template <typename T>
-        requires std::same_as<decltype(message + std::to_string(std::declval<T>())), std::string>
-    BaseError &operator<<(const T &value) {
+        requires std::same_as<decltype(std::to_string(std::declval<T>())), std::string>
+    BaseError &operator<<(T value) {
         message += std::to_string(value);
         return *this;
     }

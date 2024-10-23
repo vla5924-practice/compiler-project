@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <ostream>
+#include <sstream>
+#include <string>
 #include <unordered_map>
 
 #include "compiler/utils/helpers.hpp"
@@ -28,6 +30,12 @@ unsigned Type::bitWidth() const {
 
 void Type::dump(std::ostream &stream) const {
     stream << "<<NULL TYPE>>";
+}
+
+std::string Type::dump() const {
+    std::stringstream str;
+    dump(str);
+    return str.str();
 }
 
 bool NoneType::operator==(const Type &other) const {
