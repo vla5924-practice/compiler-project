@@ -117,7 +117,7 @@ VERIFY(ReturnOp, op, ctx, verifier) {
         ctx.pushOpError(op) << "must live within function body";
         return false;
     }
-    size_t numOperands = parent.numResults();
+    size_t numOperands = parent.type().result->is<NoneType>() ? 0U : 1U;
     verifier.verify<HasOperands>(numOperands).verify<HasResults>(0).verify<HasInwards>(0).verify<HasAttributes>(0);
     RETURN_ON_FAILURE(verifier);
     if (numOperands > 0 && !op.value()->hasType(parent.type().result)) {

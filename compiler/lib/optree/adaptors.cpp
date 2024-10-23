@@ -1,6 +1,5 @@
 #include "adaptors.hpp"
 
-#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -63,14 +62,6 @@ void FunctionOp::init(const std::string &name, const Type::Ptr &funcType) {
     op->addAttr(funcType);
     for (const auto &argType : funcType->as<FunctionType>().arguments)
         op->addInward(argType);
-}
-
-size_t FunctionOp::numArguments() const {
-    return type().arguments.size();
-}
-
-size_t FunctionOp::numResults() const {
-    return type().result->is<NoneType>() ? 0U : 1U;
 }
 
 void FunctionCallOp::init(const std::string &name, const Type::Ptr &resultType,

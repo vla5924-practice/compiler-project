@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -47,9 +46,6 @@ struct FunctionOp : Adaptor {
 
     OPTREE_ADAPTOR_ATTRIBUTE(name, setName, std::string, 0)
     OPTREE_ADAPTOR_ATTRIBUTE_TYPE(type, FunctionType, 1)
-
-    size_t numArguments() const;
-    size_t numResults() const;
 };
 
 struct FunctionCallOp : Adaptor {
