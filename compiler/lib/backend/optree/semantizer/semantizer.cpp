@@ -1,12 +1,17 @@
 #include "semantizer/semantizer.hpp"
 
+#include <cstddef>
 #include <iterator>
 #include <optional>
+#include <string>
+#include <string_view>
 
 #include "compiler/optree/adaptors.hpp"
-#include "compiler/optree/helpers.hpp"
+#include "compiler/optree/definitions.hpp"
 #include "compiler/optree/operation.hpp"
 #include "compiler/optree/program.hpp"
+#include "compiler/optree/types.hpp"
+#include "compiler/optree/value.hpp"
 #include "compiler/utils/helpers.hpp"
 
 #include "semantizer/semantizer_context.hpp"
@@ -14,9 +19,9 @@
 
 #define VERIFY(ADAPTOR_CLASS_NAME, OP_NAME, CTX_NAME, VERIFIER_NAME)                                                   \
     template <>                                                                                                        \
-    bool verify<ADAPTOR_CLASS_NAME>([[maybe_unused]] const ADAPTOR_CLASS_NAME &OP_NAME,                                \
-                                    [[maybe_unused]] SemantizerContext &CTX_NAME,                                      \
-                                    [[maybe_unused]] TraitVerifier &VERIFIER_NAME)
+    bool verify<ADAPTOR_CLASS_NAME>([[maybe_unused]] const ADAPTOR_CLASS_NAME &(OP_NAME),                              \
+                                    [[maybe_unused]] SemantizerContext &(CTX_NAME),                                    \
+                                    [[maybe_unused]] TraitVerifier &(VERIFIER_NAME))
 
 #define RETURN_ON_FAILURE(EXPR)                                                                                        \
     if (!(EXPR)) {                                                                                                     \
