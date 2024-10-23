@@ -21,14 +21,12 @@ struct Type {
     Type &operator=(const Type &) = default;
     Type &operator=(Type &&) = default;
 
-    template <typename DerivedType>
-        requires std::derived_from<DerivedType, Type>
+    template <std::derived_from<Type> DerivedType>
     bool is() const {
         return dynamic_cast<const std::remove_cvref_t<DerivedType> *>(this) != nullptr;
     }
 
-    template <typename DerivedType>
-        requires std::derived_from<DerivedType, Type>
+    template <std::derived_from<Type> DerivedType>
     const std::remove_cvref_t<DerivedType> &as() const {
         return dynamic_cast<const std::remove_cvref_t<DerivedType> &>(*this);
     }
@@ -47,6 +45,7 @@ struct Type {
 
     virtual unsigned bitWidth() const;
     virtual void dump(std::ostream &stream) const;
+    virtual std::string dump() const;
 
     template <typename ConcreteType, typename... Args>
     static auto make(Args... args) {

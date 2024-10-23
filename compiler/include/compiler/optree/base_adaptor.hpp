@@ -6,14 +6,18 @@
 #include "compiler/utils/source_ref.hpp"
 
 #define OPTREE_ADAPTOR_HELPER(BASE_ADAPTOR_CLASS, OPERATION_NAME)                                                      \
-    using BASE_ADAPTOR_CLASS::BASE_ADAPTOR_CLASS;                                                                      \
-    using BASE_ADAPTOR_CLASS::operator bool;                                                                           \
+    using Base = BASE_ADAPTOR_CLASS;                                                                                   \
+    using Base::Base;                                                                                                  \
+    using Base::operator bool;                                                                                         \
     static std::string_view getOperationName() {                                                                       \
         return (OPERATION_NAME);                                                                                       \
     }                                                                                                                  \
     static Operation::SpecId getSpecId() {                                                                             \
         static char specId = 0;                                                                                        \
         return &specId;                                                                                                \
+    }                                                                                                                  \
+    static bool implementsSpecById(Operation::SpecId specId) {                                                         \
+        return specId == getSpecId() || Base::implementsSpecById(specId);                                              \
     }
 
 #define OPTREE_ADAPTOR_ATTRIBUTE(GET_NAME, SET_NAME, TYPE, NUMBER)                                                     \
@@ -88,6 +92,10 @@ struct Adaptor {
 
     static Operation::SpecId getSpecId() {
         return nullptr;
+    }
+
+    static bool implementsSpecById(Operation::SpecId) {
+        return false;
     }
 };
 
