@@ -88,10 +88,7 @@ VERIFY(FunctionOp, op, ctx, verifier) {
 }
 
 VERIFY(FunctionCallOp, op, ctx, verifier) {
-    verifier.verify<HasOperands>(0)
-        .verify<HasInwards>(0)
-        .verify<HasAttributes>(1)
-        .verify<HasNthAttrOfType<std::string>>(0);
+    verifier.verify<HasInwards>(0).verify<HasAttributes>(1).verify<HasNthAttrOfType<std::string>>(0);
     RETURN_ON_FAILURE(verifier);
     const auto &name = op.name();
     auto maybeFunc = ctx.findFunction(name);
@@ -100,10 +97,7 @@ VERIFY(FunctionCallOp, op, ctx, verifier) {
         return false;
     }
     const auto &funcType = maybeFunc->type();
-    if (funcType.result->is<NoneType>())
-        verifier.verify<HasResults>(0);
-    else
-        verifier.verify<HasResultOfType>(funcType.result);
+    verifier.verify<HasResultOfType>(funcType.result);
     if (!valuesHaveTypes(op->operands, funcType.arguments)) {
         ctx.pushOpError(op) << "must have operands with types of arguments of provided function type";
         return false;
@@ -329,8 +323,9 @@ VERIFY(ConditionOp, op, ctx, verifier) {
         ctx.pushOpError(op) << "must have at least one operation within body";
         return false;
     }
-    if (op->body.back()->numResults() != 1) {
-        ctx.pushOpError(op) << "must have operation with one result as last within body";
+    const auto &lastOp = op->body.back();
+    if (lastOp->numResults() != 1 || !lastOp->result(0)->type->is<BoolType>()) {
+        ctx.pushOpError(op) << "must have operation with one bool result as last within body";
         return false;
     }
     return true;
@@ -367,6 +362,8 @@ bool verify(const Operation::Ptr &op, SemantizerContext &ctx) {
         return verify(concreteOp, ctx, verifier);
     if (auto concreteOp = op->as<FunctionCallOp>())
         return verify(concreteOp, ctx, verifier);
+    if (auto concreteOp = op->as<ReturnOp>())
+        return verify(concreteOp, ctx, verifier);
     if (auto concreteOp = op->as<ConstantOp>())
         return verify(concreteOp, ctx, verifier);
     if (auto concreteOp = op->as<ArithBinaryOp>())
@@ -381,11 +378,17 @@ bool verify(const Operation::Ptr &op, SemantizerContext &ctx) {
         return verify(concreteOp, ctx, verifier);
     if (auto concreteOp = op->as<LoadOp>())
         return verify(concreteOp, ctx, verifier);
+    if (auto concreteOp = op->as<StoreOp>())
+        return verify(concreteOp, ctx, verifier);
     if (auto concreteOp = op->as<IfOp>())
         return verify(concreteOp, ctx, verifier);
     if (auto concreteOp = op->as<ThenOp>())
         return verify(concreteOp, ctx, verifier);
     if (auto concreteOp = op->as<ElseOp>())
+        return verify(concreteOp, ctx, verifier);
+    if (auto concreteOp = op->as<WhileOp>())
+        return verify(concreteOp, ctx, verifier);
+    if (auto concreteOp = op->as<ConditionOp>())
         return verify(concreteOp, ctx, verifier);
     if (auto concreteOp = op->as<ForOp>())
         return verify(concreteOp, ctx, verifier);

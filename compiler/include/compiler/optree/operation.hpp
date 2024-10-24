@@ -143,7 +143,7 @@ struct Operation : public std::enable_shared_from_this<Operation> {
     template <typename AdaptorType>
     AdaptorType findParent() const {
         Ptr upperParent = parent;
-        while (upperParent && !upperParent->is<AdaptorType>()) {
+        while (upperParent) {
             if (upperParent->is<AdaptorType>())
                 return {upperParent};
             upperParent = upperParent->parent;

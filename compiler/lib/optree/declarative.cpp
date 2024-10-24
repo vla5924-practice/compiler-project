@@ -77,6 +77,10 @@ const Operation::Ptr &DeclarativeModule::rootOp() const {
     return root;
 }
 
+const Operation::Ptr &DeclarativeModule::nestedOp(size_t index) const {
+    return *std::next(root->body.begin(), index);
+}
+
 Program DeclarativeModule::makeProgram() const {
     return {root};
 }
