@@ -15,6 +15,9 @@
 .. image:: https://coveralls.io/repos/github/vla5924-practice/compiler-project/badge.svg?branch=main
    :target: https://coveralls.io/github/vla5924-practice/compiler-project?branch=main
 
+.. image:: https://www.bestpractices.dev/projects/6129/badge
+   :target: https://www.bestpractices.dev/projects/6129
+
 
 This is a home for `Compiler project <https://github.com/vla5924-practice/compiler-project>`_, a free for use, open
 source, written from scratch compiler with additional support of LLVM IR code generation and binary executable

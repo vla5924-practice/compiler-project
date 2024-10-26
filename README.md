@@ -4,13 +4,14 @@
 [![Dev Container](https://github.com/vla5924-practice/compiler-project/actions/workflows/devcontainer.yml/badge.svg?branch=main&event=push)](https://github.com/vla5924-practice/compiler-project/actions/workflows/devcontainer.yml)
 [![CodeQL](https://github.com/vla5924-practice/compiler-project/actions/workflows/codeql.yml/badge.svg?branch=main&event=push)](https://github.com/vla5924-practice/compiler-project/actions/workflows/codeql.yml)
 [![Code coverage](https://coveralls.io/repos/github/vla5924-practice/compiler-project/badge.svg?branch=main)](https://coveralls.io/github/vla5924-practice/compiler-project?branch=main)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/6129/badge)](https://www.bestpractices.dev/projects/6129)
 
 This is a home for [Compiler project](https://github.com/vla5924-practice/compiler-project), a free for use, open source, written from scratch compiler with additional support of LLVM IR code generation and binary executable production.
 
 
 ## Language
 
-A compiler supports an imperative Python-flavoured language with static typing and a `main` entry function. For example, a program that calculates the factorial of aт integer may be written this way:
+A compiler supports an imperative Python-flavoured language with static typing and a `main` entry function. For example, a program that calculates the factorial of an integer may be written this way:
 
 ```py
 # Factorial
@@ -22,7 +23,7 @@ def fact(n: int) -> int:
 # Main function
 def main() -> None:
     x: int = input()
-    x = fact(x + 0)
+    x = fact(x)
     print(x) # output
 ```
 
