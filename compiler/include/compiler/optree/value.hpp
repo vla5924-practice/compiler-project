@@ -10,7 +10,7 @@
 
 namespace optree {
 
-class Operation;
+struct Operation;
 
 struct Value {
     using Ptr = std::shared_ptr<Value>;
