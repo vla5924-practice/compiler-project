@@ -21,4 +21,6 @@ AdaptorType getValueOwnerAs(const Value::Ptr &value) {
     return value->owner.lock()->as<AdaptorType>();
 }
 
+bool similar(const Operation::Ptr& lhs, const Operation::Ptr& rhs);
+
 } // namespace optree
