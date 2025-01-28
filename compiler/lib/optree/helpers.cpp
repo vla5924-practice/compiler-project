@@ -1,11 +1,11 @@
 #include "helpers.hpp"
 
 #include <algorithm>
-#include <ranges>
 
 #include "compiler/utils/source_ref.hpp"
 
 #include "compiler/optree/adaptors.hpp"
+#include "compiler/optree/attribute.hpp"
 #include "compiler/optree/builder.hpp"
 #include "compiler/optree/definitions.hpp"
 #include "compiler/optree/types.hpp"
@@ -58,6 +58,7 @@ ArithCastOp insertNumericCastOp(const Type::Ptr &resultType, const Value::Ptr &v
 
 bool similar(const Operation::Ptr &lhs, const Operation::Ptr &rhs) {
     auto name = lhs->name == rhs->name;
+    auto specId = lhs->as<Adaptor>().getSpecId() == rhs->as<Adaptor>().getSpecId();
     auto attrEqual = [](const Attribute &lhs, const Attribute &rhs) { return lhs.storage == rhs.storage; };
     bool attr = std::ranges::equal(lhs->attributes, rhs->attributes, attrEqual);
     auto operandEqual = [&lhs, &rhs](const Value::Ptr &lhsValue, const Value::Ptr &rhsValue) {
@@ -79,7 +80,7 @@ bool similar(const Operation::Ptr &lhs, const Operation::Ptr &rhs) {
     bool results = std::ranges::equal(lhs->results, rhs->results, valueEqual);
     bool body = std::ranges::equal(lhs->body, rhs->body, optree::similar);
 
-    return name && attr && operands && body;
+    return name && attr && operands && inwards && results && body;
 }
 
 } // namespace optree
