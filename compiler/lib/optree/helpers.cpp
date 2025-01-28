@@ -6,10 +6,12 @@
 
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/attribute.hpp"
+#include "compiler/optree/base_adaptor.hpp"
 #include "compiler/optree/builder.hpp"
 #include "compiler/optree/definitions.hpp"
 #include "compiler/optree/types.hpp"
 #include "compiler/optree/value.hpp"
+
 
 namespace optree {
 
