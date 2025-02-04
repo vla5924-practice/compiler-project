@@ -1,5 +1,6 @@
 #include <cstdint>
 
+#include <algorithm>
 #include <gtest/gtest.h>
 
 #include "compiler/optree/adaptors.hpp"
