@@ -29,7 +29,7 @@ struct Attribute {
     Attribute &operator=(const Attribute &) = default;
     Attribute &operator=(Attribute &&) = default;
 
-    bool operator==(const Attribute& other) const;
+    bool operator==(const Attribute &other) const;
 
     template <typename VariantType>
     explicit Attribute(const VariantType &value) {
@@ -76,7 +76,7 @@ struct Attribute {
     }
 
     template <typename VariantType>
-        requires std::derived_from<VariantType, Type>
+    requires std::derived_from<VariantType, Type>
     void set(const std::shared_ptr<const VariantType> &value) {
         storage = std::dynamic_pointer_cast<const Type>(value);
     }

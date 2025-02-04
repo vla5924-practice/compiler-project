@@ -12,7 +12,6 @@
 #include "compiler/optree/types.hpp"
 #include "compiler/optree/value.hpp"
 
-
 namespace optree {
 
 Type::Ptr deduceTargetCastType(const Type::Ptr &outType, const Type::Ptr &inType, bool isAssignment) {
