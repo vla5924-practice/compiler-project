@@ -58,11 +58,11 @@ ArithCastOp insertNumericCastOp(const Type::Ptr &resultType, const Value::Ptr &v
     return builder.insert<ArithCastOp>(ref, kind, resultType, value);
 }
 
-bool similar(const Operation::Ptr &lhs, const Operation::Ptr &rhs) {
+bool similar(const Operation::Ptr &lhs, const Operation::Ptr &rhs, bool checkBody) {
     auto name = lhs->name == rhs->name;
-    auto specId = lhs->as<Adaptor>().getSpecId() == rhs->as<Adaptor>().getSpecId();
-    auto attrEqual = [](const Attribute &lhs, const Attribute &rhs) { return lhs.storage == rhs.storage; };
-    bool attr = std::ranges::equal(lhs->attributes, rhs->attributes, attrEqual);
+    auto specId = name ? lhs->as<Adaptor>().getSpecId() == rhs->as<Adaptor>().getSpecId() : false;
+    auto attrEqual = [](const Attribute &lhs, const Attribute &rhs) { return lhs == rhs; };
+    bool attr = specId ? std::ranges::equal(lhs->attributes, rhs->attributes, attrEqual) : false;
     auto operandEqual = [&lhs, &rhs](const Value::Ptr &lhsValue, const Value::Ptr &rhsValue) {
         bool type = lhsValue->sameType(rhsValue);
         auto lhsOwner = lhsValue->owner.lock();
@@ -70,18 +70,22 @@ bool similar(const Operation::Ptr &lhs, const Operation::Ptr &rhs) {
         bool sameGlobalOwner = lhsOwner == rhsOwner;
         bool similarLocalOwner = false;
         if (!sameGlobalOwner && lhsOwner != lhs && rhsOwner != rhs) {
-            similarLocalOwner = similar(lhsOwner, rhsOwner);
+            similarLocalOwner = similar(lhsOwner, rhsOwner, false);
         }
         return type && (sameGlobalOwner || similarLocalOwner);
     };
-    bool operands = std::ranges::equal(lhs->operands, rhs->operands, operandEqual);
+    bool operands = attr ? std::ranges::equal(lhs->operands, rhs->operands, operandEqual) : false;
     auto valueEqual = [](const Value::Ptr &lhsValue, const Value::Ptr &rhsValue) {
         return lhsValue->sameType(rhsValue);
     };
-    bool inwards = std::ranges::equal(lhs->inwards, rhs->inwards, valueEqual);
-    bool results = std::ranges::equal(lhs->results, rhs->results, valueEqual);
-    bool body = std::ranges::equal(lhs->body, rhs->body, optree::similar);
-
+    bool inwards = operands ? std::ranges::equal(lhs->inwards, rhs->inwards, valueEqual) : false;
+    bool results = inwards ? std::ranges::equal(lhs->results, rhs->results, valueEqual) : false;
+    bool body = true;
+    if (checkBody) {
+        body = std::ranges::equal(lhs->body, rhs->body, [](const Operation::Ptr &lhs, const Operation::Ptr &rhs) {
+            return optree::similar(lhs, rhs, true);
+        });
+    }
     return name && attr && operands && inwards && results && body;
 }
 
