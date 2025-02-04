@@ -76,7 +76,7 @@ struct Attribute {
     }
 
     template <typename VariantType>
-    requires std::derived_from<VariantType, Type>
+        requires std::derived_from<VariantType, Type>
     void set(const std::shared_ptr<const VariantType> &value) {
         storage = std::dynamic_pointer_cast<const Type>(value);
     }
