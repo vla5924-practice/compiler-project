@@ -74,6 +74,85 @@ Operation::SpecId Operation::getUnknownSpecId() {
     return &unknownSpec;
 }
 
+const Value::Ptr &Operation::operand(size_t index) const {
+    return operands[index];
+}
+
+Value::Ptr &Operation::operand(size_t index) {
+    return operands[index];
+}
+
+const Value::Ptr &Operation::result(size_t index) const {
+    return results[index];
+}
+
+Value::Ptr &Operation::result(size_t index) {
+    return results[index];
+}
+
+const Value::Ptr &Operation::inward(size_t index) const {
+    return inwards[index];
+}
+
+Value::Ptr &Operation::inward(size_t index) {
+    return inwards[index];
+}
+
+const Attribute &Operation::attr(size_t index) const {
+    return attributes[index];
+}
+
+Attribute &Operation::attr(size_t index) {
+    return attributes[index];
+}
+
+const Operation::Ptr &Operation::child(size_t index) const {
+    size_t size = numChildren();
+    if (size - index > index)
+        return *std::prev(end(), size - index);
+    return *std::next(begin(), index);
+}
+
+Operation::operator bool() const {
+    return specId;
+}
+
+size_t Operation::numOperands() const {
+    return operands.size();
+}
+
+size_t Operation::numResults() const {
+    return results.size();
+}
+
+size_t Operation::numInwards() const {
+    return inwards.size();
+}
+
+size_t Operation::numAttrs() const {
+    return attributes.size();
+}
+
+size_t Operation::numChildren() const {
+    return body.size();
+}
+
+Operation::Body::const_iterator Operation::begin() const {
+    return body.begin();
+}
+
+Operation::Body::iterator Operation::begin() {
+    return body.begin();
+}
+
+Operation::Body::const_iterator Operation::end() const {
+    return body.end();
+}
+
+Operation::Body::iterator Operation::end() {
+    return body.end();
+}
+
 void Operation::addOperand(const Value::Ptr &value) {
     addUse(value, operands.size());
     operands.emplace_back(value);

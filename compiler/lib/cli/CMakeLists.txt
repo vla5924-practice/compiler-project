@@ -6,17 +6,21 @@ set_target_include_dir(${TARGET_NAME})
 file(GLOB_RECURSE TARGET_HEADERS ${TARGET_INCLUDE_DIR}/*.hpp)
 file(GLOB_RECURSE TARGET_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
+include(${COMPILER_CMAKE_DIR}/version.cmake)
+configure_file(${TARGET_INCLUDE_DIR}/version.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/version.hpp @ONLY)
+
 add_executable(${TARGET_NAME} ${TARGET_SRC} ${TARGET_HEADERS})
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME compiler)
 
 target_include_directories(${TARGET_NAME}
     PUBLIC ${COMPILER_INCLUDE_DIR}
-    PRIVATE ${TARGET_INCLUDE_DIR}
+    PRIVATE ${TARGET_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 target_link_libraries(${TARGET_NAME} PUBLIC
     argparse
     backend_ast
+    backend_optree
     frontend
     utils
 )

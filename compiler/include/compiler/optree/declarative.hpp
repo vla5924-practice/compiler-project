@@ -147,6 +147,7 @@ class DeclarativeModule {
     void endBody();
 
     const Operation::Ptr &rootOp() const;
+    const Operation::Ptr &childOp(size_t index = 0) const;
     Program makeProgram() const;
 
     std::string dump() const;
