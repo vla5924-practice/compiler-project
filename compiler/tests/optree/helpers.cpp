@@ -21,11 +21,11 @@ class DeclarativeSimilarTest : public ::testing::Test {
     DeclarativeSimilarTest() : mFirst(), mSecond(), vFirst(mFirst.values()), vSecond(mSecond.values()){};
     ~DeclarativeSimilarTest() = default;
 
-    auto assertSimilarTrue() const {
+    auto assertSimilar() const {
         ASSERT_TRUE(similar(mFirst.rootOp(), mSecond.rootOp()));
     }
 
-    auto assertSimilarFalse() const {
+    auto assertNotSimilar() const {
         ASSERT_FALSE(similar(mFirst.rootOp(), mSecond.rootOp()));
     }
 };
@@ -34,7 +34,7 @@ TEST_F(DeclarativeSimilarTest, constant_op_true_similarity) {
     vFirst[0] = mFirst.op<ConstantOp>().attr(123).result(mFirst.tI64);
     vSecond[0] = mSecond.op<ConstantOp>().attr(123).result(mSecond.tI64);
 
-    assertSimilarTrue();
+    assertSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, constant_op_true_similarity_in_one_tree) {
@@ -47,7 +47,7 @@ TEST_F(DeclarativeSimilarTest, constant_op_false_similarity) {
     vFirst[0] = mFirst.op<ConstantOp>().attr(321).result(mFirst.tI64);
     vSecond[0] = mSecond.op<ConstantOp>().attr(123).result(mSecond.tI64);
 
-    assertSimilarFalse();
+    assertNotSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, arith_binary_op_similarity) {
@@ -59,7 +59,7 @@ TEST_F(DeclarativeSimilarTest, arith_binary_op_similarity) {
     vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
     vSecond[2] = mSecond.op<ArithBinaryOp>(vSecond[0], vSecond[1]).attr(ArithBinOpKind::AddI).result(mSecond.tI64);
 
-    assertSimilarTrue();
+    assertSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, arith_binary_op_operands_attr_dissimilarity) {
@@ -71,7 +71,7 @@ TEST_F(DeclarativeSimilarTest, arith_binary_op_operands_attr_dissimilarity) {
     vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
     vSecond[2] = mSecond.op<ArithBinaryOp>(vSecond[0], vSecond[1]).attr(ArithBinOpKind::AddI).result(mSecond.tI64);
 
-    assertSimilarFalse();
+    assertNotSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, arith_binary_op_operands_result_dissimilarity) {
@@ -83,7 +83,7 @@ TEST_F(DeclarativeSimilarTest, arith_binary_op_operands_result_dissimilarity) {
     vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
     vSecond[2] = mSecond.op<ArithBinaryOp>(vSecond[0], vSecond[1]).attr(ArithBinOpKind::AddI).result(mSecond.tI64);
 
-    assertSimilarFalse();
+    assertNotSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, arith_binary_op_operands_dissimilarity) {
@@ -95,7 +95,7 @@ TEST_F(DeclarativeSimilarTest, arith_binary_op_operands_dissimilarity) {
     vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
     vSecond[2] = mSecond.op<ArithBinaryOp>(vSecond[0], vSecond[1]).attr(ArithBinOpKind::AddI).result(mSecond.tI64);
 
-    assertSimilarFalse();
+    assertNotSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, operation_dissimilarity) {
@@ -107,7 +107,7 @@ TEST_F(DeclarativeSimilarTest, operation_dissimilarity) {
     vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
     vSecond[2] = mSecond.op<BinaryOp>(vSecond[0], vSecond[1]).attr(LogicBinOpKind::Equal).result(mSecond.tI64);
 
-    assertSimilarFalse();
+    assertNotSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, function_similarity) {
@@ -135,7 +135,7 @@ TEST_F(DeclarativeSimilarTest, function_similarity) {
     mSecond.opInit<ReturnOp>();
     mSecond.endBody();
 
-    assertSimilarTrue();
+    assertSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, function_body_dissimilarity) {
@@ -155,7 +155,7 @@ TEST_F(DeclarativeSimilarTest, function_body_dissimilarity) {
     mSecond.opInit<ReturnOp>();
     mSecond.endBody();
 
-    assertSimilarFalse();
+    assertNotSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, function_name_dissimilarity) {
@@ -175,7 +175,7 @@ TEST_F(DeclarativeSimilarTest, function_name_dissimilarity) {
     mSecond.opInit<ReturnOp>();
     mSecond.endBody();
 
-    assertSimilarFalse();
+    assertNotSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, function_result_dissimilarity) {
@@ -195,7 +195,7 @@ TEST_F(DeclarativeSimilarTest, function_result_dissimilarity) {
     mSecond.opInit<ReturnOp>();
     mSecond.endBody();
 
-    assertSimilarFalse();
+    assertNotSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, function_attr_param_dissimilarity) {
@@ -215,7 +215,7 @@ TEST_F(DeclarativeSimilarTest, function_attr_param_dissimilarity) {
     mSecond.opInit<ReturnOp>();
     mSecond.endBody();
 
-    assertSimilarFalse();
+    assertNotSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, if_similarity) {
@@ -253,7 +253,7 @@ TEST_F(DeclarativeSimilarTest, if_similarity) {
     mSecond.opInit<ReturnOp>();
     mSecond.endBody();
 
-    assertSimilarTrue();
+    assertSimilar();
 }
 
 TEST_F(DeclarativeSimilarTest, if_then_else_similarity) {

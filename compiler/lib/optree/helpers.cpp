@@ -58,10 +58,13 @@ ArithCastOp insertNumericCastOp(const Type::Ptr &resultType, const Value::Ptr &v
 }
 
 bool similar(const Operation::Ptr &lhs, const Operation::Ptr &rhs, bool checkBody) {
-    auto name = lhs->name == rhs->name;
-    auto specId = name ? lhs->as<Adaptor>().getSpecId() == rhs->as<Adaptor>().getSpecId() : false;
+    if (lhs->name != rhs->name)
+        return false;
+    if (lhs->as<Adaptor>().getSpecId() != rhs->as<Adaptor>().getSpecId())
+        return false;
     auto attrEqual = [](const Attribute &lhs, const Attribute &rhs) { return lhs == rhs; };
-    bool attr = specId ? std::ranges::equal(lhs->attributes, rhs->attributes, attrEqual) : false;
+    if (!std::ranges::equal(lhs->attributes, rhs->attributes, attrEqual))
+        return false;
     auto operandEqual = [&lhs, &rhs](const Value::Ptr &lhsValue, const Value::Ptr &rhsValue) {
         bool type = lhsValue->sameType(rhsValue);
         auto lhsOwner = lhsValue->owner.lock();
@@ -73,19 +76,22 @@ bool similar(const Operation::Ptr &lhs, const Operation::Ptr &rhs, bool checkBod
         }
         return type && (sameGlobalOwner || similarLocalOwner);
     };
-    bool operands = attr ? std::ranges::equal(lhs->operands, rhs->operands, operandEqual) : false;
+    if (!std::ranges::equal(lhs->operands, rhs->operands, operandEqual))
+        return false;
     auto valueEqual = [](const Value::Ptr &lhsValue, const Value::Ptr &rhsValue) {
         return lhsValue->sameType(rhsValue);
     };
-    bool inwards = operands ? std::ranges::equal(lhs->inwards, rhs->inwards, valueEqual) : false;
-    bool results = inwards ? std::ranges::equal(lhs->results, rhs->results, valueEqual) : false;
+    if (!std::ranges::equal(lhs->inwards, rhs->inwards, valueEqual))
+        return false;
+    if (!std::ranges::equal(lhs->results, rhs->results, valueEqual))
+        return false;
     bool body = true;
     if (checkBody) {
         body = std::ranges::equal(lhs->body, rhs->body, [](const Operation::Ptr &lhs, const Operation::Ptr &rhs) {
-            return optree::similar(lhs, rhs, true);
+            return similar(lhs, rhs, true);
         });
     }
-    return name && attr && operands && inwards && results && body;
+    return body;
 }
 
 } // namespace optree
