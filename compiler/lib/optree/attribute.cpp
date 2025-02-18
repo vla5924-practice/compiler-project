@@ -10,6 +10,13 @@
 
 using namespace optree;
 
+bool Attribute::operator==(const Attribute &other) const {
+    if (is<Type::Ptr>() && other.is<Type::Ptr>()) {
+        return *std::get<Type::Ptr>(storage) == *std::get<Type::Ptr>(other.storage);
+    }
+    return storage == other.storage;
+}
+
 void Attribute::dump(std::ostream &stream) const {
     if (is<std::monostate>()) {
         stream << "empty";

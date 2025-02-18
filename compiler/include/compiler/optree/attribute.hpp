@@ -29,6 +29,8 @@ struct Attribute {
     Attribute &operator=(const Attribute &) = default;
     Attribute &operator=(Attribute &&) = default;
 
+    bool operator==(const Attribute &other) const;
+
     template <typename VariantType>
     explicit Attribute(const VariantType &value) {
         if constexpr (Attribute::canHold<VariantType>())
