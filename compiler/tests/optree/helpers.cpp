@@ -25,89 +25,114 @@ class DeclarativeSimilarTest : public ::testing::Test {
         ASSERT_TRUE(similar(mFirst.rootOp(), mSecond.rootOp()));
     }
 
+    auto assertSimilarByIndex(size_t index) const {
+        ASSERT_TRUE(similar(mFirst.childOp(index), mSecond.childOp(index)));
+    }
+
     auto assertNotSimilar() const {
         ASSERT_FALSE(similar(mFirst.rootOp(), mSecond.rootOp()));
+    }
+
+    auto assertNotSimilarByIndex(size_t index) const {
+        ASSERT_FALSE(similar(mFirst.childOp(index), mSecond.childOp(index)));
     }
 };
 
 TEST_F(DeclarativeSimilarTest, constant_op_true_similarity) {
-    vFirst[0] = mFirst.op<ConstantOp>().attr(123).result(mFirst.tI64);
-    vSecond[0] = mSecond.op<ConstantOp>().attr(123).result(mSecond.tI64);
+    vFirst[0] = mFirst.opInit<ConstantOp>(mFirst.tI64, 123);
+    vSecond[0] = mSecond.opInit<ConstantOp>(mSecond.tI64, 123);
 
     assertSimilar();
+    assertSimilarByIndex(0);
 }
 
 TEST_F(DeclarativeSimilarTest, constant_op_true_similarity_in_one_tree) {
-    vFirst[0] = mFirst.op<ConstantOp>().attr(123).result(mFirst.tI64);
+    vFirst[0] = mFirst.opInit<ConstantOp>(mFirst.tI64, 123);
 
     ASSERT_TRUE(similar(mFirst.rootOp(), mFirst.rootOp()));
 }
 
 TEST_F(DeclarativeSimilarTest, constant_op_false_similarity) {
-    vFirst[0] = mFirst.op<ConstantOp>().attr(321).result(mFirst.tI64);
-    vSecond[0] = mSecond.op<ConstantOp>().attr(123).result(mSecond.tI64);
+    vFirst[0] = mFirst.opInit<ConstantOp>(mFirst.tI64, 321);
+    vSecond[0] = mSecond.opInit<ConstantOp>(mSecond.tI64, 123);
 
     assertNotSimilar();
+    assertNotSimilarByIndex(0);
 }
 
 TEST_F(DeclarativeSimilarTest, arith_binary_op_similarity) {
-    vFirst[0] = mFirst.op<ConstantOp>().attr(123).result(mFirst.tI64);
-    vFirst[1] = mFirst.op<ConstantOp>().attr(321).result(mFirst.tI64);
-    vFirst[2] = mFirst.op<ArithBinaryOp>(vFirst[0], vFirst[1]).attr(ArithBinOpKind::AddI).result(mFirst.tI64);
+    vFirst[0] = mFirst.opInit<ConstantOp>(mFirst.tI64, 123);
+    vFirst[1] = mFirst.opInit<ConstantOp>(mFirst.tI64, 321);
+    vFirst[2] = mFirst.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, mFirst.tI64, vFirst[0], vFirst[1]);
 
-    vSecond[0] = mSecond.op<ConstantOp>().attr(123).result(mSecond.tI64);
-    vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
-    vSecond[2] = mSecond.op<ArithBinaryOp>(vSecond[0], vSecond[1]).attr(ArithBinOpKind::AddI).result(mSecond.tI64);
+    vSecond[0] = mSecond.opInit<ConstantOp>(mSecond.tI64, 123);
+    vSecond[1] = mSecond.opInit<ConstantOp>(mSecond.tI64, 321);
+    vSecond[2] = mSecond.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, mFirst.tI64, vSecond[0], vSecond[1]);
 
     assertSimilar();
+    assertSimilarByIndex(0);
+    assertSimilarByIndex(1);
+    assertSimilarByIndex(2);
 }
 
 TEST_F(DeclarativeSimilarTest, arith_binary_op_operands_attr_dissimilarity) {
-    vFirst[0] = mFirst.op<ConstantOp>().attr(123).result(mFirst.tI64);
-    vFirst[1] = mFirst.op<ConstantOp>().attr(321).result(mFirst.tI64);
-    vFirst[2] = mFirst.op<ArithBinaryOp>(vFirst[0], vFirst[1]).attr(ArithBinOpKind::AddF).result(mFirst.tI64);
+    vFirst[0] = mFirst.opInit<ConstantOp>(mFirst.tI64, 321);
+    vFirst[1] = mFirst.opInit<ConstantOp>(mFirst.tI64, 123);
+    vFirst[2] = mFirst.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, mFirst.tI64, vFirst[0], vFirst[1]);
 
-    vSecond[0] = mSecond.op<ConstantOp>().attr(123).result(mSecond.tI64);
-    vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
-    vSecond[2] = mSecond.op<ArithBinaryOp>(vSecond[0], vSecond[1]).attr(ArithBinOpKind::AddI).result(mSecond.tI64);
+    vSecond[0] = mSecond.opInit<ConstantOp>(mSecond.tI64, 123);
+    vSecond[1] = mSecond.opInit<ConstantOp>(mSecond.tI64, 321);
+    vSecond[2] = mSecond.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, mFirst.tI64, vSecond[0], vSecond[1]);
 
     assertNotSimilar();
+    assertNotSimilarByIndex(0);
+    assertNotSimilarByIndex(1);
+    assertNotSimilarByIndex(2);
 }
 
 TEST_F(DeclarativeSimilarTest, arith_binary_op_operands_result_dissimilarity) {
-    vFirst[0] = mFirst.op<ConstantOp>().attr(123).result(mFirst.tI64);
-    vFirst[1] = mFirst.op<ConstantOp>().attr(321).result(mFirst.tI64);
-    vFirst[2] = mFirst.op<ArithBinaryOp>(vFirst[0], vFirst[1]).attr(ArithBinOpKind::AddI).result(mFirst.tF64);
+    vFirst[0] = mFirst.opInit<ConstantOp>(mFirst.tI64, 123);
+    vFirst[1] = mFirst.opInit<ConstantOp>(mFirst.tI64, 321);
+    vFirst[2] = mFirst.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, mFirst.tF64, vFirst[0], vFirst[1]);
 
-    vSecond[0] = mSecond.op<ConstantOp>().attr(123).result(mSecond.tI64);
-    vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
-    vSecond[2] = mSecond.op<ArithBinaryOp>(vSecond[0], vSecond[1]).attr(ArithBinOpKind::AddI).result(mSecond.tI64);
+    vSecond[0] = mSecond.opInit<ConstantOp>(mSecond.tI64, 123);
+    vSecond[1] = mSecond.opInit<ConstantOp>(mSecond.tI64, 321);
+    vSecond[2] = mSecond.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, mFirst.tI64, vSecond[0], vSecond[1]);
 
     assertNotSimilar();
+    assertSimilarByIndex(0);
+    assertSimilarByIndex(1);
+    assertNotSimilarByIndex(2);
 }
 
 TEST_F(DeclarativeSimilarTest, arith_binary_op_operands_dissimilarity) {
-    vFirst[0] = mFirst.op<ConstantOp>().attr(123).result(mFirst.tI64);
-    vFirst[1] = mFirst.op<ConstantOp>().attr(321).result(mFirst.tI64);
-    vFirst[2] = mFirst.op<ArithBinaryOp>(vFirst[1], vFirst[0]).attr(ArithBinOpKind::AddI).result(mFirst.tI64);
+    vFirst[0] = mFirst.opInit<ConstantOp>(mFirst.tI64, 123);
+    vFirst[1] = mFirst.opInit<ConstantOp>(mFirst.tI64, 321);
+    vFirst[2] = mFirst.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, mFirst.tI64, vFirst[1], vFirst[0]);
 
-    vSecond[0] = mSecond.op<ConstantOp>().attr(123).result(mSecond.tI64);
-    vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
-    vSecond[2] = mSecond.op<ArithBinaryOp>(vSecond[0], vSecond[1]).attr(ArithBinOpKind::AddI).result(mSecond.tI64);
+    vSecond[0] = mSecond.opInit<ConstantOp>(mSecond.tI64, 123);
+    vSecond[1] = mSecond.opInit<ConstantOp>(mSecond.tI64, 321);
+    vSecond[2] = mSecond.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, mFirst.tI64, vSecond[0], vSecond[1]);
 
     assertNotSimilar();
+    assertSimilarByIndex(0);
+    assertSimilarByIndex(1);
+    assertNotSimilarByIndex(2);
 }
 
 TEST_F(DeclarativeSimilarTest, operation_dissimilarity) {
-    vFirst[0] = mFirst.op<ConstantOp>().attr(123).result(mFirst.tI64);
-    vFirst[1] = mFirst.op<ConstantOp>().attr(321).result(mFirst.tI64);
-    vFirst[2] = mFirst.op<ArithBinaryOp>(vFirst[0], vFirst[1]).attr(ArithBinOpKind::AddI).result(mFirst.tI64);
+    vFirst[0] = mFirst.opInit<ConstantOp>(mFirst.tI64, 123);
+    vFirst[1] = mFirst.opInit<ConstantOp>(mFirst.tI64, 321);
+    vFirst[2] = mFirst.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, mFirst.tI64, vFirst[1], vFirst[0]);
 
-    vSecond[0] = mSecond.op<ConstantOp>().attr(123).result(mSecond.tI64);
-    vSecond[1] = mSecond.op<ConstantOp>().attr(321).result(mSecond.tI64);
-    vSecond[2] = mSecond.op<BinaryOp>(vSecond[0], vSecond[1]).attr(LogicBinOpKind::Equal).result(mSecond.tI64);
+    vSecond[0] = mSecond.opInit<ConstantOp>(mSecond.tI64, 123);
+    vSecond[1] = mSecond.opInit<ConstantOp>(mSecond.tI64, 321);
+    vSecond[2] = mSecond.opInit<BinaryOp>(mFirst.tI64, vSecond[0], vSecond[1]);
 
     assertNotSimilar();
+    assertSimilarByIndex(0);
+    assertSimilarByIndex(1);
+    assertNotSimilarByIndex(2);
 }
 
 TEST_F(DeclarativeSimilarTest, function_similarity) {
