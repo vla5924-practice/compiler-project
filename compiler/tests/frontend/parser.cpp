@@ -1302,3 +1302,49 @@ TEST(Parser, can_throw_error_when_for_loop_does_contain_colon) {
     TokenList tokens = Lexer::process(source);
     ASSERT_ANY_THROW(Parser::process(tokens));
 }
+
+TEST(Parser, can_parse_scientific_float_notation) {
+    StringVec source = {
+        "def main() -> None:",   "    x: float = 1e-0",    "    y: float = 1.e-1",   "    z: float = 1.0e-0",
+        "    s: float = 154e+1", "    v: float = 332.e+4", "    o: float = 1.65e+2",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 0.1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: z\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: s\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 1540\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: v\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 3.32e+06\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: o\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 165\n";
+    ASSERT_EQ(expected, tree.dump());
+}
