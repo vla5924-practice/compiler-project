@@ -1,9 +1,9 @@
 #include "lexer/lexer.hpp"
 
-#include <string_view>
-#include <unordered_map>
 #include <cctype>
 #include <iterator>
+#include <string_view>
+#include <unordered_map>
 
 #include "lexer/lexer_error.hpp"
 #include "lexer/token.hpp"
