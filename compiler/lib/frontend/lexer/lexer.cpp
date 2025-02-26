@@ -1,9 +1,9 @@
 #include "lexer/lexer.hpp"
 
 #include <cctype>
-#include <iterator>
 #include <string_view>
 #include <unordered_map>
+#include <iterator>
 
 #include "lexer/lexer_error.hpp"
 #include "lexer/token.hpp"
@@ -58,10 +58,10 @@ TokenList Lexer::process(const SourceFile &source) {
 }
 
 TokenList Lexer::processString(const SourceLine &source, ErrorBuffer &errors) {
-    // NOLINTBEGIN(readability-identifier-naming)
     constexpr const char *ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-                                            "\".,+-*/><=%()[]!: ";
+    "\".,+-*/><=%()[]!: ";
     constexpr const char *ID_ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
+    // NOLINTBEGIN(readability-identifier-naming)
 
     TokenList tokens;
     const SourceRef &ref = source.ref;
