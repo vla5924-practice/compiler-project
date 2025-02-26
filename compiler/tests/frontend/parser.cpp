@@ -1348,3 +1348,40 @@ TEST(Parser, can_parse_scientific_float_notation) {
                            "          FloatingPointLiteralValue: 165\n";
     ASSERT_EQ(expected, tree.dump());
 }
+
+TEST(Parser, can_throw_error_for_out_of_range_int_literals) {
+    StringVec source = {"def main() -> None:", "    x: int = 44234723472333745234234141241241245512521564"
+                                               "442347234723337452342323541251235234141241241245512521564"
+                                               "442347234723337452342323541251235234141241241245512521564"
+                                               "442347234723337452342323541251235234141241241245512521564"};
+    TokenList tokens = Lexer::process(source);
+    ASSERT_ANY_THROW(Parser::process(tokens));
+}
+
+TEST(Parser, can_throw_error_for_out_of_range_float_literals) {
+    StringVec source = {"def main() -> None:", "    x: float = 423176467123476123647725617235712675"
+                                               "216577156721354678346728365834567192347856782156782"
+                                               "471235465176235766715217835672132576172356721365761"
+                                               "273417623432567127561234756178942561254673256891723"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               ".0"};
+    TokenList tokens = Lexer::process(source);
+    ASSERT_ANY_THROW(Parser::process(tokens));
+}
+
+TEST(Parser, can_throw_error_for_out_of_range_scientific_float_literals) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x: float = 1.65e+412",
+    };
+    TokenList tokens = Lexer::process(source);
+    ASSERT_ANY_THROW(Parser::process(tokens));
+}

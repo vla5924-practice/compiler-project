@@ -58,6 +58,7 @@ TokenList Lexer::process(const SourceFile &source) {
 }
 
 TokenList Lexer::processString(const SourceLine &source, ErrorBuffer &errors) {
+    // NOLINTBEGIN(readability-identifier-naming)
     constexpr const char *ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
                                             "\".,+-*/><=%()[]!: ";
     constexpr const char *ID_ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
@@ -284,4 +285,5 @@ TokenList Lexer::processString(const SourceLine &source, ErrorBuffer &errors) {
     tokens.emplace_back(Special::EndOfExpression, ref.inSameLine(source.text.length()));
 
     return tokens;
+    // NOLINTEND(readability-identifier-naming)
 }
