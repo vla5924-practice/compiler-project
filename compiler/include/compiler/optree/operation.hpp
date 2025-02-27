@@ -60,37 +60,15 @@ struct Operation : public std::enable_shared_from_this<Operation> {
     Operation(Operation &&) = delete;
     ~Operation() = default;
 
-    const Value::Ptr &operand(size_t index) const {
-        return operands[index];
-    }
-
-    Value::Ptr &operand(size_t index) {
-        return operands[index];
-    }
-
-    const Value::Ptr &result(size_t index) const {
-        return results[index];
-    }
-
-    Value::Ptr &result(size_t index) {
-        return results[index];
-    }
-
-    const Value::Ptr &inward(size_t index) const {
-        return inwards[index];
-    }
-
-    Value::Ptr &inward(size_t index) {
-        return inwards[index];
-    }
-
-    const Attribute &attr(size_t index) const {
-        return attributes[index];
-    }
-
-    Attribute &attr(size_t index) {
-        return attributes[index];
-    }
+    const Value::Ptr &operand(size_t index) const;
+    Value::Ptr &operand(size_t index);
+    const Value::Ptr &result(size_t index) const;
+    Value::Ptr &result(size_t index);
+    const Value::Ptr &inward(size_t index) const;
+    Value::Ptr &inward(size_t index);
+    const Attribute &attr(size_t index) const;
+    Attribute &attr(size_t index);
+    const Operation::Ptr &child(size_t index) const;
 
     template <typename VariantType>
     const VariantType &attr() const {
@@ -100,37 +78,22 @@ struct Operation : public std::enable_shared_from_this<Operation> {
         throw std::logic_error("There are no attributes with a given type");
     }
 
-    operator bool() const {
-        return specId;
-    }
+    operator bool() const;
 
-    size_t numOperands() const {
-        return operands.size();
-    }
+    size_t numOperands() const;
+    size_t numResults() const;
+    size_t numInwards() const;
+    size_t numAttrs() const;
+    size_t numChildren() const;
 
-    size_t numResults() const {
-        return results.size();
-    }
-
-    size_t numInwards() const {
-        return inwards.size();
-    }
-
-    size_t numAttrs() const {
-        return attributes.size();
-    }
-
-    auto begin() {
-        return body.begin();
-    }
-
-    auto end() {
-        return body.end();
-    }
+    Body::const_iterator begin() const;
+    Body::iterator begin();
+    Body::const_iterator end() const;
+    Body::iterator end();
 
     template <typename AdaptorType>
     bool is() const {
-        return specId == AdaptorType::getSpecId();
+        return AdaptorType::implementsSpecById(specId);
     }
 
     template <typename AdaptorType>
@@ -143,7 +106,7 @@ struct Operation : public std::enable_shared_from_this<Operation> {
     template <typename AdaptorType>
     AdaptorType findParent() const {
         Ptr upperParent = parent;
-        while (upperParent && !upperParent->is<AdaptorType>()) {
+        while (upperParent) {
             if (upperParent->is<AdaptorType>())
                 return {upperParent};
             upperParent = upperParent->parent;

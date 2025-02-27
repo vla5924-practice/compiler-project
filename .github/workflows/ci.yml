@@ -15,6 +15,7 @@ on:
       - '**/*.hpp'
       - '**/CMakeLists.txt'
       - '**/.clang-tidy'
+      - 'thirdparty/**'
   pull_request:
     branches:
       - main
@@ -24,6 +25,7 @@ on:
       - '**/*.hpp'
       - '**/CMakeLists.txt'
       - '**/.clang-tidy'
+      - 'thirdparty/**'
 
 jobs:
   code-style-check:
@@ -57,6 +59,7 @@ jobs:
           CC: gcc
           CXX: g++
         run: |
+          git config --global --add safe.directory $(pwd)
           cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN='ast_to_llvmir;optree_to_llvmir'
           cmake --build build --parallel
       - name: Archive binaries
@@ -135,6 +138,8 @@ jobs:
         run: ./bin/codegen_ast_to_llvmir_test
       - name: Run codegen tests (optree to LLVM IR)
         run: ./bin/codegen_optree_to_llvmir_test
+      - name: Run utility tests
+        run: ./bin/utils_test
 
   code-coverage:
     name: Code coverage

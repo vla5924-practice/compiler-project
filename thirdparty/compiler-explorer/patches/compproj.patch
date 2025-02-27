@@ -1,0 +1,18 @@
+diff --git a/lib/compilers/_all.ts b/lib/compilers/_all.ts
+index d27227392..847d72163 100644
+--- a/lib/compilers/_all.ts
++++ b/lib/compilers/_all.ts
+@@ -141,3 +141,4 @@ export {ZigCC} from './zigcc.js';
+ export {ZigCompiler} from './zig.js';
+ export {ZigCXX} from './zigcxx.js';
+ export {z88dkCompiler} from './z88dk.js';
++export {CompProjCompiler} from './compproj.js';
+diff --git a/lib/tooling/_all.ts b/lib/tooling/_all.ts
+index 507ee2c85..210cd4c44 100644
+--- a/lib/tooling/_all.ts
++++ b/lib/tooling/_all.ts
+@@ -40,3 +40,4 @@ export {SonarTool} from './sonar-tool.js';
+ export {StringsTool} from './strings-tool.js';
+ export {x86to6502Tool} from './x86to6502-tool.js';
+ export {TestingTool} from './testing-tool.js';
++export {LliTool} from './lli-tool.js';

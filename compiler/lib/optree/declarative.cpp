@@ -77,6 +77,10 @@ const Operation::Ptr &DeclarativeModule::rootOp() const {
     return root;
 }
 
+const Operation::Ptr &DeclarativeModule::childOp(size_t index) const {
+    return root->child(index);
+}
+
 Program DeclarativeModule::makeProgram() const {
     return {root};
 }

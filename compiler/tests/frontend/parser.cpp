@@ -1193,6 +1193,106 @@ TEST(Parser, can_parse_for_enumerate) {
     ASSERT_EQ(expected, tree.dump());
 }
 
+TEST(Parser, can_parse_continue_break_loops) {
+    StringVec source = {
+        "def main() -> None:", "    for i, value in enumerate(mylist):", "        break", "    for elem in mylist:",
+        "        continue",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      ForStatement\n"
+                           "        ForTargets\n"
+                           "          VariableName: i\n"
+                           "          VariableName: value\n"
+                           "        ForIterable\n"
+                           "          Expression\n"
+                           "            FunctionCall\n"
+                           "              FunctionName: enumerate\n"
+                           "              FunctionArguments\n"
+                           "                Expression\n"
+                           "                  VariableName: mylist\n"
+                           "        BranchRoot\n"
+                           "          BreakStatement\n"
+                           "      ForStatement\n"
+                           "        ForTargets\n"
+                           "          VariableName: elem\n"
+                           "        ForIterable\n"
+                           "          Expression\n"
+                           "            VariableName: mylist\n"
+                           "        BranchRoot\n"
+                           "          ContinueStatement\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_pass_in_loops) {
+    StringVec source = {
+        "def main() -> None:",
+        "    for elem in mylist:",
+        "        pass",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      ForStatement\n"
+                           "        ForTargets\n"
+                           "          VariableName: elem\n"
+                           "        ForIterable\n"
+                           "          Expression\n"
+                           "            VariableName: mylist\n"
+                           "        BranchRoot\n"
+                           "          PassStatement\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_pass_in_if) {
+    StringVec source = {
+        "def main() -> None:",
+        "    if 1 == 2:",
+        "        pass",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      IfStatement\n"
+                           "        Expression\n"
+                           "          BinaryOperation: Equal\n"
+                           "            IntegerLiteralValue: 1\n"
+                           "            IntegerLiteralValue: 2\n"
+                           "        BranchRoot\n"
+                           "          PassStatement\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_pass_in_function) {
+    StringVec source = {"def main() -> None:", "    pass"};
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      PassStatement\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
 TEST(Parser, can_throw_error_when_for_loop_does_contain_colon) {
     StringVec source = {
         "def main() -> None:",

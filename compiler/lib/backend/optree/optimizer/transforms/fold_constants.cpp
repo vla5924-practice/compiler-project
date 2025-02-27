@@ -1,4 +1,5 @@
 #include <memory>
+#include <string_view>
 
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/definitions.hpp"
@@ -17,6 +18,10 @@ namespace {
 
 struct FoldConstants : public Transform<ArithBinaryOp, ArithCastOp, LogicBinaryOp, LogicUnaryOp> {
     using Transform::Transform;
+
+    std::string_view name() const override {
+        return "FoldConstants";
+    }
 
     static void foldArithBinaryOp(const ArithBinaryOp &op, OptBuilder &builder) {
         auto lhsOp = getValueOwnerAs<ConstantOp>(op.lhs());
