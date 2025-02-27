@@ -1375,7 +1375,8 @@ TEST(Parser, can_parse_max_min_int_literals) {
 }
 
 TEST(Parser, can_throw_error_for_out_of_range_int_literals) {
-    StringVec source = {"def main() -> None:", "    x: int = 2147483648"};
+    StringVec source = {"def main() -> None:", "    x: int = 9223372036854775808"};
+
     TokenList tokens = Lexer::process(source);
     ASSERT_ANY_THROW(Parser::process(tokens));
 }
