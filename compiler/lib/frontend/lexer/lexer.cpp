@@ -1,5 +1,7 @@
 #include "lexer/lexer.hpp"
 
+#include <cctype>
+#include <iterator>
 #include <string_view>
 #include <unordered_map>
 
@@ -56,6 +58,7 @@ TokenList Lexer::process(const SourceFile &source) {
 }
 
 TokenList Lexer::processString(const SourceLine &source, ErrorBuffer &errors) {
+    // NOLINTBEGIN(readability-identifier-naming)
     constexpr const char *ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
                                             "\".,+-*/><=%()[]!: ";
     constexpr const char *ID_ALLOWED_SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
@@ -141,18 +144,55 @@ TokenList Lexer::processString(const SourceLine &source, ErrorBuffer &errors) {
                 i++;
             }
 
-            if (i != source.text.end() && isalpha(*i)) {
+            if (i != source.text.end() && isalpha(*i) && *i != 'e') {
                 errors.push<LexerError>(ref.inSameLine(std::distance(i, source.text.begin())),
                                         "Unexpected characters in numeric literal");
             }
-
-            if (i != source.text.end() && *i == '.') { // pushing Float number
+            bool can_be_float = false;
+            if (i != source.text.end() && *i == '.') {
                 end_token++;
                 i++;
+                can_be_float = true;
+            }
+
+            if (i != source.text.end() && *i == 'e') {
+                end_token++;
+                i++;
+                if (i != source.text.end() && (*i == '-' || *i == '+')) {
+                    end_token++;
+                    i++;
+                    can_be_float = true;
+                } else {
+                    errors.push<LexerError>(ref.inSameLine(std::distance(i, source.text.begin())),
+                                            "Unexpected characters in numeric literal");
+                }
+            }
+
+            if (can_be_float) { // pushing Float number
                 while (i != source.text.end() && isdigit(*i)) {
                     end_token++;
                     i++;
                 }
+
+                if (i != source.text.end() && isalpha(*i) && *i != 'e')
+                    errors.push<LexerError>(ref.inSameLine(std::distance(i, source.text.begin())),
+                                            "Unexpected characters in numeric literal");
+                if (i != source.text.end() && *i == 'e') {
+                    end_token++;
+                    i++;
+                    if (i != source.text.end() && (*i == '-' || *i == '+')) {
+                        end_token++;
+                        i++;
+                    } else {
+                        errors.push<LexerError>(ref.inSameLine(std::distance(i, source.text.begin())),
+                                                "Unexpected characters in numeric literal");
+                    }
+                    while (i != source.text.end() && isdigit(*i)) {
+                        end_token++;
+                        i++;
+                    }
+                }
+
                 if (i != source.text.end() && isalpha(*i))
                     errors.push<LexerError>(ref.inSameLine(std::distance(i, source.text.begin())),
                                             "Unexpected characters in numeric literal");
@@ -245,4 +285,5 @@ TokenList Lexer::processString(const SourceLine &source, ErrorBuffer &errors) {
     tokens.emplace_back(Special::EndOfExpression, ref.inSameLine(source.text.length()));
 
     return tokens;
+    // NOLINTEND(readability-identifier-naming)
 }
