@@ -1,8 +1,7 @@
-#include <algorithm>
 #include <memory>
+#include <string_view>
 
 #include "compiler/optree/adaptors.hpp"
-#include "compiler/optree/attribute.hpp"
 #include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
 #include "compiler/optree/value.hpp"
