@@ -274,7 +274,7 @@ void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::
                         ParserContext::unshiftChildNode(currNode, NodeType::IntegerLiteralValue, token.ref);
                     try {
                         node->value = std::stol(token.literal().c_str());
-                    } catch (const std::out_of_range &ex) {
+                    } catch (const std::out_of_range &) {
                         errors.push<ParserError>(token,
                                                  "Failed to convert integer literal. The number is out of range");
                     }
@@ -283,7 +283,7 @@ void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::
                         ParserContext::unshiftChildNode(currNode, NodeType::FloatingPointLiteralValue, token.ref);
                     try {
                         node->value = std::stod(token.literal());
-                    } catch (const std::out_of_range &ex) {
+                    } catch (const std::out_of_range &) {
                         errors.push<ParserError>(token, "Failed to convert float literal. The number is out of range");
                     }
                 } else if (token.type == TokenType::StringLiteral) {
