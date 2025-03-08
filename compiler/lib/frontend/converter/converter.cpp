@@ -202,6 +202,7 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
         for (const auto &defNode : listNode->children) {
             auto offset = ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), i).result();
             insertStore(defNode, offset);
+            i++;
         }
     } else if (hasDefinition) {
         insertStore(node->lastChild(), {});

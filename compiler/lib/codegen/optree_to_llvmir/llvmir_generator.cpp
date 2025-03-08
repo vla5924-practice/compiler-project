@@ -27,6 +27,7 @@
 using namespace optree;
 using namespace optree::llvmir_generator;
 
+// NOLINTBEGIN(readability-avoid-return-with-void-value)
 namespace {
 
 namespace external {
@@ -342,20 +343,33 @@ void LLVMIRGenerator::visit(const LogicUnaryOp &op) {
 }
 
 void LLVMIRGenerator::visit(const AllocateOp &op) {
-    const auto &pointee = op.result()->type->as<PointerType>().pointee;
-    auto *llvmType = convertType(pointee);
-    auto *inst = builder.CreateAlloca(llvmType);
+    const auto &type = op.result()->type->as<PointerType>();
+    auto *llvmType = convertType(type.pointee);
+    llvm::Value *size = nullptr;
+    if (type.numElements > 1U)
+        size = llvm::ConstantInt::get(llvm::Type::getIntNTy(context, 64U), type.numElements);
+    auto *inst = builder.CreateAlloca(llvmType, size);
     saveValue(op.result(), inst);
     typedValues[inst] = llvmType;
 }
 
 void LLVMIRGenerator::visit(const LoadOp &op) {
     auto *ptr = findValue(op.src());
-    saveValue(op.result(), builder.CreateLoad(typedValues[ptr], ptr));
+    auto *type = typedValues[ptr];
+    if (auto offset = op.offset()) {
+        auto *index = findValue(offset);
+        ptr = builder.CreateGEP(type, ptr, index);
+    }
+    saveValue(op.result(), builder.CreateLoad(type, ptr));
 }
 
 void LLVMIRGenerator::visit(const StoreOp &op) {
-    builder.CreateStore(findValue(op.valueToStore()), findValue(op.dst()));
+    auto *ptr = findValue(op.dst());
+    if (auto offset = op.offset()) {
+        auto *index = findValue(offset);
+        ptr = builder.CreateGEP(typedValues[ptr], ptr, index);
+    }
+    builder.CreateStore(findValue(op.valueToStore()), ptr);
 }
 
 void LLVMIRGenerator::visit(const IfOp &op) {
@@ -468,3 +482,5 @@ void LLVMIRGenerator::dumpToFile(const std::string &filename) const {
     dump(os);
     os.close();
 }
+
+// NOLINTEND(readability-avoid-return-with-void-value)
