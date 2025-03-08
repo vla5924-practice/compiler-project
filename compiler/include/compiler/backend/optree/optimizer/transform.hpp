@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+#include <deque>
 #include <memory>
 #include <string_view>
 
@@ -36,6 +38,29 @@ struct Transform : public BaseTransform {
         else
             return (op->is<AdaptorTypes>() || ...);
     }
+};
+
+class CascadeTransform : public BaseTransform {
+    std::deque<BaseTransform::Ptr> transforms;
+    std::string_view commonName;
+    size_t iterLimit;
+
+    CascadeTransform(std::string_view commonName, size_t iterLimit);
+    CascadeTransform(const CascadeTransform &) = delete;
+    CascadeTransform(CascadeTransform &&) = default;
+
+  public:
+    using Ptr = std::shared_ptr<CascadeTransform>;
+
+    ~CascadeTransform() override = default;
+
+    std::string_view name() const override;
+    bool canRun(const Operation::Ptr &op) const override;
+    void run(const Operation::Ptr &op, OptBuilder &builder) const override;
+
+    CascadeTransform &add(const BaseTransform::Ptr &transform);
+
+    static Ptr make(std::string_view commonName, size_t iterLimit = 100U);
 };
 
 } // namespace optimizer

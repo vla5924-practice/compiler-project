@@ -1,4 +1,5 @@
 #include "compiler.hpp"
+#include "compiler/backend/optree/optimizer/transform.hpp"
 
 #include <exception>
 #include <iostream>
@@ -285,8 +286,10 @@ int Compiler::runOptreeOptimizer() {
     Timer timer;
     try {
         Optimizer optimizer;
-        optimizer.add(createEraseUnusedOps());
-        optimizer.add(createFoldConstants());
+        auto canonicalizer = CascadeTransform::make("Canonicalizer");
+        canonicalizer->add(createEraseUnusedOps());
+        canonicalizer->add(createFoldConstants());
+        optimizer.add(canonicalizer);
         optimizer.add(createEraseUnusedFunctions());
         timer.start();
         optimizer.process(program);
