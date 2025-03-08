@@ -1,9 +1,10 @@
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "compiler/frontend/lexer/lexer.hpp"
 #include "compiler/frontend/parser/parser.hpp"
 #include "compiler/utils/stringvec.hpp"
-
 using namespace ast;
 using namespace lexer;
 using namespace parser;
@@ -1298,6 +1299,151 @@ TEST(Parser, can_throw_error_when_for_loop_does_contain_colon) {
         "def main() -> None:",
         "    for i in range(0, 10, 1)",
         "        x = 1",
+    };
+    TokenList tokens = Lexer::process(source);
+    ASSERT_ANY_THROW(Parser::process(tokens));
+}
+
+TEST(Parser, can_parse_scientific_float_notation) {
+    StringVec source = {"def main() -> None:",   "    x: float = 1e-0",   "    y: float = 1.e-1",
+                        "    z: float = 1.0e-0", "    s: float = 154e+1", "    v: float = 332.e+4",
+                        "    o: float = 1.65e+2"};
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: y\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 0.1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: z\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 1\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: s\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 1540\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: v\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 3.32e+06\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: o\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 165\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_parse_max_min_int_literals) {
+    // signed long range values −2,147,483,647 to 2,147,483,647
+    StringVec source = {"def main() -> None:", "    x: int = 2147483647", "    y: int = -2147483647"};
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: x\n"
+                           "        Expression\n"
+                           "          IntegerLiteralValue: 2147483647\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: y\n"
+                           "        Expression\n"
+                           "          UnaryOperation: Negative\n"
+                           "            Expression\n"
+                           "              IntegerLiteralValue: 2147483647\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_throw_error_for_out_of_range_int_literals) {
+    StringVec source = {"def main() -> None:", "    x: int = 9223372036854775808"};
+
+    TokenList tokens = Lexer::process(source);
+    ASSERT_ANY_THROW(Parser::process(tokens));
+}
+
+TEST(Parser, can_parse_max_min_float_literals) {
+    StringVec source = {"def main() -> None:", "    max: float = 1.7976931348623157e+308",
+                        "    min: float = -1.7976931348623157e+308", "    left_zero: float = 2.2250738585072014e-308",
+                        "    right_zero: float = -2.2250738585072014e-308"};
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: max\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 1.79769e+308\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: min\n"
+                           "        Expression\n"
+                           "          UnaryOperation: Negative\n"
+                           "            Expression\n"
+                           "              FloatingPointLiteralValue: 1.79769e+308\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: left_zero\n"
+                           "        Expression\n"
+                           "          FloatingPointLiteralValue: 2.22507e-308\n"
+                           "      VariableDeclaration\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: right_zero\n"
+                           "        Expression\n"
+                           "          UnaryOperation: Negative\n"
+                           "            Expression\n"
+                           "              FloatingPointLiteralValue: 2.22507e-308\n";
+    ASSERT_EQ(expected, tree.dump());
+}
+
+TEST(Parser, can_throw_error_for_out_of_range_float_literals) {
+    StringVec source = {"def main() -> None:", "    x: float = 423176467123476123647725617235712675"
+                                               "216577156721354678346728365834567192347856782156782"
+                                               "471235465176235766715217835672132576172356721365761"
+                                               "273417623432567127561234756178942561254673256891723"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               "462718235671236879576268123645767218562378567891235"
+                                               ".0"};
+    TokenList tokens = Lexer::process(source);
+    ASSERT_ANY_THROW(Parser::process(tokens));
+}
+
+TEST(Parser, can_throw_error_for_out_of_range_scientific_float_literals) {
+    StringVec source = {
+        "def main() -> None:",
+        "    x: float = 1.65e+412",
     };
     TokenList tokens = Lexer::process(source);
     ASSERT_ANY_THROW(Parser::process(tokens));
