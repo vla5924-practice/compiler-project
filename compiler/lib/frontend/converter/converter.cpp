@@ -157,14 +157,34 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
     auto &nameNode = node->secondChild();
     const auto &name = nameNode->str();
     if (ctx.wouldBeRedeclaration(name)) {
-        ctx.pushError(node, "variable is already declared:" + name);
+        ctx.pushError(node, "variable is already declared: " + name);
         return;
     }
-    auto type = convertType(node->firstChild()->typeId());
-    auto allocOp = ctx.insert<AllocateOp>(node->ref, Type::make<PointerType>(type));
+    size_t numElements = 1U;
+    const auto &typeNode = node->firstChild();
+    Node::Ptr listNode;
+    Type::Ptr type;
+    bool hasDefinition = node->children.size() == 3U;
+    if (typeNode->typeId() == ast::ListType) {
+        type = convertType(typeNode->firstChild()->typeId());
+        if (!hasDefinition) {
+            ctx.pushError(node, "list declaration must contain initializer to determine its size: " + name);
+        } else {
+            // VariableDeclaration -> Expression -> ListStatement
+            listNode = node->lastChild()->firstChild();
+            assert(listNode->type == NodeType::ListStatement && "ListType variable must be defined with ListStatement");
+            numElements = listNode->children.size();
+            if (numElements == 0U) {
+                ctx.pushError(node, "list variable must be initialized with at least one element: " + name);
+                numElements = 1U;
+            }
+        }
+    } else {
+        type = convertType(typeNode->typeId());
+    }
+    auto allocOp = ctx.insert<AllocateOp>(node->ref, Type::make<PointerType>(type, numElements));
     ctx.saveVariable(name, allocOp.result(), true);
-    if (node->children.size() == 3U) {
-        auto defNode = node->lastChild();
+    auto insertStore = [&](const Node::Ptr &defNode, const Value::Ptr &offset) {
         if (defNode->type == NodeType::Expression && isFunctionCallInputNode(defNode->firstChild())) {
             createInputOp(nameNode, defNode->ref, ctx);
             return;
@@ -175,7 +195,16 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
             if (auto castOp = insertNumericCastOp(type, defValue, ctx.builder, defNode->ref))
                 defValue = castOp.result();
         }
-        ctx.insert<StoreOp>(defNode->ref, allocOp.result(), defValue);
+        ctx.insert<StoreOp>(defNode->ref, allocOp.result(), defValue, offset);
+    };
+    if (listNode) {
+        int64_t i = 0;
+        for (const auto &defNode : listNode->children) {
+            auto offset = ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), i).result();
+            insertStore(defNode, offset);
+        }
+    } else if (hasDefinition) {
+        insertStore(node->lastChild(), {});
     }
 }
 
@@ -269,11 +298,18 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         error << "unexpected expression type: " << prettyTypeName(type) << ", supported types are: int, bool, float";
         return error.str();
     };
+    Value::Ptr offset;
     if (isAssignment(binOp)) {
-        if (lhsType->is<PointerType>())
-            lhsType = lhsType->as<PointerType>().pointee;
-        else
+        if (lhsType->is<PointerType>()) {
+            const auto &ptrType = lhsType->as<PointerType>();
+            lhsType = ptrType.pointee;
+            if (ptrType.numElements > 1U) {
+                assert(lhsNode->type == NodeType::ListAccessor && lhsNode->children.size() == 2U);
+                offset = visitNode(lhsNode->lastChild(), ctx);
+            }
+        } else {
             ctx.pushError(node, "left-handed operand of an assignment expression must be a variable name");
+        }
     }
     if (!utils::isAny<IntegerType, FloatType>(lhsType)) {
         ctx.pushError(node, typeError(lhsType));
@@ -335,7 +371,7 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         return makeLogicBinaryOp(LogicBinOpKind::OrI, LogicBinOpKind::Unknown);
     case ast::BinaryOperation::Assign:
     case ast::BinaryOperation::FAssign:
-        ctx.insert<StoreOp>(node->ref, lhs, rhs);
+        ctx.insert<StoreOp>(node->ref, lhs, rhs, offset);
         return rhs;
     default:
         COMPILER_UNREACHABLE("Unexpected ast::BinaryOperation value in visitBinaryOperation");
@@ -379,6 +415,24 @@ Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
         arguments.emplace_back(visitNode(argNode, ctx));
     }
     return ctx.insert<FunctionCallOp>(node->ref, name, ctx.functions[name], arguments).result();
+}
+
+Value::Ptr visitListAccessor(const Node::Ptr &node, ConverterContext &ctx) {
+    const auto &nameNode = node->firstChild();
+    assert(nameNode->type == NodeType::VariableName && "ListAccessor node must have VariableName as first child");
+    auto var = ctx.findVariable(nameNode->str());
+    if (!var.value) {
+        ctx.pushError(node, "variable was not declared in this scope: " + nameNode->str());
+        throw ctx.errors;
+    }
+    if (!var.needsLoad) {
+        ctx.pushError(node, "list accessor is not allowed in the current context: " + nameNode->str());
+        throw ctx.errors;
+    }
+    if (isLhsInAssignment(node))
+        return var.value;
+    auto offset = visitNode(node->lastChild(), ctx);
+    return ctx.insert<LoadOp>(node->ref, var.value, offset).result();
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx) {
@@ -430,6 +484,8 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
         return visitVariableName(node, ctx);
     case NodeType::FunctionCall:
         return visitFunctionCall(node, ctx);
+    case NodeType::ListAccessor:
+        return visitListAccessor(node, ctx);
     default:
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in visitNode");
     }
