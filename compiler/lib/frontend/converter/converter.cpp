@@ -227,6 +227,68 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
     ctx.goParent();
 }
 
+void processForStatement(const Node::Ptr &node, ConverterContext &ctx) {
+    const auto &targets = node->firstChild();
+    const auto &iterExpr = node->secondChild()->firstChild()->firstChild();
+    // for i in range(...)
+    if (iterExpr->type == NodeType::FunctionCall && iterExpr->firstChild()->str() == language::funcRange) {
+        assert(!targets->children.empty() && "parser ensures that there is at least one target");
+        if (targets->children.size() > 1)
+            ctx.pushError(node, "for loop with range() must have exactly one target");
+        const auto &argsNode = iterExpr->lastChild();
+        size_t numArgs = argsNode->children.size();
+        if (numArgs == 0) {
+            ctx.pushError(argsNode, "range() must have at least one argument");
+            throw ctx.errors;
+        }
+        if (numArgs > 3)
+            ctx.pushError(argsNode, "range() must have 1, 2, or 3 arguments");
+        Node::Ptr startExpr, stopExpr, stepExpr;
+        if (numArgs == 1) {
+            stopExpr = argsNode->firstChild();
+        } else if (numArgs == 2) {
+            startExpr = argsNode->firstChild();
+            stopExpr = argsNode->lastChild();
+        } else {
+            assert(numArgs == 3);
+            startExpr = argsNode->firstChild();
+            stopExpr = argsNode->secondChild();
+            stepExpr = argsNode->lastChild();
+        }
+        auto stopValue = visitNode(stopExpr, ctx);
+        Value::Ptr startValue;
+        if (startExpr)
+            startValue = visitNode(startExpr, ctx);
+        else
+            startValue = ctx.insert<ConstantOp>(iterExpr->ref, stopValue->type, 0).result();
+        Value::Ptr stepValue;
+        if (stepExpr)
+            stepValue = visitNode(stepExpr, ctx);
+        else
+            stepValue = ctx.insert<ConstantOp>(iterExpr->ref, stopValue->type, 1).result();
+        ctx.enterScope();
+        const auto &targetNode = targets->firstChild();
+        auto inductionVar = ctx.insert<AllocateOp>(targetNode->ref, Type::make<PointerType>(stopValue->type)).result();
+        ctx.saveVariable(targetNode->str(), inductionVar);
+        ctx.insert<StoreOp>(targetNode->ref, inductionVar, startValue);
+        processNode(node->lastChild(), ctx);
+        auto currentInd = ctx.insert<LoadOp>(targetNode->ref, inductionVar).result();
+        auto nextValue =
+            ctx.insert<ArithBinaryOp>(targetNode->ref, ArithBinOpKind::AddI, currentInd, stepValue).result();
+        ctx.insert<StoreOp>(targetNode->ref, inductionVar, nextValue);
+        ctx.exitScope();
+    }
+    // for i, value in enumerate(...)
+    else if (iterExpr->type == NodeType::FunctionCall && iterExpr->firstChild()->str() == language::funcEnumerate) {
+        COMPILER_UNREACHABLE("Enumerate-based ForStatement layout conversion is not implemented");
+    }
+    // for value in list
+    else if (iterExpr->type == NodeType::VariableName) {
+        COMPILER_UNREACHABLE("Traverse-based ForStatement layout conversion is not implemented");
+    }
+    COMPILER_UNREACHABLE("Unexpected ForStatement layout");
+}
+
 Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
     return visitNode(node->firstChild(), ctx);
 }
@@ -407,6 +469,8 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
     case NodeType::IfStatement:
         processIfStatement(node, ctx);
         return;
+    case NodeType::ForStatement:
+        processForStatement(node, ctx);
     default:
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in processNode");
     }
