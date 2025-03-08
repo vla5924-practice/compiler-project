@@ -74,7 +74,8 @@ std::string_view prettyTypeName(const Type::Ptr &type) {
 template <const Node::Ptr &(Node::*childAccessor)(void) const>
 bool isSomewhereInAssignment(const Node::Ptr &node) {
     const auto &parent = node->parent;
-    return node->type == ast::NodeType::VariableName && parent->type == ast::NodeType::BinaryOperation &&
+    return (node->type == NodeType::VariableName || node->type == NodeType::ListAccessor) &&
+           parent->type == NodeType::BinaryOperation &&
            (parent->binOp() == ast::BinaryOperation::Assign || parent->binOp() == ast::BinaryOperation::FAssign) &&
            (parent.get()->*childAccessor)() == node;
 }
