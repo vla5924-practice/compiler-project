@@ -2,7 +2,7 @@ find_program(PYTHON python3 REQUIRED)
 
 macro(add_cli_test TEST_NAME)
     set(test_dir ${CMAKE_CURRENT_SOURCE_DIR}/${TEST_NAME})
-    add_test(NAME hello_world COMMAND ${PYTHON} "${CMAKE_CURRENT_SOURCE_DIR}/run_test.py"
+    add_test(NAME "CLI.${TEST_NAME}" COMMAND ${PYTHON} "${CMAKE_CURRENT_SOURCE_DIR}/run_test.py"
         --compiler $<TARGET_FILE:cli>
         --input "${test_dir}/input.py"
         --output "${test_dir}/output.txt"
