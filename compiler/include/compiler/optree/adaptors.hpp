@@ -162,20 +162,28 @@ struct AllocateOp : Adaptor {
 struct LoadOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Load")
 
-    void init(const Type::Ptr &resultType, const Value::Ptr &src);
-    void init(const Value::Ptr &src);
+    void init(const Type::Ptr &resultType, const Value::Ptr &src, const Value::Ptr &offset = {});
+    void init(const Value::Ptr &src, const Value::Ptr &offset = {});
 
     OPTREE_ADAPTOR_OPERAND(src, setSrc, 0)
     OPTREE_ADAPTOR_RESULT(result, 0)
+
+    // offset is an optional operand
+    Value::Ptr offset() const;
+    void setOffset(const Value::Ptr &value);
 };
 
 struct StoreOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Store")
 
-    void init(const Value::Ptr &dst, const Value::Ptr &valueToStore);
+    void init(const Value::Ptr &dst, const Value::Ptr &valueToStore, const Value::Ptr &offset = {});
 
     OPTREE_ADAPTOR_OPERAND(dst, setDst, 0)
     OPTREE_ADAPTOR_OPERAND(valueToStore, setValueToStore, 1)
+
+    // offset is an optional operand
+    Value::Ptr offset() const;
+    void setOffset(const Value::Ptr &value);
 };
 
 // ----------------------------------------------------------------------------

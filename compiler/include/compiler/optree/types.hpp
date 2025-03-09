@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <ostream>
@@ -139,8 +140,10 @@ struct PointerType : public Type {
     using Ptr = std::shared_ptr<const PointerType>;
 
     const Type::Ptr pointee;
+    size_t numElements;
 
-    PointerType(const Type::Ptr &pointee) : pointee(pointee){};
+    explicit PointerType(const Type::Ptr &pointee, size_t numElements = 1U)
+        : pointee(pointee), numElements(numElements){};
 
     bool operator==(const Type &other) const override;
     using Type::operator!=;

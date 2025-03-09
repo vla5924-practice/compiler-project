@@ -94,14 +94,29 @@ void InputOp::init(const Value::Ptr &dst) {
     op->addOperand(dst);
 }
 
-void LoadOp::init(const Type::Ptr &resultType, const Value::Ptr &src) {
+void LoadOp::init(const Type::Ptr &resultType, const Value::Ptr &src, const Value::Ptr &offset) {
     op->addOperand(src);
+    if (offset)
+        op->addOperand(offset);
     op->results.emplace_back(Value::make(resultType, op));
 }
 
-void LoadOp::init(const Value::Ptr &src) {
+void LoadOp::init(const Value::Ptr &src, const Value::Ptr &offset) {
     auto resultType = src->type->as<PointerType>().pointee;
-    init(resultType, src);
+    init(resultType, src, offset);
+}
+
+Value::Ptr LoadOp::offset() const {
+    if (op->numOperands() == 2)
+        return op->operand(1);
+    return {};
+}
+
+void LoadOp::setOffset(const Value::Ptr &value) {
+    if (op->numOperands() == 2)
+        op->operand(1) = value;
+    else
+        op->addOperand(value);
 }
 
 void LogicBinaryOp::init(LogicBinOpKind kind, const Value::Ptr &lhs, const Value::Ptr &rhs) {
@@ -133,9 +148,24 @@ void ReturnOp::init(const Value::Ptr &value) {
     op->addOperand(value);
 }
 
-void StoreOp::init(const Value::Ptr &dst, const Value::Ptr &valueToStore) {
+void StoreOp::init(const Value::Ptr &dst, const Value::Ptr &valueToStore, const Value::Ptr &offset) {
     op->addOperand(dst);
     op->addOperand(valueToStore);
+    if (offset)
+        op->addOperand(offset);
+}
+
+Value::Ptr StoreOp::offset() const {
+    if (op->numOperands() == 3)
+        return op->operand(2);
+    return {};
+}
+
+void StoreOp::setOffset(const Value::Ptr &value) {
+    if (op->numOperands() == 3)
+        op->operand(2) = value;
+    else
+        op->addOperand(value);
 }
 
 void ThenOp::init() {
