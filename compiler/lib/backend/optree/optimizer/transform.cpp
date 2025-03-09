@@ -122,6 +122,10 @@ OptBuilder::Notifier makeNotifier(OperationSet &ops, bool &mutated, MutationTrac
 
 } // namespace
 
+bool BaseTransform::recurse() const {
+    return true;
+}
+
 CascadeTransform::CascadeTransform(std::string_view commonName, size_t iterLimit)
     : commonName(commonName), iterLimit(iterLimit) {
 }
@@ -159,6 +163,10 @@ void CascadeTransform::run(const Operation::Ptr &op, [[maybe_unused]] OptBuilder
             }
         }
     } while (mutated && ++iter < iterLimit);
+}
+
+bool CascadeTransform::recurse() const {
+    return false;
 }
 
 CascadeTransform &CascadeTransform::add(const BaseTransform::Ptr &transform) {

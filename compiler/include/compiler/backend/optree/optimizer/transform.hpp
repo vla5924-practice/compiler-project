@@ -23,6 +23,7 @@ struct BaseTransform {
     virtual std::string_view name() const = 0;
     virtual bool canRun(const Operation::Ptr &op) const = 0;
     virtual void run(const Operation::Ptr &op, OptBuilder &builder) const = 0;
+    virtual bool recurse() const;
 };
 
 template <typename... AdaptorTypes>
@@ -57,6 +58,7 @@ class CascadeTransform : public BaseTransform {
     std::string_view name() const override;
     bool canRun(const Operation::Ptr &op) const override;
     void run(const Operation::Ptr &op, OptBuilder &builder) const override;
+    bool recurse() const override;
 
     CascadeTransform &add(const BaseTransform::Ptr &transform);
 

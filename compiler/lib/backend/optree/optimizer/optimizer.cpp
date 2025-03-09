@@ -16,16 +16,19 @@ using dbg = utils::DebugPrinter;
 namespace {
 
 void runTransform(const BaseTransform::Ptr &transform, const Operation::Ptr &op) {
-    for (const auto &childOp : utils::advanceEarly(op->body)) {
-        runTransform(transform, childOp);
-        if (transform->canRun(childOp)) {
-            OptBuilder builder;
-            builder.setInsertPointBefore(childOp);
-            COMPILER_DEBUG(dbg::get() << "Run " << transform->name() << " on " << op->dump() << "{\n");
-            transform->run(childOp, builder);
-            COMPILER_DEBUG(dbg::get() << "}\n\n");
+    bool canRun = transform->canRun(op);
+    if (transform->recurse() || (!canRun && !transform->recurse())) {
+        for (const auto &childOp : utils::advanceEarly(op->body)) {
+            runTransform(transform, childOp);
         }
     }
+    if (!canRun)
+        return;
+    OptBuilder builder;
+    builder.setInsertPointBefore(op);
+    COMPILER_DEBUG(dbg::get() << "Run " << transform->name() << " on " << op->dump() << "{\n");
+    transform->run(op, builder);
+    COMPILER_DEBUG(dbg::get() << "}\n\n");
 }
 
 } // namespace
