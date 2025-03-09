@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <utility>
-
 #include "compiler/backend/optree/optimizer/optimizer.hpp"
+#include "compiler/backend/optree/optimizer/transform.hpp"
 #include "compiler/backend/optree/optimizer/transform_factories.hpp"
 #include "compiler/optree/adaptors.hpp"
 
@@ -13,7 +12,9 @@ using namespace optree::optimizer;
 
 class EraseUnusedOpsTest : public TransformTestBase {
     virtual void setupOptimizer(Optimizer &opt) const override {
-        opt.add(createEraseUnusedOps());
+        auto transform = CascadeTransform::make("EraseUnusedOpsTest");
+        transform->add(createEraseUnusedOps());
+        opt.add(transform);
     }
 
   public:
