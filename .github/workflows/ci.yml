@@ -40,7 +40,7 @@ jobs:
         clangFormatVersion: 17
 
   build-test-gcc:
-    name: Build and test on Ubuntu GCC
+    name: Build and test (Ubuntu GCC)
     runs-on: ubuntu-latest
     needs: code-style-check
     container:
@@ -62,7 +62,8 @@ jobs:
           git config --global --add safe.directory $(pwd)
           cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN='ast_to_llvmir;optree_to_llvmir'
           cmake --build build --parallel
-          ctest --test-dir build --output-on-failure
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
       - name: Archive binaries
         run: tar cf binaries.tar -C build bin
       - name: Upload binaries
@@ -72,7 +73,7 @@ jobs:
           path: binaries.tar
 
   build-test-clang:
-    name: Build on Ubuntu Clang
+    name: Build and test (Ubuntu Clang)
     runs-on: ubuntu-latest
     needs: code-style-check
     container:
@@ -93,10 +94,11 @@ jobs:
         run: |
           cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_CODEGEN='ast_to_llvmir;optree_to_llvmir'
           cmake --build build --parallel
-          ctest --test-dir build --output-on-failure
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
 
   build-test-msvc:
-    name: Build on Windows MSVC
+    name: Build and test (Windows MSVC)
     runs-on: windows-latest
     needs: code-style-check
     steps:
@@ -108,7 +110,8 @@ jobs:
         run: |
           cmake -S compiler -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel
-          ctest --test-dir build --output-on-failure
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
 
   code-coverage:
     name: Code coverage

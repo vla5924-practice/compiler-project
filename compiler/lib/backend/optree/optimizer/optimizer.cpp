@@ -55,7 +55,7 @@ class OperationSet {
         return op;
     }
 
-    void erase(const Operation::Ptr &op) {
+    void erase(Operation::Ptr op) {
         auto it = positions.find(op.get());
         if (it == positions.end())
             return;
