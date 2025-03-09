@@ -1,12 +1,14 @@
 #include "optimizer/transform.hpp"
 
-#include <algorithm>
 #include <cstddef>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
 
+#include "compiler/optree/operation.hpp"
 #include "compiler/utils/debug.hpp"
+
+#include "optimizer/opt_builder.hpp"
 
 using namespace optree;
 using namespace optree::optimizer;
