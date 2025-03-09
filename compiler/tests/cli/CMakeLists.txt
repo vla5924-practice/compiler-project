@@ -4,7 +4,7 @@ macro(add_cli_test TEST_NAME)
     set(test_dir ${CMAKE_CURRENT_SOURCE_DIR}/${TEST_NAME})
     add_test(NAME "CLI.${TEST_NAME}" COMMAND ${PYTHON} "${CMAKE_CURRENT_SOURCE_DIR}/run_test.py"
         --compiler $<TARGET_FILE:cli>
-        --input "${test_dir}/input.py"
+        --program "${test_dir}/program.py"
         --output "${test_dir}/output.txt"
         ${ARGN}
     )

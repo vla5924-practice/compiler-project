@@ -10,7 +10,7 @@ import tempfile
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--compiler", default="compiler", help="compiler executable")
-    parser.add_argument("--input", required=True, help="test input")
+    parser.add_argument("--program", required=True, help="test program")
     parser.add_argument("--output", required=True, help="test output")
     parser.add_argument("--run", action="store_true", help="run output file after the compilation")
     parser.add_argument("compiler_args", nargs="*", help="additional compiler arguments")
@@ -21,7 +21,7 @@ def main() -> int:
     args = parse_args()
     with tempfile.TemporaryDirectory() as temp_dir:
         compiler_output = os.path.join(temp_dir, "output")
-        cmd = [args.compiler, args.input, "--output", compiler_output]
+        cmd = [args.compiler, args.program, "--output", compiler_output]
         if args.run:
             cmd.append("--compile")
         if args.compiler_args:
