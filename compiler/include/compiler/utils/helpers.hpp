@@ -8,18 +8,22 @@
 #include <type_traits>
 #include <variant>
 
-#if defined(_MSC_VER) && !defined(__clang__) // MSVC
+#include "compiler/utils/platform.hpp"
+
+#ifdef COMPILER_TOOLCHAIN_MSVC
 #define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
     do {                                                                                                               \
         assert(false && (MESSAGE));                                                                                    \
         __assume(false);                                                                                               \
     } while (0)
-#else // GCC, Clang
+#elifdef COMPILER_TOOLCHAIN_GCC_COMPATIBLE
 #define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
     do {                                                                                                               \
         assert(false && (MESSAGE));                                                                                    \
         __builtin_unreachable();                                                                                       \
     } while (0)
+#else
+#define COMPILER_UNREACHABLE(...)
 #endif
 
 namespace utils {
