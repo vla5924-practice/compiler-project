@@ -22,11 +22,14 @@ class OptBuilder : public Builder {
         Notifier(Notifier &&) = default;
         ~Notifier() = default;
 
-        Notifier(const Callback &onInsert, const Callback &onUpdate, const Callback &onErase)
-            : onInsert(onInsert), onUpdate(onUpdate), onErase(onErase){};
+        Notifier(const Callback &onInsert, const Callback &onUpdate, const Callback &onErase);
+
+        void notifyInsert(const Operation::Ptr &op) const;
+        void notifyUpdate(const Operation::Ptr &op) const;
+        void notifyErase(const Operation::Ptr &op) const;
     };
 
-    OptBuilder(const Notifier &notifier) : Builder(), notifier(notifier){};
+    explicit OptBuilder(const Notifier &notifier = {}) : Builder(), notifier(notifier){};
     OptBuilder(const OptBuilder &) = delete;
     OptBuilder(OptBuilder &&) = default;
     ~OptBuilder() override = default;

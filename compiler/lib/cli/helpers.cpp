@@ -9,10 +9,10 @@
 
 #if defined(COMPILER_PLATFORM_WINDOWS)
 #include <array>
-#include <cstdio>
+#include <stdio.h> // NOLINT(misc-include-cleaner)
 #include <string_view>
 #elif defined(COMPILER_PLATFORM_LINUX)
-#include <cstdlib>
+#include <stdlib.h> // NOLINT(misc-include-cleaner)
 #endif
 
 namespace cli {
