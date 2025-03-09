@@ -7,10 +7,30 @@
 #include <iostream>
 #include <string>
 
+#include "compiler/utils/platform.hpp"
+
 #if defined(NDEBUG) && !defined(DEBUG)
-#define COMPILER_DEBUG(STATEMENT)
+#define COMPILER_DEBUG(...)
 #else
 #define COMPILER_DEBUG(STATEMENT) STATEMENT
+#endif
+
+#define COMPILER_DEBUG_PRINT(SUBEXPR) COMPILER_DEBUG(::utils::DebugPrinter::get() << SUBEXPR)
+
+#if defined(COMPILER_TOOLCHAIN_MSVC)
+#define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
+    do {                                                                                                               \
+        COMPILER_DEBUG_PRINT("UNREACHABLE: " << (MESSAGE) << '\n');                                                    \
+        __assume(false);                                                                                               \
+    } while (0)
+#elif defined(COMPILER_TOOLCHAIN_GCC_COMPATIBLE)
+#define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
+    do {                                                                                                               \
+        COMPILER_DEBUG_PRINT("UNREACHABLE: " << (MESSAGE) << '\n');                                                    \
+        __builtin_unreachable();                                                                                       \
+    } while (0)
+#else
+#define COMPILER_UNREACHABLE(MESSAGE) COMPILER_DEBUG_PRINT("UNREACHABLE: " << (MESSAGE) << '\n')
 #endif
 
 namespace utils {

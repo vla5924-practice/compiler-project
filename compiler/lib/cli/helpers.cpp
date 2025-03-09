@@ -1,32 +1,33 @@
 #include "helpers.hpp"
 
-#include <array>
 #include <filesystem>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#ifdef COMPILER_PLATFORM_WINDOWS
-#include <stdio.h>
-#elifdef COMPILER_PLATFORM_LINUX
-#include <cstdio>
-#endif
-
 #include "compiler/utils/platform.hpp"
+
+#if defined(COMPILER_PLATFORM_WINDOWS)
+#include <array>
+#include <cstdio>
+#include <string_view>
+#elif defined(COMPILER_PLATFORM_LINUX)
+#include <cstdlib>
+#endif
 
 namespace cli {
 
 TemporaryDirectory::TemporaryDirectory() {
-#ifdef COMPILER_PLATFORM_WINDOWS
+#if defined(COMPILER_PLATFORM_WINDOWS)
     std::array<char, L_tmpnam_s> tmpnamArg;
     tmpnam_s(tmpnamArg.data(), L_tmpnam_s);
     char *tmpnamResult = tmpnamArg.data();
-#elifdef COMPILER_PLATFORM_LINUX
-    std::array<char, L_tmpnam> tmpnamArg;
-    char *tmpnamResult = std::tmpnam(tmpnamArg.data());
+    std::filesystem::create_directory(std::string_view(tmpnamArg.data()));
+#elif defined(COMPILER_PLATFORM_LINUX)
+    auto templatePath = std::filesystem::temp_directory_path() / "XXXXXX";
+    std::string tmpnamArg(templatePath.string());
+    mkstemp(tmpnamArg.data());
 #endif
-    dir = tmpnamResult;
-    std::filesystem::create_directory(dir);
 }
 
 TemporaryDirectory::~TemporaryDirectory() {

@@ -8,24 +8,6 @@
 #include <type_traits>
 #include <variant>
 
-#include "compiler/utils/platform.hpp"
-
-#ifdef COMPILER_TOOLCHAIN_MSVC
-#define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
-    do {                                                                                                               \
-        assert(false && (MESSAGE));                                                                                    \
-        __assume(false);                                                                                               \
-    } while (0)
-#elifdef COMPILER_TOOLCHAIN_GCC_COMPATIBLE
-#define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
-    do {                                                                                                               \
-        assert(false && (MESSAGE));                                                                                    \
-        __builtin_unreachable();                                                                                       \
-    } while (0)
-#else
-#define COMPILER_UNREACHABLE(...)
-#endif
-
 namespace utils {
 
 namespace detail {

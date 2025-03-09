@@ -22,8 +22,8 @@
 #include "compiler/frontend/lexer/lexer.hpp"
 #include "compiler/frontend/parser/parser.hpp"
 #include "compiler/frontend/preprocessor/preprocessor.hpp"
+#include "compiler/utils/debug.hpp"
 #include "compiler/utils/error_buffer.hpp"
-#include "compiler/utils/helpers.hpp"
 #include "compiler/utils/source_files.hpp"
 #include "compiler/utils/timer.hpp"
 

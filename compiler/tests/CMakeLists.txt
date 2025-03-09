@@ -27,3 +27,8 @@ DEPENDS
 )
 
 add_subdirectory(codegen)
+
+if(ENABLE_CLI AND ENABLE_CODEGEN)
+    add_subdirectory(cli)
+    add_dependencies(run_tests run_cli_test)
+endif()
