@@ -99,12 +99,15 @@ void FunctionType::dump(std::ostream &stream) const {
 
 bool PointerType::operator==(const Type &other) const {
     TYPE_COMPARE_EARLY_RETURN(PointerType, other)
-    return *pointee == *other.as<PointerType>().pointee;
+    const auto &otherPointer = other.as<PointerType>();
+    return numElements == otherPointer.numElements && *pointee == *otherPointer.pointee;
 }
 
 void PointerType::dump(std::ostream &stream) const {
     stream << "ptr(";
     pointee->dump(stream);
+    if (numElements != 1U)
+        stream << ", " << numElements;
     stream << ')';
 }
 
@@ -167,3 +170,5 @@ StrType::Ptr TypeStorage::strType(unsigned width) {
     }
     return ptr;
 }
+
+#undef TYPE_COMPARE_EARLY_RETURN
