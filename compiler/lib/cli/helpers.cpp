@@ -1,25 +1,33 @@
 #include "helpers.hpp"
 
-#include <array>
-#include <cstdio>
 #include <filesystem>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include "compiler/utils/platform.hpp"
+
+#if defined(COMPILER_PLATFORM_WINDOWS)
+#include <array>
+#include <cstdio>
+#include <string_view>
+#elif defined(COMPILER_PLATFORM_LINUX)
+#include <cstdlib>
+#endif
+
 namespace cli {
 
 TemporaryDirectory::TemporaryDirectory() {
-#if defined(_MSC_VER)
+#if defined(COMPILER_PLATFORM_WINDOWS)
     std::array<char, L_tmpnam_s> tmpnamArg;
     tmpnam_s(tmpnamArg.data(), L_tmpnam_s);
     char *tmpnamResult = tmpnamArg.data();
-#else
-    std::array<char, L_tmpnam> tmpnamArg;
-    char *tmpnamResult = std::tmpnam(tmpnamArg.data());
+    std::filesystem::create_directory(std::string_view(tmpnamArg.data()));
+#elif defined(COMPILER_PLATFORM_LINUX)
+    auto templatePath = std::filesystem::temp_directory_path() / "XXXXXX";
+    std::string tmpnamArg(templatePath.string());
+    mkstemp(tmpnamArg.data());
 #endif
-    dir = tmpnamResult;
-    std::filesystem::create_directory(dir);
 }
 
 TemporaryDirectory::~TemporaryDirectory() {
@@ -37,9 +45,12 @@ std::string wrapQuotes(const std::string &str) {
 }
 
 std::string makeCommand(const std::vector<std::string> &args) {
+    if (args.empty())
+        return {};
     std::stringstream cmd;
-    for (const auto &arg : args)
-        cmd << wrapQuotes(arg) << ' ';
+    cmd << args.front();
+    for (auto it = args.begin() + 1; it != args.end(); ++it)
+        cmd << ' ' << wrapQuotes(*it);
     return cmd.str();
 }
 

@@ -8,20 +8,6 @@
 #include <type_traits>
 #include <variant>
 
-#if defined(_MSC_VER) && !defined(__clang__) // MSVC
-#define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
-    do {                                                                                                               \
-        assert(false && (MESSAGE));                                                                                    \
-        __assume(false);                                                                                               \
-    } while (0)
-#else // GCC, Clang
-#define COMPILER_UNREACHABLE(MESSAGE)                                                                                  \
-    do {                                                                                                               \
-        assert(false && (MESSAGE));                                                                                    \
-        __builtin_unreachable();                                                                                       \
-    } while (0)
-#endif
-
 namespace utils {
 
 namespace detail {
