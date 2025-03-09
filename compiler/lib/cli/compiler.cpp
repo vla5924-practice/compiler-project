@@ -22,8 +22,8 @@
 #include "compiler/frontend/lexer/lexer.hpp"
 #include "compiler/frontend/parser/parser.hpp"
 #include "compiler/frontend/preprocessor/preprocessor.hpp"
+#include "compiler/utils/debug.hpp"
 #include "compiler/utils/error_buffer.hpp"
-#include "compiler/utils/helpers.hpp"
 #include "compiler/utils/source_files.hpp"
 #include "compiler/utils/timer.hpp"
 
@@ -60,14 +60,28 @@ namespace {
 #ifdef LLVMIR_CODEGEN_ENABLED
 std::string llToObj(const std::string &llcBin, const std::filesystem::path &llFile,
                     const std::filesystem::path &objFile) {
-    std::vector<std::string> cmd = {llcBin, "-relocation-model=pic", "-filetype=obj", llFile.string(),
-                                    "-o",   objFile.string()};
+    std::vector<std::string> cmd = {
+        llcBin,
+#ifdef COMPILER_PLATFORM_LINUX
+        "-relocation-model=pic",
+#endif
+        "-filetype=obj",
+        llFile.string(),
+        "-o",
+        objFile.string(),
+    };
     return makeCommand(cmd);
 }
 
 std::string objToExe(const std::string &clangBin, const std::filesystem::path &objFile,
                      const std::filesystem::path &exeFile) {
-    std::vector<std::string> cmd = {clangBin, "-fPIE", objFile.string(), "-o", exeFile.string()};
+    std::vector<std::string> cmd = {
+        clangBin,
+#ifdef COMPILER_PLATFORM_LINUX
+        "-fPIE",
+#endif
+        objFile.string(), "-o", exeFile.string(),
+    };
     return makeCommand(cmd);
 }
 
@@ -113,7 +127,7 @@ int runLLVMIRGenerator(const Options &opt, const std::function<void(std::ostream
         bool cmdFailed = (runCommand(llcCmd) || runCommand(clangCmd));
         if (cmdFailed)
             return 3;
-        std::filesystem::copy_file(exeFile, opt.output);
+        std::filesystem::copy_file(exeFile, opt.output, std::filesystem::copy_options::overwrite_existing);
     } catch (std::exception &e) {
         std::cerr << e.what();
         return 3;

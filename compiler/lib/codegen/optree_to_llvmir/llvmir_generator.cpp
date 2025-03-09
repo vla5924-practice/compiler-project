@@ -22,7 +22,7 @@
 #include "compiler/optree/program.hpp"
 #include "compiler/optree/types.hpp"
 #include "compiler/optree/value.hpp"
-#include "compiler/utils/helpers.hpp"
+#include "compiler/utils/debug.hpp"
 
 using namespace optree;
 using namespace optree::llvmir_generator;

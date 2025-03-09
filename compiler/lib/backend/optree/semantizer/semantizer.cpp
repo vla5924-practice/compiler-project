@@ -12,7 +12,7 @@
 #include "compiler/optree/program.hpp"
 #include "compiler/optree/types.hpp"
 #include "compiler/optree/value.hpp"
-#include "compiler/utils/helpers.hpp"
+#include "compiler/utils/debug.hpp"
 
 #include "semantizer/semantizer_context.hpp"
 #include "semantizer/traits.hpp"
