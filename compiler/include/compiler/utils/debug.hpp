@@ -15,6 +15,7 @@
 #define COMPILER_DEBUG(STATEMENT) STATEMENT
 #endif
 
+// NOLINTNEXTLINE(bugprone-macro-parentheses)
 #define COMPILER_DEBUG_PRINT(SUBEXPR) COMPILER_DEBUG(::utils::DebugPrinter::get() << SUBEXPR)
 
 #if defined(COMPILER_TOOLCHAIN_MSVC)
