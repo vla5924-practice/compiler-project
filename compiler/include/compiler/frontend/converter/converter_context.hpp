@@ -1,10 +1,12 @@
 #pragma once
 
+#include <cstddef>
 #include <forward_list>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 
 #include "compiler/ast/node.hpp"
 #include "compiler/optree/builder.hpp"
@@ -19,8 +21,11 @@ namespace converter {
 
 struct ConverterContext {
     struct LocalVariable {
+        using NumElementsStorage = std::variant<std::monostate, optree::Value::Ptr, size_t>;
+
         optree::Value::Ptr value = {};
         bool needsLoad = true;
+        NumElementsStorage numElements = {};
     };
 
     optree::Operation::Ptr op;
@@ -53,16 +58,17 @@ struct ConverterContext {
         variables.pop_front();
     }
 
-    void saveVariable(const std::string &name, optree::Value::Ptr value, bool needsLoad = true) {
+    void saveVariable(const std::string &name, optree::Value::Ptr value, bool needsLoad = true,
+                      const LocalVariable::NumElementsStorage &numElements = {}) {
         variables.front().emplace(std::piecewise_construct, std::forward_as_tuple(name),
-                                  std::forward_as_tuple(value, needsLoad));
+                                  std::forward_as_tuple(value, needsLoad, numElements));
     }
 
-    LocalVariable findVariable(const std::string &name) {
+    const LocalVariable *findVariable(const std::string &name) {
         for (auto &scope : variables)
             if (scope.contains(name))
-                return scope[name];
-        return {};
+                return &scope[name];
+        return nullptr;
     }
 
     bool wouldBeRedeclaration(const std::string &name) {

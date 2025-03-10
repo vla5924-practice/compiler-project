@@ -10,6 +10,7 @@ macro(add_cli_test TEST_NAME)
     )
 endmacro()
 
+add_cli_test(for_loop --run)
 add_cli_test(hello_world --run)
 
 add_custom_target(run_cli_test
