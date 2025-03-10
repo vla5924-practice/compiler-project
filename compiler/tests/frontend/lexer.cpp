@@ -525,3 +525,30 @@ TEST(Lexer, for_range_and_enumerate_expression) {
     expected.emplace_back(Special::EndOfExpression);
     ASSERT_EQ(expected, transformed);
 }
+
+TEST(Lexer, can_parse_scientific_notation_float_literal) {
+    StringVec source = {
+        "1e-0", "1.e-1", "1.0e-0", "154e+1", "332.e+23", "1.65e+412",
+    };
+    TokenList transformed = Lexer::process(source);
+    TokenList expected;
+    expected.emplace_back(TokenType::FloatingPointLiteral, "1e-0");
+    expected.emplace_back(Special::EndOfExpression);
+    expected.emplace_back(TokenType::FloatingPointLiteral, "1.e-1");
+    expected.emplace_back(Special::EndOfExpression);
+    expected.emplace_back(TokenType::FloatingPointLiteral, "1.0e-0");
+    expected.emplace_back(Special::EndOfExpression);
+    expected.emplace_back(TokenType::FloatingPointLiteral, "154e+1");
+    expected.emplace_back(Special::EndOfExpression);
+    expected.emplace_back(TokenType::FloatingPointLiteral, "332.e+23");
+    expected.emplace_back(Special::EndOfExpression);
+    expected.emplace_back(TokenType::FloatingPointLiteral, "1.65e+412");
+    expected.emplace_back(Special::EndOfExpression);
+
+    ASSERT_EQ(expected, transformed);
+}
+
+TEST(Lexer, raise_error_on_scientific_notation_literal_with_alpha) {
+    StringVec source = {"6.5e-0a"};
+    ASSERT_THROW(Lexer::process(source), ErrorBuffer);
+}

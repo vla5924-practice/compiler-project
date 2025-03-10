@@ -1,8 +1,12 @@
 #include "helpers.hpp"
 
+#include <algorithm>
+
 #include "compiler/utils/source_ref.hpp"
 
 #include "compiler/optree/adaptors.hpp"
+#include "compiler/optree/attribute.hpp"
+#include "compiler/optree/base_adaptor.hpp"
 #include "compiler/optree/builder.hpp"
 #include "compiler/optree/definitions.hpp"
 #include "compiler/optree/types.hpp"
@@ -51,6 +55,43 @@ ArithCastOp insertNumericCastOp(const Type::Ptr &resultType, const Value::Ptr &v
     else
         return {};
     return builder.insert<ArithCastOp>(ref, kind, resultType, value);
+}
+
+bool similar(const Operation::Ptr &lhs, const Operation::Ptr &rhs, bool checkBody) {
+    if (lhs->name != rhs->name)
+        return false;
+    if (lhs->as<Adaptor>().getSpecId() != rhs->as<Adaptor>().getSpecId())
+        return false;
+    auto attrEqual = [](const Attribute &lhs, const Attribute &rhs) { return lhs == rhs; };
+    if (!std::ranges::equal(lhs->attributes, rhs->attributes, attrEqual))
+        return false;
+    auto operandEqual = [&lhs, &rhs](const Value::Ptr &lhsValue, const Value::Ptr &rhsValue) {
+        bool type = lhsValue->sameType(rhsValue);
+        auto lhsOwner = lhsValue->owner.lock();
+        auto rhsOwner = rhsValue->owner.lock();
+        bool sameGlobalOwner = lhsOwner == rhsOwner;
+        bool similarLocalOwner = false;
+        if (!sameGlobalOwner && lhsOwner != lhs && rhsOwner != rhs) {
+            similarLocalOwner = similar(lhsOwner, rhsOwner, false);
+        }
+        return type && (sameGlobalOwner || similarLocalOwner);
+    };
+    if (!std::ranges::equal(lhs->operands, rhs->operands, operandEqual))
+        return false;
+    auto valueEqual = [](const Value::Ptr &lhsValue, const Value::Ptr &rhsValue) {
+        return lhsValue->sameType(rhsValue);
+    };
+    if (!std::ranges::equal(lhs->inwards, rhs->inwards, valueEqual))
+        return false;
+    if (!std::ranges::equal(lhs->results, rhs->results, valueEqual))
+        return false;
+    bool body = true;
+    if (checkBody) {
+        body = std::ranges::equal(lhs->body, rhs->body, [](const Operation::Ptr &lhs, const Operation::Ptr &rhs) {
+            return similar(lhs, rhs, true);
+        });
+    }
+    return body;
 }
 
 } // namespace optree
