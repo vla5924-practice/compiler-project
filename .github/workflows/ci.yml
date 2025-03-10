@@ -134,7 +134,7 @@ jobs:
           submodules: true
       - name: Build and run tests
         run: |
-          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_CODEGEN=OFF -DENABLE_COVERAGE=ON
+          cmake -S compiler -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DENABLE_CODEGEN='ast_to_llvmir;optree_to_llvmir' -DENABLE_COVERAGE=ON
           cmake --build build --target run_tests --parallel
       - name: Generate coverage report
         run: cmake --build build --target coverage
