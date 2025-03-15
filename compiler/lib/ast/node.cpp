@@ -200,6 +200,9 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::ListAccessor:
         stream << "ListAccessor\n";
         break;
+    case NodeType::ListDynamicSize:
+        stream << "ListDynamicSize\n";
+        break;
     case NodeType::ForStatement:
         stream << "ForStatement\n";
         break;
@@ -221,12 +224,12 @@ void Node::dump(std::ostream &stream, int depth) const {
     default:
         stream << "Unknown\n";
     }
-    for (auto child : children)
+    for (const auto &child : children)
         child->dump(stream, depth + 1);
 }
 
 std::string Node::dump(int depth) const {
     std::stringstream str;
-    dump(str);
+    dump(str, depth);
     return str.str();
 }
