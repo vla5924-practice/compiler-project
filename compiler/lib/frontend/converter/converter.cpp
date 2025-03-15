@@ -598,6 +598,7 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
         return;
     case NodeType::ForStatement:
         processForStatement(node, ctx);
+        return;
     default:
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in processNode");
     }
