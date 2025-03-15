@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "compiler/ast/node.hpp"
+#include "compiler/ast/node_type.hpp"
 #include "compiler/utils/error_buffer.hpp"
 #include "compiler/utils/source_ref.hpp"
 
