@@ -218,9 +218,9 @@ size_t getOperationPriority(const Token &token) {
 
 size_t getOperandCount(OperationType type) {
     if (type == OperationType::Binary)
-        return 2u;
+        return 2U;
     if (type == OperationType::Unary)
-        return 1u;
+        return 1U;
     return -1;
 }
 
@@ -245,6 +245,33 @@ bool canBeUnaryOperation(const TokenIterator &tokenIter) {
 bool isUnaryOperation(const TokenIterator &tokenIter, const ExpressionTokenType &prevTokenIter) {
     return canBeUnaryOperation(tokenIter) &&
            (prevTokenIter == ExpressionTokenType::Operation || prevTokenIter == ExpressionTokenType::OpeningBrace);
+}
+
+std::string unescapeStringLiteral(const std::string &str) {
+    std::string result;
+    result.reserve(str.size());
+    std::string::value_type prev = '\0';
+    bool backslash = false;
+    for (auto c : str) {
+        if (!backslash && prev == '\\') {
+            backslash = false;
+            if (c == '\\')
+                backslash = true;
+            else if (c == 'n')
+                result.back() = '\n';
+            else if (c == 'r')
+                result.back() = '\r';
+            else if (c == 't')
+                result.back() = '\t';
+            else
+                result.push_back(c);
+        } else {
+            result.push_back(c);
+        }
+        prev = c;
+    }
+    result.shrink_to_fit();
+    return result;
 }
 
 void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::Ptr &root, ErrorBuffer &errors) {
@@ -288,7 +315,7 @@ void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::
                     }
                 } else if (token.type == TokenType::StringLiteral) {
                     Node::Ptr node = ParserContext::unshiftChildNode(currNode, NodeType::StringLiteralValue, token.ref);
-                    node->value = token.literal();
+                    node->value = unescapeStringLiteral(token.literal());
                 } else if (token.is(Keyword::False) || token.is(Keyword::True)) {
                     Node::Ptr node =
                         ParserContext::unshiftChildNode(currNode, NodeType::BooleanLiteralValue, token.ref);
