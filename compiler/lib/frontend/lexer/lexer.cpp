@@ -1,7 +1,9 @@
 #include "lexer/lexer.hpp"
 
 #include <cctype>
+#include <cstddef>
 #include <iterator>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 
