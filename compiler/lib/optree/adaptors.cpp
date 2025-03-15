@@ -12,8 +12,23 @@ using namespace optree;
 
 // The following definitions for the methods of the operation classes should be arranged in alphabetical order.
 
-void AllocateOp::init(const Type::Ptr &type) {
+void AllocateOp::init(const Type::Ptr &type, const Value::Ptr &dynamicSize) {
     op->results.emplace_back(Value::make(type, op));
+    if (dynamicSize)
+        op->addOperand(dynamicSize);
+}
+
+Value::Ptr AllocateOp::dynamicSize() const {
+    if (op->numOperands() == 1)
+        return op->operand(0);
+    return {};
+}
+
+void AllocateOp::setDynamicSize(const Value::Ptr &value) {
+    if (op->numOperands() == 1)
+        op->operand(0) = value;
+    else
+        op->addOperand(value);
 }
 
 void ArithBinaryOp::init(ArithBinOpKind kind, const Type::Ptr &resultType, const Value::Ptr &lhs,

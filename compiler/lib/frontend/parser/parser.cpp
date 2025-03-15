@@ -774,7 +774,18 @@ void parseListStatement(ParserContext &ctx) {
         ctx.goParentNode();
     }
     ctx.goNextToken();
-    ctx.goParentNode();
+    if (ctx.token().is(Special::EndOfExpression)) {
+        ctx.goParentNode();
+    } else if (ctx.token().is(Operator::Mult)) {
+        ctx.goNextToken();
+        ctx.node = ctx.pushChildNode(NodeType::ListDynamicSize);
+        ctx.node = ctx.pushChildNode(NodeType::Expression);
+        ctx.propagate();
+        ctx.goParentNode();
+        ctx.goParentNode();
+    } else {
+        ctx.pushError("Either end of line or '*' was expected");
+    }
     ctx.goParentNode();
 }
 

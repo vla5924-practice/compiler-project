@@ -1,11 +1,9 @@
 #pragma once
 
 #include <functional>
-#include <stack>
 #include <unordered_map>
 
 #include "compiler/ast/node.hpp"
-#include "compiler/ast/types.hpp"
 #include "compiler/utils/error_buffer.hpp"
 #include "compiler/utils/source_ref.hpp"
 
@@ -27,21 +25,21 @@ struct ParserContext {
         return *tokenIter;
     }
 
-    static ast::Node::Ptr pushChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType,
+    static ast::Node::Ptr pushChildNode(const ast::Node::Ptr &node, ast::NodeType nodeType,
                                         const utils::SourceRef &ref) {
         auto &childNode = node->children.emplace_back(new ast::Node(nodeType, node));
         childNode->ref = ref;
         return childNode;
     }
 
-    static ast::Node::Ptr unshiftChildNode(ast::Node::Ptr node, const ast::NodeType &nodeType,
+    static ast::Node::Ptr unshiftChildNode(const ast::Node::Ptr &node, ast::NodeType nodeType,
                                            const utils::SourceRef &ref) {
         auto &childNode = node->children.emplace_front(new ast::Node(nodeType, node));
         childNode->ref = ref;
         return childNode;
     }
 
-    ast::Node::Ptr pushChildNode(const ast::NodeType &nodeType) {
+    ast::Node::Ptr pushChildNode(ast::NodeType nodeType) {
         return pushChildNode(node, nodeType, tokenIter->ref);
     }
 
