@@ -154,9 +154,13 @@ struct StoreOp;
 struct AllocateOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Allocate")
 
-    void init(const Type::Ptr &type);
+    void init(const Type::Ptr &type, const Value::Ptr &dynamicSize = {});
 
     OPTREE_ADAPTOR_RESULT(result, 0)
+
+    // dynamicSize is an optional operand
+    Value::Ptr dynamicSize() const;
+    void setDynamicSize(const Value::Ptr &value);
 };
 
 struct LoadOp : Adaptor {
