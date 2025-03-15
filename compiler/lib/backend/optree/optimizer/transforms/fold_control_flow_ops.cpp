@@ -1,10 +1,12 @@
 #include "optimizer/transform.hpp"
 
 #include <memory>
+#include <string_view>
 
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
+#include "compiler/utils/helpers.hpp"
 
 #include "optimizer/opt_builder.hpp"
 
