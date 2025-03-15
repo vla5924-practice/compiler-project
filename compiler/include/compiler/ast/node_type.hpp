@@ -60,6 +60,7 @@ enum class NodeType {
     IfStatement,
     IntegerLiteralValue,
     ListAccessor,
+    ListDynamicSize,
     ListStatement,
     PassStatement,
     ProgramRoot,
