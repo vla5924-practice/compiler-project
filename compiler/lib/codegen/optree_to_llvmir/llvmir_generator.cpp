@@ -429,6 +429,7 @@ void LLVMIRGenerator::visit(const ForOp &op) {
     builder.CreateBr(condBlock);
     builder.SetInsertPoint(condBlock);
     auto *loadedI = builder.CreateLoad(llvmType, allocaI);
+    saveValue(op.iterator(), loadedI);
     auto *cond = builder.CreateICmpSLT(loadedI, findValue(op.stop()));
     auto *thenBlock = createBlock();
     auto *nextBlock = createBlock();

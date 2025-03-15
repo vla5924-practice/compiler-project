@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "compiler/ast/node_type.hpp"
@@ -98,16 +99,16 @@ bool isAssignment(ast::BinaryOperation binOp) {
 }
 
 void createInputOp(const Node::Ptr &varNameNode, const utils::SourceRef &inputRef, ConverterContext &ctx) {
-    auto var = ctx.findVariable(varNameNode->str());
-    if (!var.value) {
+    const auto *var = ctx.findVariable(varNameNode->str());
+    if (var == nullptr) {
         ctx.pushError(varNameNode, "variable was not declared in this scope: " + varNameNode->str());
         return;
     }
-    if (!var.needsLoad) {
+    if (!var->needsLoad) {
         ctx.pushError(varNameNode, "variable cannot be modified: " + varNameNode->str());
         return;
     }
-    ctx.insert<InputOp>(inputRef, var.value);
+    ctx.insert<InputOp>(inputRef, var->value);
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx);
@@ -185,7 +186,7 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
         type = convertType(typeNode->typeId());
     }
     auto allocOp = ctx.insert<AllocateOp>(node->ref, Type::make<PointerType>(type, numElements));
-    ctx.saveVariable(name, allocOp.result(), true);
+    ctx.saveVariable(name, allocOp.result(), true, numElements);
     auto insertStore = [&](const Node::Ptr &defNode, const Value::Ptr &offset) {
         if (defNode->type == NodeType::Expression && isFunctionCallInputNode(defNode->firstChild())) {
             createInputOp(nameNode, defNode->ref, ctx);
@@ -257,6 +258,137 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
     while (depth-- > 0)
         ctx.goParent();
     ctx.goParent();
+}
+
+void processForStatement(const Node::Ptr &node, ConverterContext &ctx) {
+    const auto &targets = node->firstChild();
+    size_t numTargets = targets->children.size();
+    assert(numTargets != 0 && "parser ensures that there is at least one target");
+    const auto &iterExpr = node->secondChild()->firstChild()->firstChild();
+    // Process layout: for i in range(start, stop, step)
+    if (iterExpr->type == NodeType::FunctionCall && iterExpr->firstChild()->str() == language::funcRange) {
+        if (numTargets > 1)
+            ctx.pushError(node, "for loop with range() must have exactly one target");
+        const auto &argsNode = iterExpr->lastChild();
+        size_t numArgs = argsNode->children.size();
+        if (numArgs == 0) {
+            ctx.pushError(argsNode, "range() must have at least one argument");
+            return;
+        }
+        if (numArgs > 3)
+            ctx.pushError(argsNode, "range() must have 1, 2, or 3 arguments");
+        Node::Ptr startExpr, stopExpr, stepExpr;
+        if (numArgs == 1) {
+            stopExpr = argsNode->firstChild();
+        } else if (numArgs == 2) {
+            startExpr = argsNode->firstChild();
+            stopExpr = argsNode->lastChild();
+        } else {
+            assert(numArgs == 3);
+            startExpr = argsNode->firstChild();
+            stopExpr = argsNode->secondChild();
+            stepExpr = argsNode->lastChild();
+        }
+        auto stopValue = visitNode(stopExpr, ctx);
+        if (!stopValue->type->is<IntegerType>())
+            ctx.pushError(stopExpr, "'stop' argument of range() statement must be int");
+        Value::Ptr startValue;
+        if (startExpr) {
+            startValue = visitNode(startExpr, ctx);
+            if (!startValue->type->is<IntegerType>())
+                ctx.pushError(startExpr, "'start' argument of range() statement must be int");
+        } else {
+            startValue = ctx.insert<ConstantOp>(iterExpr->ref, stopValue->type, 0).result();
+        }
+        Value::Ptr stepValue;
+        if (stepExpr) {
+            stepValue = visitNode(stepExpr, ctx);
+            if (!stepValue->type->is<IntegerType>())
+                ctx.pushError(stepExpr, "'step' argument of range() statement must be int");
+        } else {
+            stepValue = ctx.insert<ConstantOp>(iterExpr->ref, stopValue->type, 1).result();
+        }
+        auto forOp = ctx.insert<ForOp>(node->ref, stopValue->type, startValue, stopValue, stepValue);
+        ctx.goInto(forOp);
+        ctx.enterScope();
+        const auto &targetNode = targets->firstChild();
+        ctx.saveVariable(targetNode->str(), forOp.iterator(), false);
+        processNode(node->lastChild(), ctx);
+        ctx.exitScope();
+        ctx.goParent();
+        return;
+    }
+    // Process layout: for i, value in enumerate(list)
+    if (iterExpr->type == NodeType::FunctionCall && iterExpr->firstChild()->str() == language::funcEnumerate) {
+        if (numTargets != 2)
+            ctx.pushError(node, "for loop with enumerate() must have exactly two targets");
+        if (numTargets < 2)
+            return;
+        const auto &argsNode = iterExpr->lastChild();
+        if (argsNode->children.size() != 1) {
+            ctx.pushError(argsNode, "enumerate() must have exactly one argument");
+            return;
+        }
+        const auto &listNode = argsNode->firstChild()->firstChild();
+        if (listNode->type != NodeType::VariableName) {
+            ctx.pushError(listNode, "enumerate() must have variable name as an argument");
+            return;
+        }
+        const auto *var = ctx.findVariable(listNode->str());
+        if (var == nullptr) {
+            ctx.pushError(listNode, "variable was not declared in this scope: " + listNode->str());
+            return;
+        }
+        if (!std::holds_alternative<size_t>(var->numElements)) {
+            ctx.pushError(node, "list must have static length to be used in for loop: " + listNode->str());
+            return;
+        }
+        auto intType = TypeStorage::integerType();
+        auto startValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, 0).result();
+        auto numElements = static_cast<NativeInt>(std::get<size_t>(var->numElements));
+        auto stopValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, numElements).result();
+        auto stepValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, 1).result();
+        auto forOp = ctx.insert<ForOp>(node->ref, intType, startValue, stopValue, stepValue);
+        ctx.goInto(forOp);
+        ctx.enterScope();
+        ctx.saveVariable(targets->firstChild()->str(), forOp.iterator(), false);
+        auto value = ctx.insert<LoadOp>(targets->lastChild()->ref, var->value, forOp.iterator()).result();
+        ctx.saveVariable(targets->lastChild()->str(), value, false);
+        processNode(node->lastChild(), ctx);
+        ctx.exitScope();
+        ctx.goParent();
+        return;
+    }
+    // Process layout: for value in list
+    if (iterExpr->type == NodeType::VariableName) {
+        if (numTargets > 1)
+            ctx.pushError(node, "for loop with list must have exactly one target");
+        const auto *var = ctx.findVariable(iterExpr->str());
+        if (var == nullptr) {
+            ctx.pushError(iterExpr, "variable was not declared in this scope: " + iterExpr->str());
+            return;
+        }
+        if (!std::holds_alternative<size_t>(var->numElements)) {
+            ctx.pushError(node, "list must have static length to be used in for loop: " + iterExpr->str());
+            return;
+        }
+        auto intType = TypeStorage::integerType();
+        auto startValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, 0).result();
+        auto numElements = static_cast<NativeInt>(std::get<size_t>(var->numElements));
+        auto stopValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, numElements).result();
+        auto stepValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, 1).result();
+        auto forOp = ctx.insert<ForOp>(node->ref, intType, startValue, stopValue, stepValue);
+        ctx.goInto(forOp);
+        ctx.enterScope();
+        const auto &targetNode = targets->firstChild();
+        auto value = ctx.insert<LoadOp>(targetNode->ref, var->value, forOp.iterator()).result();
+        ctx.saveVariable(targetNode->str(), value, false);
+        processNode(node->lastChild(), ctx);
+        ctx.exitScope();
+        ctx.goParent();
+        return;
+    }
+    ctx.pushError(node, "unexpected for loop layout");
 }
 
 Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
@@ -382,14 +514,14 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 Value::Ptr visitVariableName(const Node::Ptr &node, ConverterContext &ctx) {
-    auto var = ctx.findVariable(node->str());
-    if (!var.value) {
+    const auto *var = ctx.findVariable(node->str());
+    if (var == nullptr) {
         ctx.pushError(node, "variable was not declared in this scope: " + node->str());
         throw ctx.errors;
     }
-    if (isLhsInAssignment(node) || !var.needsLoad)
-        return var.value;
-    return ctx.insert<LoadOp>(node->ref, var.value).result();
+    if (isLhsInAssignment(node) || !var->needsLoad)
+        return var->value;
+    return ctx.insert<LoadOp>(node->ref, var->value).result();
 }
 
 Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
@@ -423,19 +555,19 @@ Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
 Value::Ptr visitListAccessor(const Node::Ptr &node, ConverterContext &ctx) {
     const auto &nameNode = node->firstChild();
     assert(nameNode->type == NodeType::VariableName && "ListAccessor node must have VariableName as first child");
-    auto var = ctx.findVariable(nameNode->str());
-    if (!var.value) {
+    const auto *var = ctx.findVariable(nameNode->str());
+    if (var == nullptr) {
         ctx.pushError(node, "variable was not declared in this scope: " + nameNode->str());
         throw ctx.errors;
     }
-    if (!var.needsLoad) {
+    if (!var->needsLoad) {
         ctx.pushError(node, "list accessor is not allowed in the current context: " + nameNode->str());
         throw ctx.errors;
     }
     if (isLhsInAssignment(node))
-        return var.value;
+        return var->value;
     auto offset = visitNode(node->lastChild(), ctx);
-    return ctx.insert<LoadOp>(node->ref, var.value, offset).result();
+    return ctx.insert<LoadOp>(node->ref, var->value, offset).result();
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx) {
@@ -463,6 +595,9 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
         return;
     case NodeType::IfStatement:
         processIfStatement(node, ctx);
+        return;
+    case NodeType::ForStatement:
+        processForStatement(node, ctx);
         return;
     default:
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in processNode");
