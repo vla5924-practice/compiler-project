@@ -62,6 +62,10 @@ struct EraseUnusedFunctions : public Transform<ModuleOp> {
             }
         }
     }
+
+    bool recurse() const override {
+        return false;
+    }
 };
 
 } // namespace
