@@ -346,7 +346,9 @@ void LLVMIRGenerator::visit(const AllocateOp &op) {
     const auto &type = op.result()->type->as<PointerType>();
     auto *llvmType = convertType(type.pointee);
     llvm::Value *size = nullptr;
-    if (type.numElements > 1U)
+    if (type.numElements == PointerType::dynamic)
+        size = findValue(op.dynamicSize());
+    else if (type.numElements > 1U)
         size = llvm::ConstantInt::get(llvm::Type::getIntNTy(context, 64U), type.numElements);
     auto *inst = builder.CreateAlloca(llvmType, size);
     saveValue(op.result(), inst);
