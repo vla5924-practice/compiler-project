@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <utility>
-#include <iostream>
 
 #include "compiler/backend/optree/optimizer/optimizer.hpp"
 #include "compiler/backend/optree/optimizer/transform_factories.hpp"
@@ -18,7 +17,7 @@ class FoldControlFlowTest : public TransformTestBase {
     }
 
   public:
-  FoldControlFlowTest() = default;
+    FoldControlFlowTest() = default;
     ~FoldControlFlowTest() = default;
 };
 

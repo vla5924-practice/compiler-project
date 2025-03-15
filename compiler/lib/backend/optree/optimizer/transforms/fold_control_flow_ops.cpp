@@ -1,7 +1,6 @@
 #include "optimizer/transform.hpp"
 
 #include <memory>
-#include <iostream>
 
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/helpers.hpp"
@@ -16,7 +15,7 @@ namespace {
 
 struct FoldControlFlowOps : public Transform<IfOp, WhileOp> {
     using Transform::Transform;
-    
+
     std::string_view name() const override {
         return "FoldControlFlowOps";
     }
@@ -24,11 +23,11 @@ struct FoldControlFlowOps : public Transform<IfOp, WhileOp> {
     static void hoistBody(const Operation::Ptr &op, OptBuilder &builder) {
         if (!op)
             return;
-        auto& parent = op->parent;
+        auto &parent = op->parent;
         builder.setInsertPointBefore(parent);
         for (const auto &childOp : utils::advanceEarly(op->body)) {
             auto cloned = builder.clone(childOp);
-            builder.replace(childOp, cloned); 
+            builder.replace(childOp, cloned);
             builder.setInsertPointAfter(cloned);
         }
     }
@@ -42,7 +41,7 @@ struct FoldControlFlowOps : public Transform<IfOp, WhileOp> {
             hoistBody(op.thenOp(), builder);
         } else {
             hoistBody(op.elseOp(), builder);
-        }        
+        }
         builder.erase(op);
     }
 
