@@ -33,6 +33,7 @@ using namespace converter;
 using ast::Node;
 using ast::NodeType;
 using ast::SyntaxTree;
+using NumElements = ConverterContext::LocalVariable::NumElementsStorage;
 
 namespace language = utils::language;
 
@@ -163,7 +164,7 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.pushError(node, "variable is already declared: " + name);
         return;
     }
-    size_t numElements = 1U;
+    NumElements numElements = 1U;
     const auto &typeNode = node->firstChild();
     Node::Ptr listNode;
     Type::Ptr type;
@@ -176,16 +177,30 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
             // VariableDeclaration -> Expression -> ListStatement
             listNode = node->lastChild()->firstChild();
             assert(listNode->type == NodeType::ListStatement && "ListType variable must be defined with ListStatement");
-            numElements = listNode->children.size();
-            if (numElements == 0U) {
-                ctx.pushError(node, "list variable must be initialized with at least one element: " + name);
-                numElements = 1U;
+            size_t numChildren = listNode->children.size();
+            if (listNode->lastChild()->type == NodeType::ListDynamicSize) {
+                if (numChildren != 2)
+                    ctx.pushError(node, "dynamically sized list must have exactly one initializer: " + name);
+                numElements = visitNode(listNode->lastChild()->firstChild(), ctx);
+            } else {
+                if (numChildren != 0U) {
+                    numElements = numChildren;
+                } else {
+                    ctx.pushError(node, "list variable must be initialized with at least one element: " + name);
+                    numElements = 1U;
+                }
             }
         }
     } else {
         type = convertType(typeNode->typeId());
     }
-    auto allocOp = ctx.insert<AllocateOp>(node->ref, Type::make<PointerType>(type, numElements));
+    size_t boundNum = PointerType::dynamic;
+    Value::Ptr dynamicSize;
+    if (std::holds_alternative<size_t>(numElements))
+        boundNum = std::get<size_t>(numElements);
+    else
+        dynamicSize = std::get<Value::Ptr>(numElements);
+    auto allocOp = ctx.insert<AllocateOp>(node->ref, Type::make<PointerType>(type, boundNum), dynamicSize);
     ctx.saveVariable(name, allocOp.result(), true, numElements);
     auto insertStore = [&](const Node::Ptr &defNode, const Value::Ptr &offset) {
         if (defNode->type == NodeType::Expression && isFunctionCallInputNode(defNode->firstChild())) {
@@ -201,11 +216,26 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.insert<StoreOp>(defNode->ref, allocOp.result(), defValue, offset);
     };
     if (listNode) {
-        int64_t i = 0;
-        for (const auto &defNode : listNode->children) {
-            auto offset = ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), i).result();
-            insertStore(defNode, offset);
-            i++;
+        if (std::holds_alternative<Value::Ptr>(numElements)) { // Dynamically sized list (numElements holds Value::Ptr)
+            const auto &stopValue = std::get<Value::Ptr>(numElements);
+            const auto &sizeNode = listNode->lastChild();
+            if (!stopValue->type->is<IntegerType>()) {
+                ctx.pushError(sizeNode, "dynamic list size must be defined as int");
+                throw ctx.errors;
+            }
+            auto startValue = ctx.insert<ConstantOp>(sizeNode->ref, stopValue->type, 0).result();
+            auto stepValue = ctx.insert<ConstantOp>(sizeNode->ref, stopValue->type, 1).result();
+            auto forOp = ctx.insert<ForOp>(node->ref, stopValue->type, startValue, stopValue, stepValue);
+            ctx.goInto(forOp);
+            insertStore(listNode->firstChild(), forOp.iterator());
+            ctx.goParent();
+        } else { // List with compile-time known constant size (numElements holds size_t)
+            int64_t i = 0;
+            for (const auto &defNode : listNode->children) {
+                auto offset = ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), i).result();
+                insertStore(defNode, offset);
+                i++;
+            }
         }
     } else if (hasDefinition) {
         insertStore(node->lastChild(), {});

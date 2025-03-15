@@ -12,6 +12,7 @@ endmacro()
 
 add_cli_test(for_loop --run)
 add_cli_test(hello_world --run)
+add_cli_test(list --run)
 
 add_custom_target(run_cli_test
     COMMAND ctest -C $<CONFIGURATION> --output-on-failure
