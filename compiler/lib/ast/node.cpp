@@ -107,19 +107,26 @@ void dumpVariablesTable(std::ostream &stream, const VariablesTable &table) {
 
 } // namespace
 
-Node::Node(const NodeType &type, const Ptr &parent) : type(type), parent(parent){};
+Node::Node(const NodeType &type, const Ptr &parent) : type(type), parent(parent) {
+}
 
-Node::Node(int64_t intNum, const Ptr &parent) : type(NodeType::IntegerLiteralValue), value(intNum), parent(parent){};
+Node::Node(int64_t intNum, const Ptr &parent) : type(NodeType::IntegerLiteralValue), value(intNum), parent(parent) {
+}
 
-Node::Node(double fpNum, const Ptr &parent) : type(NodeType::FloatingPointLiteralValue), value(fpNum), parent(parent){};
+Node::Node(double fpNum, const Ptr &parent) : type(NodeType::FloatingPointLiteralValue), value(fpNum), parent(parent) {
+}
 
-Node::Node(const NodeType &type, const std::string &str, const Ptr &parent) : type(type), value(str), parent(parent){};
+Node::Node(const NodeType &type, const std::string &str, const Ptr &parent) : type(type), value(str), parent(parent) {
+}
 
-Node::Node(TypeId typeId, const Ptr &parent) : type(NodeType::TypeName), value(typeId), parent(parent){};
+Node::Node(TypeId typeId, const Ptr &parent) : type(NodeType::TypeName), value(typeId), parent(parent) {
+}
 
-Node::Node(BinaryOperation binOp, const Ptr &parent) : type(NodeType::BinaryOperation), value(binOp), parent(parent){};
+Node::Node(BinaryOperation binOp, const Ptr &parent) : type(NodeType::BinaryOperation), value(binOp), parent(parent) {
+}
 
-Node::Node(UnaryOperation unOp, const Ptr &parent) : type(NodeType::UnaryOperation), value(unOp), parent(parent){};
+Node::Node(UnaryOperation unOp, const Ptr &parent) : type(NodeType::UnaryOperation), value(unOp), parent(parent) {
+}
 
 const int64_t &Node::intNum() const {
     return std::get<int64_t>(value);
