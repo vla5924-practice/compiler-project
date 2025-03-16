@@ -25,7 +25,7 @@ macro(add_cli_test TEST_NAME)
 endmacro()
 
 add_cli_test(bubble_sort INPUT RUN)
-add_cli_test(debug_optree_llvmir DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/debug" RUN -- --backend optree --debug)
+add_cli_test(debug_optree_llvmir DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/debug" INPUT RUN -- --backend optree --debug)
 add_cli_test(for_loop RUN)
 add_cli_test(hello_world RUN)
 add_cli_test(input INPUT RUN)
