@@ -139,18 +139,32 @@ void processFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
     const std::string &name = (*it)->str();
     ++it;
     Type::PtrVector arguments;
-    std::vector<std::string> argNames;
+    struct ArgInfo {
+        std::string name;
+        bool aggregate;
+    };
+    std::vector<ArgInfo> argsInfo;
+    argsInfo.reserve((*it)->children.size());
     for (const auto &argNode : (*it)->children) {
-        arguments.push_back(convertType(argNode->firstChild()->typeId()));
-        argNames.push_back(argNode->lastChild()->str());
+        auto typeId = argNode->firstChild()->typeId();
+        bool aggregate = false;
+        if (typeId == ast::ListType) {
+            aggregate = true;
+            auto innerNode = argNode->firstChild()->firstChild();
+            arguments.push_back(Type::make<PointerType>(convertType(innerNode->typeId()), PointerType::dynamic));
+        } else {
+            arguments.push_back(convertType(typeId));
+        }
+        argsInfo.emplace_back(argNode->lastChild()->str(), aggregate);
     }
     ++it;
     auto funcType = Type::make<FunctionType>(arguments, convertType((*it)->typeId()));
     auto funcOp = ctx.insert<FunctionOp>(node->ref, name, funcType);
     ctx.goInto(funcOp);
     ctx.enterScope();
-    for (size_t i = 0; i < argNames.size(); i++)
-        ctx.saveVariable(argNames[i], funcOp->inward(i), false);
+    size_t i = 0;
+    for (const auto &argInfo : argsInfo)
+        ctx.saveVariable(argInfo.name, funcOp->inward(i++), /*needsLoad*/ false, argInfo.aggregate);
     ++it;
     processNode(*it, ctx);
     ctx.exitScope();
@@ -176,7 +190,9 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
     Node::Ptr listNode;
     Type::Ptr type;
     bool hasDefinition = node->children.size() == 3U;
+    bool aggregate = false;
     if (typeNode->typeId() == ast::ListType) {
+        aggregate = true;
         type = convertType(typeNode->firstChild()->typeId());
         if (!hasDefinition) {
             ctx.pushError(node, "list declaration must contain initializer to determine its size: " + name);
@@ -208,7 +224,7 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
     else
         dynamicSize = std::get<Value::Ptr>(numElements);
     auto allocOp = ctx.insert<AllocateOp>(node->ref, Type::make<PointerType>(type, boundNum), dynamicSize);
-    ctx.saveVariable(name, allocOp.result(), true, numElements);
+    ctx.saveVariable(name, allocOp.result(), /*needsLoad*/ true, aggregate, numElements);
     auto insertStore = [&](const Node::Ptr &defNode, const Value::Ptr &offset) {
         if (defNode->type == NodeType::Expression && isFunctionCallInputNode(defNode->firstChild())) {
             createInputOp(nameNode, defNode->ref, ctx);
@@ -490,7 +506,7 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         if (lhsType->is<PointerType>()) {
             const auto &ptrType = lhsType->as<PointerType>();
             lhsType = ptrType.pointee;
-            if (ptrType.numElements > 1U) {
+            if (ptrType.numElements != 1U) {
                 assert(lhsNode->type == NodeType::ListAccessor && lhsNode->children.size() == 2U);
                 offset = visitNode(lhsNode->lastChild(), ctx);
             }
@@ -571,7 +587,7 @@ Value::Ptr visitVariableName(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.pushError(node, "variable was not declared in this scope: " + node->str());
         throw ctx.errors;
     }
-    if (isLhsInAssignment(node) || !var->needsLoad)
+    if (isLhsInAssignment(node) || !var->needsLoad || var->aggregate)
         return var->value;
     return ctx.insert<LoadOp>(node->ref, var->value).result();
 }
@@ -612,7 +628,7 @@ Value::Ptr visitListAccessor(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.pushError(node, "variable was not declared in this scope: " + nameNode->str());
         throw ctx.errors;
     }
-    if (!var->needsLoad) {
+    if (!var->aggregate) {
         ctx.pushError(node, "list accessor is not allowed in the current context: " + nameNode->str());
         throw ctx.errors;
     }
