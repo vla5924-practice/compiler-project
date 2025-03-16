@@ -12,7 +12,7 @@
 
 using namespace optree;
 using namespace optree::optimizer;
-
+#include <iostream>
 namespace {
 
 struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
@@ -24,36 +24,35 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
 
     // checks pattern x op x
     static bool checkIdempotence(const LogicBinaryOp &logicOp) {
-        auto lhs = logicOp.lhs()->owner.lock();
-        auto rhs = logicOp.rhs()->owner.lock();
-        return similar(lhs, rhs);
+        return logicOp.lhs() == logicOp.rhs();
     }
 
     // checks pattern x op ~x
     static bool checkComplementation(const LogicBinaryOp &logicOp) {
         auto lhs = getValueOwnerAs<UnaryOp>(logicOp.lhs());
-        bool result = false; 
+        bool result = false;
         if (lhs) {
-            result = similar(lhs->operand(0)->owner.lock(), logicOp.rhs()->owner.lock());
+            result = lhs->operand(0) == logicOp.rhs();
         }
-        auto rhs = getValueOwnerAs<UnaryOp>(logicOp.rhs());
-        if (rhs && !result) {
-            result = similar(rhs->operand(0)->owner.lock(), logicOp.lhs()->owner.lock());
+        if (!result) {
+            auto rhs = getValueOwnerAs<UnaryOp>(logicOp.rhs());
+            if (rhs && !result) {
+                result = rhs->operand(0) == logicOp.lhs();
+            }
         }
         return result;
     }
 
-    static bool proccesOperand(const ConstantOp &constOp, const Operation::Ptr &secondOp, bool annihilatorValue,
+    static bool proccesOperand(const LogicBinaryOp &logicOp, const ConstantOp &constOp, const Operation::Ptr &secondOp, bool annihilatorValue,
                                OptBuilder &builder) {
         auto valueType = constOp->result(0)->type;
-        auto &parent = constOp->parent;
-        auto replaceFunc = [&parent, &secondOp, &builder, annihilatorValue]<typename T>(T value) {
+        auto replaceFunc = [&logicOp, &secondOp, &builder, annihilatorValue]<typename T>(T value) {
             bool opSwitch = annihilatorValue ? !value : value;
             if (opSwitch) {
-                builder.replace(parent, secondOp);
+                builder.replace(logicOp, secondOp);
             } else {
-                auto newOp = builder.insert<ConstantOp>(parent->ref, TypeStorage::boolType(), annihilatorValue);
-                builder.replace(parent, newOp);
+                auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), annihilatorValue);
+                builder.replace(logicOp, newOp);
             }
         };
         if (valueType->is<BoolType>()) {
@@ -80,33 +79,61 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         auto constLhsOp = getValueOwnerAs<ConstantOp>(logicOp.lhs());
         bool processed = false;
         if (constLhsOp) {
-            processed = proccesOperand(constLhsOp, logicOp.rhs()->owner.lock(), annihilatorValue, builder);
+            processed = proccesOperand(logicOp, constLhsOp, logicOp.rhs()->owner.lock(), annihilatorValue, builder);
         }
-        auto constRhsOp = getValueOwnerAs<ConstantOp>(logicOp.rhs());
-        if (constRhsOp && !processed) {
-            proccesOperand(constRhsOp, logicOp.lhs()->owner.lock(), annihilatorValue, builder);
+        if (!processed) {
+            auto constRhsOp = getValueOwnerAs<ConstantOp>(logicOp.rhs());
+            if (constRhsOp) {
+                proccesOperand(logicOp, constRhsOp, logicOp.lhs()->owner.lock(), annihilatorValue, builder);
+            }
         }
     }
 
     static void proccesAnd(const LogicBinaryOp &logicOp, OptBuilder &builder) {
         if (checkIdempotence(logicOp)) {
-            builder.replace(logicOp, logicOp.lhs()->owner.lock());
-        } 
-        if (checkComplementation(logicOp)) { 
+            builder.update(logicOp, 
+                [&logicOp, &builder](){
+                    auto lhsResult = logicOp.lhs();
+                    auto &oldUses = logicOp.result()->uses;
+                    for (const auto &use : oldUses) {
+                        auto user = use.lock();
+                        builder.update(user, [&] { user->operand(use.operandNumber) = lhsResult; });
+                    }
+                    lhsResult->uses.splice_after(lhsResult->uses.before_begin(), oldUses);
+                }
+            );
+            builder.erase(logicOp);
+            return;
+        }
+        if (checkComplementation(logicOp)) {
             auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), false);
             builder.replace(logicOp, newOp);
+            return;
         }
         proccesIdentityAndAnnihilatorRules(logicOp, false, builder);
     }
 
     static void proccesOr(const LogicBinaryOp &logicOp, OptBuilder &builder) {
         if (checkIdempotence(logicOp)) {
-            builder.replace(logicOp, logicOp.lhs()->owner.lock());
+            builder.update(logicOp, 
+                [&logicOp, &builder](){
+                    auto &lhsUses = logicOp.lhs()->uses;
+                    auto lhsResult = logicOp.lhs();
+                    auto &oldUses = logicOp.result()->uses;
+                    for (const auto &use : oldUses) {
+                        auto user = use.lock();
+                        builder.update(user, [&] { user->operand(use.operandNumber) = lhsResult; });
+                    }
+                    lhsResult->uses.splice_after(lhsResult->uses.before_begin(), oldUses);
+                }
+            );
+            builder.erase(logicOp);
             return;
         }
-        if (checkComplementation(logicOp)) { 
+        if (checkComplementation(logicOp)) {
             auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), true);
             builder.replace(logicOp, newOp);
+            return;
         }
         proccesIdentityAndAnnihilatorRules(logicOp, true, builder);
     }
@@ -115,6 +142,7 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         if (checkIdempotence(logicOp)) {
             auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), true);
             builder.replace(logicOp, newOp);
+            return;
         }
         if (checkComplementation(logicOp)) {
             auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), false);
