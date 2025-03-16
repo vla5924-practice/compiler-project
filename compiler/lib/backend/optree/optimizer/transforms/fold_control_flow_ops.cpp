@@ -25,8 +25,7 @@ struct FoldControlFlowOps : public Transform<IfOp, WhileOp> {
     static void hoistBody(const Operation::Ptr &op, OptBuilder &builder) {
         if (!op)
             return;
-        auto &parent = op->parent;
-        builder.setInsertPointBefore(parent);
+        builder.setInsertPointBefore(op->parent);
         for (const auto &childOp : utils::advanceEarly(op->body)) {
             auto cloned = builder.clone(childOp);
             builder.replace(childOp, cloned);
