@@ -89,6 +89,7 @@ struct ArithBinaryOp;
 struct LogicBinaryOp;
 struct UnaryOp;
 struct ArithCastOp;
+struct ArithUnaryOp;
 struct LogicUnaryOp;
 
 struct BinaryOp : Adaptor {
@@ -133,6 +134,15 @@ struct ArithCastOp : UnaryOp {
     void init(ArithCastOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value);
 
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, ArithCastOpKind, 0)
+};
+
+struct ArithUnaryOp : UnaryOp {
+    OPTREE_ADAPTOR_HELPER(UnaryOp, "ArithUnary")
+
+    void init(ArithUnaryOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value);
+    void init(ArithUnaryOpKind kind, const Value::Ptr &value);
+
+    OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, ArithUnaryOpKind, 0)
 };
 
 struct LogicUnaryOp : UnaryOp {

@@ -46,6 +46,15 @@ void ArithCastOp::init(ArithCastOpKind kind, const Type::Ptr &resultType, const 
     op->addAttr(kind);
 }
 
+void ArithUnaryOp::init(ArithUnaryOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value) {
+    UnaryOp::init(resultType, value);
+    op->addAttr(kind);
+}
+
+void ArithUnaryOp::init(ArithUnaryOpKind kind, const Value::Ptr &value) {
+    init(kind, value->type, value);
+}
+
 void BinaryOp::init(const Type::Ptr &resultType, const Value::Ptr &lhs, const Value::Ptr &rhs) {
     op->addResult(resultType);
     op->addOperand(lhs);

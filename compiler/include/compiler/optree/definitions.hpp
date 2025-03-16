@@ -24,6 +24,12 @@ enum class ArithCastOpKind {
     TruncF,
 };
 
+enum class ArithUnaryOpKind {
+    Unknown,
+    NegI,
+    NegF,
+};
+
 enum class LogicBinOpKind {
     Unknown,
     Equal,
