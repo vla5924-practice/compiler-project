@@ -11,12 +11,14 @@ def main() -> None:
         l1: list[int] = [1, 2, 3]
         l2: list[float] = [-4] * x
         z: float = foo(x) * (2.5 + l2[x])
+    elif not True or (2 != 2) or (5 > 5) or (7 <= 1):
+        pass
     else:
         y = 6
         while x < 10:
             x = x + 1
     for i in range(10):
-        if True:
+        if False or (1 < 2) and (3.5 >= 1.5):
         #     break
         # elif False:
         #     continue
