@@ -74,6 +74,13 @@ std::string_view prettyTypeName(const Type::Ptr &type) {
     return "<undefined-type>";
 }
 
+std::string typeError(const Type::Ptr &actualType, std::string_view supportedTypes) {
+    std::stringstream error;
+    error << "unexpected expression type: " << prettyTypeName(actualType)
+          << ", supported types are: " << supportedTypes;
+    return error.str();
+};
+
 template <const Node::Ptr &(Node::*childAccessor)(void) const>
 bool isSomewhereInAssignment(const Node::Ptr &node) {
     const auto &parent = node->parent;
@@ -456,13 +463,16 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
     }
     auto lhs = visitNode(lhsNode, ctx);
     auto rhs = visitNode(rhsNode, ctx);
+    if (!lhs) {
+        ctx.pushError(lhsNode, "expression result cannot be used as an operand in this context");
+        throw ctx.errors;
+    }
+    if (!rhs) {
+        ctx.pushError(rhsNode, "expression result cannot be used as an operand in this context");
+        throw ctx.errors;
+    }
     Type::Ptr lhsType = lhs->type;
     const Type::Ptr &rhsType = rhs->type;
-    auto typeError = [](const Type::Ptr &type) {
-        std::stringstream error;
-        error << "unexpected expression type: " << prettyTypeName(type) << ", supported types are: int, bool, float";
-        return error.str();
-    };
     Value::Ptr offset;
     if (isAssignment(binOp)) {
         if (lhsType->is<PointerType>()) {
@@ -477,11 +487,11 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         }
     }
     if (!utils::isAny<IntegerType, FloatType>(lhsType)) {
-        ctx.pushError(node, typeError(lhsType));
+        ctx.pushError(node, typeError(lhsType, "int, bool, float"));
         throw ctx.errors;
     }
     if (!utils::isAny<IntegerType, FloatType>(rhsType)) {
-        ctx.pushError(node, typeError(rhsType));
+        ctx.pushError(node, typeError(lhsType, "int, bool, float"));
         throw ctx.errors;
     }
     if (*lhsType != *rhsType) {
@@ -600,6 +610,36 @@ Value::Ptr visitListAccessor(const Node::Ptr &node, ConverterContext &ctx) {
     return ctx.insert<LoadOp>(node->ref, var->value, offset).result();
 }
 
+Value::Ptr visitUnaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
+    const auto &opndNode = node->firstChild();
+    auto operand = visitNode(opndNode, ctx);
+    if (!operand) {
+        ctx.pushError(opndNode, "expression result cannot be used as an operand in this context");
+        throw ctx.errors;
+    }
+    const auto &type = operand->type;
+    auto unOp = node->unOp();
+    switch (unOp) {
+    case ast::UnaryOperation::Negative: {
+        if (!utils::isAny<IntegerType, FloatType>(type)) {
+            ctx.pushError(opndNode, typeError(type, "int, float"));
+            throw ctx.errors;
+        }
+        auto kind = type->is<IntegerType>() ? ArithUnaryOpKind::NegI : ArithUnaryOpKind::NegF;
+        return ctx.insert<ArithUnaryOp>(node->ref, kind, operand).result();
+    }
+    case ast::UnaryOperation::Not: {
+        if (!type->is<BoolType>()) {
+            ctx.pushError(opndNode, typeError(type, "bool"));
+            throw ctx.errors;
+        }
+        return ctx.insert<LogicUnaryOp>(node->ref, LogicUnaryOpKind::Not, operand).result();
+    }
+    default:
+        COMPILER_UNREACHABLE("Unexpected ast::UnaryOperation value in visitUnaryOperation");
+    }
+}
+
 void processNode(const Node::Ptr &node, ConverterContext &ctx) {
     switch (node->type) {
     case NodeType::ProgramRoot:
@@ -654,6 +694,8 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
         return visitFunctionCall(node, ctx);
     case NodeType::ListAccessor:
         return visitListAccessor(node, ctx);
+    case NodeType::UnaryOperation:
+        return visitUnaryOperation(node, ctx);
     default:
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in visitNode");
     }
