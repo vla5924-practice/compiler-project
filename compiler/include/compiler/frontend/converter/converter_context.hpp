@@ -25,6 +25,7 @@ struct ConverterContext {
 
         optree::Value::Ptr value = {};
         bool needsLoad = true;
+        bool aggregate = false;
         NumElementsStorage numElements = {};
     };
 
@@ -58,10 +59,10 @@ struct ConverterContext {
         variables.pop_front();
     }
 
-    void saveVariable(const std::string &name, optree::Value::Ptr value, bool needsLoad = true,
+    void saveVariable(const std::string &name, optree::Value::Ptr value, bool needsLoad = true, bool aggregate = false,
                       const LocalVariable::NumElementsStorage &numElements = {}) {
         variables.front().emplace(std::piecewise_construct, std::forward_as_tuple(name),
-                                  std::forward_as_tuple(value, needsLoad, numElements));
+                                  std::forward_as_tuple(value, needsLoad, aggregate, numElements));
     }
 
     const LocalVariable *findVariable(const std::string &name) {

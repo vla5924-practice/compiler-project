@@ -200,12 +200,19 @@ void LLVMIRGenerator::visit(const ModuleOp &op) {
 void LLVMIRGenerator::visit(const FunctionOp &op) {
     const auto &funcType = op.type();
     std::vector<llvm::Type *> arguments;
-    for (const auto &arg : funcType.arguments)
+    std::vector<llvm::Type *> elemTypes;
+    for (const auto &arg : funcType.arguments) {
         arguments.push_back(convertType(arg));
+        elemTypes.push_back(arg->is<PointerType>() ? convertType(arg->as<PointerType>().pointee) : nullptr);
+    }
     auto *llvmType = llvm::FunctionType::get(convertType(funcType.result), arguments, /*isVarArg*/ false);
     currentFunction = llvm::cast<llvm::Function>(mod.getOrInsertFunction(op.name(), llvmType).getCallee());
-    for (size_t i = 0; i < op->numInwards(); i++)
-        saveValue(op->inward(i), currentFunction->getArg(i));
+    for (size_t i = 0; i < op->numInwards(); i++) {
+        auto *argValue = currentFunction->getArg(i);
+        saveValue(op->inward(i), argValue);
+        if (auto *elemType = elemTypes[i])
+            typedValues[argValue] = elemType;
+    }
     auto *bb = createBlock();
     builder.SetInsertPoint(bb);
     visitBody(op);

@@ -1,16 +1,24 @@
 #include "parser/type_registry.hpp"
+
+#include <map>
+
 #include "compiler/ast/types.hpp"
+
 #include "lexer/token_types.hpp"
 
 using ast::TypeId;
 using namespace lexer;
 using namespace parser;
 
-std::map<std::string, TypeId> TypeRegistry::userDefinedTypes = {};
+namespace {
+
+std::map<std::string, TypeId> userDefinedTypes = {};
+
+} // namespace
 
 bool TypeRegistry::isTypename(const Token &token) {
     return token.is(Keyword::Int) || token.is(Keyword::Float) || token.is(Keyword::Bool) || token.is(Keyword::Str) ||
-           token.is(Keyword::None) ||
+           token.is(Keyword::None) || token.is(Keyword::List) ||
            (token.type == TokenType::Identifier && userDefinedTypes.find(token.id()) != userDefinedTypes.end());
 }
 
