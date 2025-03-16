@@ -158,6 +158,8 @@ void LLVMIRGenerator::visit(const Operation::Ptr &op) {
         return visit(concreteOp);
     if (auto concreteOp = op->as<ArithCastOp>())
         return visit(concreteOp);
+    if (auto concreteOp = op->as<ArithUnaryOp>())
+        return visit(concreteOp);
     if (auto concreteOp = op->as<LogicUnaryOp>())
         return visit(concreteOp);
     if (auto concreteOp = op->as<AllocateOp>())
@@ -328,6 +330,19 @@ void LLVMIRGenerator::visit(const ArithCastOp &op) {
         return result(builder.CreateFPTrunc(operand, destType));
     default:
         COMPILER_UNREACHABLE("unexpected kind in ArithCastOp");
+    }
+}
+
+void LLVMIRGenerator::visit(const ArithUnaryOp &op) {
+    auto result = [&](llvm::Value *v) -> void { saveValue(op.result(), v); };
+    auto *operand = findValue(op.value());
+    switch (op.kind()) {
+    case ArithUnaryOpKind::NegI:
+        return result(builder.CreateNeg(operand));
+    case ArithUnaryOpKind::NegF:
+        return result(builder.CreateFNeg(operand));
+    default:
+        COMPILER_UNREACHABLE("unexpected kind in ArithUnaryOp");
     }
 }
 
