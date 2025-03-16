@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <gtest/gtest.h>
 
 #include "compiler/ast/node.hpp"
@@ -5,7 +6,7 @@
 using namespace ast;
 
 TEST(Node, can_construct_with_integer_literal_value) {
-    long value = 1l;
+    int64_t value = 1l;
     Node node(value);
     ASSERT_EQ(value, node.intNum());
     ASSERT_EQ(NodeType::IntegerLiteralValue, node.type);

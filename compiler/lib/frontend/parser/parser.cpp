@@ -334,7 +334,7 @@ void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::
             callNode->parent = currNode;
             currNode->children.push_front(callNode);
         }
-        while (currNode->children.size() >= getOperandCount(getOperationType(*currNode)))
+        while (currNode->numChildren() >= getOperandCount(getOperationType(*currNode)))
             currNode = currNode->parent;
         postfixForm.pop();
     }
