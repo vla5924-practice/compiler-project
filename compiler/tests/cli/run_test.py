@@ -11,6 +11,7 @@ def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--compiler", default="compiler", help="compiler executable")
     parser.add_argument("--program", required=True, help="test program")
+    parser.add_argument("--input", default="", help="test input")
     parser.add_argument("--output", required=True, help="test output")
     parser.add_argument("--run", action="store_true", help="run output file after the compilation")
     parser.add_argument("compiler_args", nargs="*", help="additional compiler arguments")
@@ -31,7 +32,8 @@ def main() -> int:
         actual_output = ""
         if args.run:
             print("Run compiled executable:", compiler_output)
-            cp = subprocess.run([compiler_output], capture_output=True, text=True, timeout=10)
+            input_text = Path(args.input).read_text() if args.input else None
+            cp = subprocess.run([compiler_output], input=input_text, capture_output=True, text=True, timeout=10)
             actual_output = cp.stdout.strip()
         else:
             actual_output = Path(compiler_output).read_text()
