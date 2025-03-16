@@ -1448,3 +1448,37 @@ TEST(Parser, can_throw_error_for_out_of_range_scientific_float_literals) {
     TokenList tokens = Lexer::process(source);
     ASSERT_ANY_THROW(Parser::process(tokens));
 }
+
+TEST(Parser, can_parse_function_arguments) {
+    StringVec source = {
+        "def main(v1: int, v2: float, v3: bool, v5: list[int], v6: list[float]) -> None:",
+        "    return",
+    };
+    TokenList tokens = Lexer::process(source);
+    SyntaxTree tree = Parser::process(tokens);
+    std::string expected = "ProgramRoot\n"
+                           "  FunctionDefinition\n"
+                           "    FunctionName: main\n"
+                           "    FunctionArguments\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: IntType\n"
+                           "        VariableName: v1\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: FloatType\n"
+                           "        VariableName: v2\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: BoolType\n"
+                           "        VariableName: v3\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: ListType\n"
+                           "          TypeName: IntType\n"
+                           "        VariableName: v5\n"
+                           "      FunctionArgument\n"
+                           "        TypeName: ListType\n"
+                           "          TypeName: FloatType\n"
+                           "        VariableName: v6\n"
+                           "    FunctionReturnType: NoneType\n"
+                           "    BranchRoot\n"
+                           "      ReturnStatement\n";
+    ASSERT_EQ(expected, tree.dump());
+}
