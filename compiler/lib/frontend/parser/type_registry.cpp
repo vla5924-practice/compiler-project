@@ -1,6 +1,7 @@
 #include "parser/type_registry.hpp"
 
 #include <map>
+#include <string>
 
 #include "compiler/ast/types.hpp"
 
