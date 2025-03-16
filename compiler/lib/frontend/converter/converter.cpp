@@ -428,6 +428,18 @@ void processForStatement(const Node::Ptr &node, ConverterContext &ctx) {
     ctx.pushError(node, "unexpected for loop layout");
 }
 
+void processBreakStatement(const Node::Ptr &node, ConverterContext &ctx) {
+    ctx.pushError(node, "break is not supported");
+}
+
+void processContinueStatement(const Node::Ptr &node, ConverterContext &ctx) {
+    ctx.pushError(node, "continue is not supported");
+}
+
+void processPassStatement([[maybe_unused]] const Node::Ptr &node, [[maybe_unused]] ConverterContext &ctx) {
+    // Nothing to do here...
+}
+
 Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
     return visitNode(node->firstChild(), ctx);
 }
@@ -668,6 +680,15 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
         return;
     case NodeType::ForStatement:
         processForStatement(node, ctx);
+        return;
+    case NodeType::BreakStatement:
+        processBreakStatement(node, ctx);
+        return;
+    case NodeType::ContinueStatement:
+        processContinueStatement(node, ctx);
+        return;
+    case NodeType::PassStatement:
+        processPassStatement(node, ctx);
         return;
     default:
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in processNode");
