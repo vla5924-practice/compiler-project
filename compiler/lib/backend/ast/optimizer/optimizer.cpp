@@ -1,6 +1,7 @@
 #include "optimizer/optimizer.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <variant>
 
 #include "compiler/utils/language.hpp"
@@ -80,11 +81,11 @@ bool canBeConstantFloat(const Node::Ptr &node, OptimizerContext &ctx) {
 
 } // namespace
 
-long int calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
-    long int lhs = first->type == NodeType::VariableName ? std::get<long int>(ctx.findVariableValue(first->str()))
-                                                         : first->intNum();
-    long int rhs = second->type == NodeType::VariableName ? std::get<long int>(ctx.findVariableValue(second->str()))
-                                                          : second->intNum();
+int64_t calculateIntOperation(Node::Ptr &first, Node::Ptr &second, BinaryOperation operation, OptimizerContext &ctx) {
+    int64_t lhs = first->type == NodeType::VariableName ? std::get<int64_t>(ctx.findVariableValue(first->str()))
+                                                        : first->intNum();
+    int64_t rhs = second->type == NodeType::VariableName ? std::get<int64_t>(ctx.findVariableValue(second->str()))
+                                                         : second->intNum();
 
     switch (operation) {
     case BinaryOperation::Add:
@@ -179,7 +180,7 @@ void processTypeConversion(Node::Ptr &node, OptimizerContext &ctx) {
             node->value = static_cast<double>(operand->intNum());
         } else {
             node->type = NodeType::IntegerLiteralValue;
-            node->value = static_cast<long int>(operand->fpNum());
+            node->value = static_cast<int64_t>(operand->fpNum());
         }
         node->children.clear();
         return;
@@ -189,10 +190,10 @@ void processTypeConversion(Node::Ptr &node, OptimizerContext &ctx) {
         const std::string &varName = operand->str();
         if (node->firstChild()->typeId() == BuiltInTypes::FloatType) {
             node->type = NodeType::FloatingPointLiteralValue;
-            node->value = static_cast<double>(std::get<long int>(ctx.findVariableValue(varName)));
+            node->value = static_cast<double>(std::get<int64_t>(ctx.findVariableValue(varName)));
         } else {
             node->type = NodeType::IntegerLiteralValue;
-            node->value = static_cast<long int>(std::get<double>(ctx.findVariableValue(varName)));
+            node->value = static_cast<int64_t>(std::get<double>(ctx.findVariableValue(varName)));
         }
         node->children.clear();
     }
@@ -225,7 +226,7 @@ void variablePropagation(Node::Ptr &node, OptimizerContext &ctx) {
         node->value = std::get<double>(variableIter);
     } else {
         node->type = NodeType::IntegerLiteralValue;
-        node->value = std::get<long int>(variableIter);
+        node->value = std::get<int64_t>(variableIter);
     }
 }
 
@@ -280,8 +281,8 @@ void copyExpression(const Node::Ptr &node, Node::Ptr &newExpr, std::unordered_ma
     }
 }
 
-void processFunctionCall(Node::Ptr &node, Node functionRoot, OptimizerContext &ctx) {
-    if (functionRoot.children.size() != 1u)
+void processFunctionCall(Node::Ptr &node, Node functionRoot) {
+    if (functionRoot.numChildren() != 1U)
         return;
     auto returnExpr = functionRoot.lastChild()->lastChild();
     if (isNumericLiteral(returnExpr->firstChild())) {
@@ -294,7 +295,7 @@ void processFunctionCall(Node::Ptr &node, Node functionRoot, OptimizerContext &c
         node = newExpr;
     }
 
-    if (node->children.size() > 1u) {
+    if (node->numChildren() > 1u) {
         std::unordered_map<std::string, Node::Ptr> map;
         auto nodeArgsIter = node->secondChild()->children.begin();
         for (auto &argsIter : functionRoot.parent->secondChild()->children) {
@@ -331,7 +332,7 @@ bool processBinaryOperation(Node::Ptr &node, OptimizerContext &ctx) {
         if (funct->second.returnType != BuiltInTypes::NoneType) {
             for (auto &rootIter : ctx.root->children) {
                 if (rootIter->firstChild()->str() == funct->first) {
-                    processFunctionCall(node->firstChild(), *(rootIter->lastChild()), ctx);
+                    processFunctionCall(node->firstChild(), *(rootIter->lastChild()));
                     break;
                 }
             }
@@ -344,7 +345,7 @@ bool processBinaryOperation(Node::Ptr &node, OptimizerContext &ctx) {
         if (funct->second.returnType != BuiltInTypes::NoneType) {
             for (auto &rootIter : ctx.root->children) {
                 if (rootIter->firstChild()->str() == funct->first) {
-                    processFunctionCall(node->lastChild(), *(rootIter->lastChild()), ctx);
+                    processFunctionCall(node->lastChild(), *(rootIter->lastChild()));
                     break;
                 }
             }
@@ -394,7 +395,7 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
                 if (funct->second.returnType != BuiltInTypes::NoneType) {
                     for (auto &rootIter : ctx.root->children) {
                         if (rootIter->firstChild()->str() == funct->first) {
-                            processFunctionCall(child->lastChild(), *(rootIter->lastChild()), ctx);
+                            processFunctionCall(child->lastChild(), *(rootIter->lastChild()));
                             break;
                         }
                     }
@@ -581,13 +582,13 @@ void removeEmptyBranchRoots(Node::Ptr node) {
     for (auto &child : node->children) {
         if (!child->children.empty())
             removeEmptyBranchRoots(child);
-        if (child->children.size() == 1u && child->firstChild()->type == NodeType::BranchRoot &&
+        if (child->numChildren() == 1U && child->firstChild()->type == NodeType::BranchRoot &&
             child->type != NodeType::ElseStatement && child->type != NodeType::FunctionDefinition)
             child = child->firstChild();
         child->children.remove_if([](const Node::Ptr &node) {
             return node->type == NodeType::BranchRoot && node->children.empty() ||
-                   node->type == NodeType::WhileStatement && node->children.size() == 1u ||
-                   node->type == NodeType::IfStatement && node->children.size() == 1u;
+                   node->type == NodeType::WhileStatement && node->numChildren() == 1U ||
+                   node->type == NodeType::IfStatement && node->numChildren() == 1U;
         });
     }
 }

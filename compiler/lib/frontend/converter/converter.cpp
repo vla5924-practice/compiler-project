@@ -144,7 +144,7 @@ void processFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
         bool aggregate;
     };
     std::vector<ArgInfo> argsInfo;
-    argsInfo.reserve((*it)->children.size());
+    argsInfo.reserve((*it)->numChildren());
     for (const auto &argNode : (*it)->children) {
         auto typeId = argNode->firstChild()->typeId();
         bool aggregate = false;
@@ -189,7 +189,7 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
     const auto &typeNode = node->firstChild();
     Node::Ptr listNode;
     Type::Ptr type;
-    bool hasDefinition = node->children.size() == 3U;
+    bool hasDefinition = node->numChildren() == 3U;
     bool aggregate = false;
     if (typeNode->typeId() == ast::ListType) {
         aggregate = true;
@@ -200,7 +200,7 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
             // VariableDeclaration -> Expression -> ListStatement
             listNode = node->lastChild()->firstChild();
             assert(listNode->type == NodeType::ListStatement && "ListType variable must be defined with ListStatement");
-            size_t numChildren = listNode->children.size();
+            size_t numChildren = listNode->numChildren();
             if (listNode->lastChild()->type == NodeType::ListDynamicSize) {
                 if (numChildren != 2)
                     ctx.pushError(node, "dynamically sized list must have exactly one initializer: " + name);
@@ -283,7 +283,7 @@ void processWhileStatement(const Node::Ptr &node, ConverterContext &ctx) {
 
 void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
     auto cond = visitNode(node->firstChild(), ctx);
-    bool withElse = node->children.size() > 2;
+    bool withElse = node->numChildren() > 2;
     auto ifOp = ctx.insert<IfOp>(node->ref, cond, withElse);
     ctx.goInto(ifOp.thenOp());
     processNode(node->secondChild(), ctx);
@@ -315,7 +315,7 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
 
 void processForStatement(const Node::Ptr &node, ConverterContext &ctx) {
     const auto &targets = node->firstChild();
-    size_t numTargets = targets->children.size();
+    size_t numTargets = targets->numChildren();
     assert(numTargets != 0 && "parser ensures that there is at least one target");
     const auto &iterExpr = node->secondChild()->firstChild()->firstChild();
     // Process layout: for i in range(start, stop, step)
@@ -323,7 +323,7 @@ void processForStatement(const Node::Ptr &node, ConverterContext &ctx) {
         if (numTargets > 1)
             ctx.pushError(node, "for loop with range() must have exactly one target");
         const auto &argsNode = iterExpr->lastChild();
-        size_t numArgs = argsNode->children.size();
+        size_t numArgs = argsNode->numChildren();
         if (numArgs == 0) {
             ctx.pushError(argsNode, "range() must have at least one argument");
             return;
@@ -378,7 +378,7 @@ void processForStatement(const Node::Ptr &node, ConverterContext &ctx) {
         if (numTargets < 2)
             return;
         const auto &argsNode = iterExpr->lastChild();
-        if (argsNode->children.size() != 1) {
+        if (argsNode->numChildren() != 1U) {
             ctx.pushError(argsNode, "enumerate() must have exactly one argument");
             return;
         }
@@ -507,7 +507,7 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
             const auto &ptrType = lhsType->as<PointerType>();
             lhsType = ptrType.pointee;
             if (ptrType.numElements != 1U) {
-                assert(lhsNode->type == NodeType::ListAccessor && lhsNode->children.size() == 2U);
+                assert(lhsNode->type == NodeType::ListAccessor && lhsNode->numChildren() == 2U);
                 offset = visitNode(lhsNode->lastChild(), ctx);
             }
         } else {
