@@ -22,18 +22,32 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         return "BooleanExpressionMinimization";
     }
 
-    // x ∨ x = x, x ∧ x = x
+    // checks pattern x op x
     static bool checkIdempotence(const LogicBinaryOp &logicOp) {
         auto lhs = logicOp.lhs()->owner.lock();
         auto rhs = logicOp.rhs()->owner.lock();
         return similar(lhs, rhs);
     }
 
+    // checks pattern x op ~x
+    static bool checkComplementation(const LogicBinaryOp &logicOp) {
+        auto lhs = getValueOwnerAs<UnaryOp>(logicOp.lhs());
+        bool result = false; 
+        if (lhs) {
+            result = similar(lhs->operand(0)->owner.lock(), logicOp.rhs()->owner.lock());
+        }
+        auto rhs = getValueOwnerAs<UnaryOp>(logicOp.rhs());
+        if (rhs && !result) {
+            result = similar(rhs->operand(0)->owner.lock(), logicOp.lhs()->owner.lock());
+        }
+        return result;
+    }
+
     static bool proccesOperand(const ConstantOp &constOp, const Operation::Ptr &secondOp, bool annihilatorValue,
                                OptBuilder &builder) {
         auto valueType = constOp->result(0)->type;
         auto &parent = constOp->parent;
-        auto replaceFunc = [&parent, &secondOp, annihilatorValue]<typename T>(T value) {
+        auto replaceFunc = [&parent, &secondOp, &builder, annihilatorValue]<typename T>(T value) {
             bool opSwitch = annihilatorValue ? !value : value;
             if (opSwitch) {
                 builder.replace(parent, secondOp);
@@ -45,20 +59,22 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         if (valueType->is<BoolType>()) {
             auto value = constOp.value().as<NativeBool>();
             replaceFunc(value);
-            return;
+            return true;
         }
         if (valueType->is<IntegerType>()) {
             auto value = constOp.value().as<NativeInt>();
             replaceFunc(value);
-            return;
+            return true;
         }
         if (valueType->is<FloatType>()) {
             auto value = constOp.value().as<NativeFloat>();
             replaceFunc(value);
-            return;
+            return true;
         }
+        return false;
     }
 
+    // checks x op patterns, annihilatorValue(f.e. x and 0 = 0, where 0 is annihilator)
     static void proccesIdentityAndAnnihilatorRules(const LogicBinaryOp &logicOp, bool annihilatorValue,
                                                    OptBuilder &builder) {
         auto constLhsOp = getValueOwnerAs<ConstantOp>(logicOp.lhs());
@@ -75,17 +91,24 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
     static void proccesAnd(const LogicBinaryOp &logicOp, OptBuilder &builder) {
         if (checkIdempotence(logicOp)) {
             builder.replace(logicOp, logicOp.lhs()->owner.lock());
-        } else {
-            proccesIdentityAndAnnihilatorRules(logicOp, false, builder);
+        } 
+        if (checkComplementation(logicOp)) { 
+            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), false);
+            builder.replace(logicOp, newOp);
         }
+        proccesIdentityAndAnnihilatorRules(logicOp, false, builder);
     }
 
     static void proccesOr(const LogicBinaryOp &logicOp, OptBuilder &builder) {
         if (checkIdempotence(logicOp)) {
             builder.replace(logicOp, logicOp.lhs()->owner.lock());
-        } else {
-            proccesIdentityAndAnnihilatorRules(logicOp, true, builder);
+            return;
         }
+        if (checkComplementation(logicOp)) { 
+            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), true);
+            builder.replace(logicOp, newOp);
+        }
+        proccesIdentityAndAnnihilatorRules(logicOp, true, builder);
     }
 
     static void proccesEqual(const LogicBinaryOp &logicOp, OptBuilder &builder) {
@@ -93,12 +116,23 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
             auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), true);
             builder.replace(logicOp, newOp);
         }
+        if (checkComplementation(logicOp)) {
+            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), false);
+            builder.replace(logicOp, newOp);
+            return;
+        }
     }
 
     static void proccesNotEqual(const LogicBinaryOp &logicOp, OptBuilder &builder) {
         if (checkIdempotence(logicOp)) {
             auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), false);
             builder.replace(logicOp, newOp);
+            return;
+        }
+        if (checkComplementation(logicOp)) {
+            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), true);
+            builder.replace(logicOp, newOp);
+            return;
         }
     }
 
