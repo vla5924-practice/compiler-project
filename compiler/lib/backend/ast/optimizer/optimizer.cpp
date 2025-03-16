@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <variant>
 
+#include "compiler/ast/node.hpp"
+#include "compiler/ast/node_type.hpp"
 #include "compiler/utils/language.hpp"
 
 #include "optimizer/optimizer_context.hpp"
@@ -295,7 +297,7 @@ void processFunctionCall(Node::Ptr &node, Node functionRoot) {
         node = newExpr;
     }
 
-    if (node->numChildren() > 1u) {
+    if (node->numChildren() > 1U) {
         std::unordered_map<std::string, Node::Ptr> map;
         auto nodeArgsIter = node->secondChild()->children.begin();
         for (auto &argsIter : functionRoot.parent->secondChild()->children) {
@@ -409,10 +411,10 @@ void processExpression(Node::Ptr &node, OptimizerContext &ctx) {
         }
 
         if (child->type == NodeType::FunctionCall) {
-            auto end_child = child->children.back();
-            processExpression(end_child, ctx);
+            auto lastChild = child->lastChild();
+            processExpression(lastChild, ctx);
             ctx.functions.find(child->firstChild()->str())->second.useCount++;
-            if (end_child->type == NodeType::FunctionName)
+            if (lastChild->type == NodeType::FunctionName)
                 continue;
         }
 
@@ -511,8 +513,9 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
                         }
                     }
 
-                    child->children.remove_if(
-                        [](Node::Ptr node) { return node->type == NodeType::ElifStatement && node->children.empty(); });
+                    child->children.remove_if([](const Node::Ptr &node) {
+                        return node->type == NodeType::ElifStatement && node->children.empty();
+                    });
 
                     if (child->children.empty()) {
                         child->type = NodeType::BranchRoot;
@@ -578,7 +581,7 @@ void processBranchRoot(Node::Ptr &node, OptimizerContext &ctx) {
     ctx.values.pop_front();
 }
 
-void removeEmptyBranchRoots(Node::Ptr node) {
+void removeEmptyBranchRoots(const Node::Ptr &node) {
     for (auto &child : node->children) {
         if (!child->children.empty())
             removeEmptyBranchRoots(child);
@@ -594,7 +597,7 @@ void removeEmptyBranchRoots(Node::Ptr node) {
 }
 
 void removeUnusedFunctions(SyntaxTree &tree) {
-    tree.root->children.remove_if([&functions = tree.functions](Node::Ptr node) {
+    tree.root->children.remove_if([&functions = tree.functions](const Node::Ptr &node) {
         const std::string &funcName = node->firstChild()->str();
         return functions[funcName].useCount == 0 && funcName != language::funcMain;
     });

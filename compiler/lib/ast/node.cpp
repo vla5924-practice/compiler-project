@@ -1,10 +1,15 @@
 #include "node.hpp"
 
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
+#include <iterator>
 #include <sstream>
+#include <string>
 
 #include "node_type.hpp"
 #include "types.hpp"
+#include "variables_table.hpp"
 
 using namespace ast;
 
