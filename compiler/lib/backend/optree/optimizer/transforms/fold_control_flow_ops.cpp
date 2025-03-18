@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string_view>
-#include <iostream>
 
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/helpers.hpp"
