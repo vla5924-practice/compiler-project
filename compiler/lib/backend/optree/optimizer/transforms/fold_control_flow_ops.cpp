@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string_view>
+#include <iostream>
 
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/helpers.hpp"
@@ -37,7 +38,7 @@ struct FoldControlFlowOps : public Transform<IfOp, WhileOp> {
         auto conditionOp = getValueOwnerAs<ConstantOp>(op.cond());
         if (!conditionOp)
             return;
-        bool condition = conditionOp.value().as<bool>();
+        bool condition = conditionOp.value().as<NativeBool>();
         if (condition) {
             hoistBody(op.thenOp(), builder);
         } else {
@@ -50,7 +51,7 @@ struct FoldControlFlowOps : public Transform<IfOp, WhileOp> {
         auto conditionOp = getValueOwnerAs<ConstantOp>(op.conditionOp().terminator());
         if (!conditionOp)
             return;
-        bool condition = conditionOp.value().as<bool>();
+        bool condition = conditionOp.value().as<NativeBool>();
         if (!condition) {
             builder.erase(op);
         }
