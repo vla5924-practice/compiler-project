@@ -6,6 +6,7 @@
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
+#include "compiler/optree/types.hpp"
 #include "compiler/utils/helpers.hpp"
 
 #include "optimizer/opt_builder.hpp"
