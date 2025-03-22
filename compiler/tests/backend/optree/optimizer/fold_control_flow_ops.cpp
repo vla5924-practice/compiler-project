@@ -1,7 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <utility>
-
 #include "compiler/backend/optree/optimizer/optimizer.hpp"
 #include "compiler/backend/optree/optimizer/transform_factories.hpp"
 #include "compiler/optree/adaptors.hpp"
@@ -13,8 +11,10 @@ using namespace optree::optimizer;
 
 class FoldControlFlowTest : public TransformTestBase {
     virtual void setupOptimizer(Optimizer &opt) const override {
-        opt.add(createFoldConstants());
-        opt.add(createFoldControlFlowOps());
+        auto transform = CascadeTransform::make("FoldControlFlowTest");
+        transform->add(createFoldControlFlowOps());
+        transform->add(createFoldConstants());
+        opt.add(transform);
     }
 
   public:
