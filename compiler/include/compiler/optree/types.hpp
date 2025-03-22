@@ -138,6 +138,7 @@ struct FunctionType : public Type {
 
 struct PointerType : public Type {
     using Ptr = std::shared_ptr<const PointerType>;
+    static inline constexpr size_t dynamic = 0U;
 
     const Type::Ptr pointee;
     size_t numElements;

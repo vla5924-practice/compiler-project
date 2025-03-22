@@ -158,6 +158,8 @@ void LLVMIRGenerator::visit(const Operation::Ptr &op) {
         return visit(concreteOp);
     if (auto concreteOp = op->as<ArithCastOp>())
         return visit(concreteOp);
+    if (auto concreteOp = op->as<ArithUnaryOp>())
+        return visit(concreteOp);
     if (auto concreteOp = op->as<LogicUnaryOp>())
         return visit(concreteOp);
     if (auto concreteOp = op->as<AllocateOp>())
@@ -198,12 +200,19 @@ void LLVMIRGenerator::visit(const ModuleOp &op) {
 void LLVMIRGenerator::visit(const FunctionOp &op) {
     const auto &funcType = op.type();
     std::vector<llvm::Type *> arguments;
-    for (const auto &arg : funcType.arguments)
+    std::vector<llvm::Type *> elemTypes;
+    for (const auto &arg : funcType.arguments) {
         arguments.push_back(convertType(arg));
+        elemTypes.push_back(arg->is<PointerType>() ? convertType(arg->as<PointerType>().pointee) : nullptr);
+    }
     auto *llvmType = llvm::FunctionType::get(convertType(funcType.result), arguments, /*isVarArg*/ false);
     currentFunction = llvm::cast<llvm::Function>(mod.getOrInsertFunction(op.name(), llvmType).getCallee());
-    for (size_t i = 0; i < op->numInwards(); i++)
-        saveValue(op->inward(i), currentFunction->getArg(i));
+    for (size_t i = 0; i < op->numInwards(); i++) {
+        auto *argValue = currentFunction->getArg(i);
+        saveValue(op->inward(i), argValue);
+        if (auto *elemType = elemTypes[i])
+            typedValues[argValue] = elemType;
+    }
     auto *bb = createBlock();
     builder.SetInsertPoint(bb);
     visitBody(op);
@@ -331,6 +340,19 @@ void LLVMIRGenerator::visit(const ArithCastOp &op) {
     }
 }
 
+void LLVMIRGenerator::visit(const ArithUnaryOp &op) {
+    auto result = [&](llvm::Value *v) -> void { saveValue(op.result(), v); };
+    auto *operand = findValue(op.value());
+    switch (op.kind()) {
+    case ArithUnaryOpKind::NegI:
+        return result(builder.CreateNeg(operand));
+    case ArithUnaryOpKind::NegF:
+        return result(builder.CreateFNeg(operand));
+    default:
+        COMPILER_UNREACHABLE("unexpected kind in ArithUnaryOp");
+    }
+}
+
 void LLVMIRGenerator::visit(const LogicUnaryOp &op) {
     auto result = [&](llvm::Value *v) -> void { saveValue(op.result(), v); };
     auto *operand = findValue(op.value());
@@ -346,7 +368,9 @@ void LLVMIRGenerator::visit(const AllocateOp &op) {
     const auto &type = op.result()->type->as<PointerType>();
     auto *llvmType = convertType(type.pointee);
     llvm::Value *size = nullptr;
-    if (type.numElements > 1U)
+    if (type.numElements == PointerType::dynamic)
+        size = findValue(op.dynamicSize());
+    else if (type.numElements > 1U)
         size = llvm::ConstantInt::get(llvm::Type::getIntNTy(context, 64U), type.numElements);
     auto *inst = builder.CreateAlloca(llvmType, size);
     saveValue(op.result(), inst);
@@ -429,6 +453,7 @@ void LLVMIRGenerator::visit(const ForOp &op) {
     builder.CreateBr(condBlock);
     builder.SetInsertPoint(condBlock);
     auto *loadedI = builder.CreateLoad(llvmType, allocaI);
+    saveValue(op.iterator(), loadedI);
     auto *cond = builder.CreateICmpSLT(loadedI, findValue(op.stop()));
     auto *thenBlock = createBlock();
     auto *nextBlock = createBlock();

@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "compiler/ast/node_type.hpp"
@@ -32,6 +33,7 @@ using namespace converter;
 using ast::Node;
 using ast::NodeType;
 using ast::SyntaxTree;
+using NumElements = ConverterContext::LocalVariable::NumElementsStorage;
 
 namespace language = utils::language;
 
@@ -72,6 +74,13 @@ std::string_view prettyTypeName(const Type::Ptr &type) {
     return "<undefined-type>";
 }
 
+std::string typeError(const Type::Ptr &actualType, std::string_view supportedTypes) {
+    std::stringstream error;
+    error << "unexpected expression type: " << prettyTypeName(actualType)
+          << ", supported types are: " << supportedTypes;
+    return error.str();
+};
+
 template <const Node::Ptr &(Node::*childAccessor)(void) const>
 bool isSomewhereInAssignment(const Node::Ptr &node) {
     const auto &parent = node->parent;
@@ -98,16 +107,16 @@ bool isAssignment(ast::BinaryOperation binOp) {
 }
 
 void createInputOp(const Node::Ptr &varNameNode, const utils::SourceRef &inputRef, ConverterContext &ctx) {
-    auto var = ctx.findVariable(varNameNode->str());
-    if (!var.value) {
+    const auto *var = ctx.findVariable(varNameNode->str());
+    if (var == nullptr) {
         ctx.pushError(varNameNode, "variable was not declared in this scope: " + varNameNode->str());
         return;
     }
-    if (!var.needsLoad) {
+    if (!var->needsLoad) {
         ctx.pushError(varNameNode, "variable cannot be modified: " + varNameNode->str());
         return;
     }
-    ctx.insert<InputOp>(inputRef, var.value);
+    ctx.insert<InputOp>(inputRef, var->value);
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx);
@@ -130,18 +139,32 @@ void processFunctionDefinition(const Node::Ptr &node, ConverterContext &ctx) {
     const std::string &name = (*it)->str();
     ++it;
     Type::PtrVector arguments;
-    std::vector<std::string> argNames;
+    struct ArgInfo {
+        std::string name;
+        bool aggregate;
+    };
+    std::vector<ArgInfo> argsInfo;
+    argsInfo.reserve((*it)->numChildren());
     for (const auto &argNode : (*it)->children) {
-        arguments.push_back(convertType(argNode->firstChild()->typeId()));
-        argNames.push_back(argNode->lastChild()->str());
+        auto typeId = argNode->firstChild()->typeId();
+        bool aggregate = false;
+        if (typeId == ast::ListType) {
+            aggregate = true;
+            auto innerNode = argNode->firstChild()->firstChild();
+            arguments.push_back(Type::make<PointerType>(convertType(innerNode->typeId()), PointerType::dynamic));
+        } else {
+            arguments.push_back(convertType(typeId));
+        }
+        argsInfo.emplace_back(argNode->lastChild()->str(), aggregate);
     }
     ++it;
     auto funcType = Type::make<FunctionType>(arguments, convertType((*it)->typeId()));
     auto funcOp = ctx.insert<FunctionOp>(node->ref, name, funcType);
     ctx.goInto(funcOp);
     ctx.enterScope();
-    for (size_t i = 0; i < argNames.size(); i++)
-        ctx.saveVariable(argNames[i], funcOp->inward(i), false);
+    size_t i = 0;
+    for (const auto &argInfo : argsInfo)
+        ctx.saveVariable(argInfo.name, funcOp->inward(i++), /*needsLoad*/ false, argInfo.aggregate);
     ++it;
     processNode(*it, ctx);
     ctx.exitScope();
@@ -162,12 +185,14 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.pushError(node, "variable is already declared: " + name);
         return;
     }
-    size_t numElements = 1U;
+    NumElements numElements = 1U;
     const auto &typeNode = node->firstChild();
     Node::Ptr listNode;
     Type::Ptr type;
-    bool hasDefinition = node->children.size() == 3U;
+    bool hasDefinition = node->numChildren() == 3U;
+    bool aggregate = false;
     if (typeNode->typeId() == ast::ListType) {
+        aggregate = true;
         type = convertType(typeNode->firstChild()->typeId());
         if (!hasDefinition) {
             ctx.pushError(node, "list declaration must contain initializer to determine its size: " + name);
@@ -175,17 +200,31 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
             // VariableDeclaration -> Expression -> ListStatement
             listNode = node->lastChild()->firstChild();
             assert(listNode->type == NodeType::ListStatement && "ListType variable must be defined with ListStatement");
-            numElements = listNode->children.size();
-            if (numElements == 0U) {
-                ctx.pushError(node, "list variable must be initialized with at least one element: " + name);
-                numElements = 1U;
+            size_t numChildren = listNode->numChildren();
+            if (listNode->lastChild()->type == NodeType::ListDynamicSize) {
+                if (numChildren != 2)
+                    ctx.pushError(node, "dynamically sized list must have exactly one initializer: " + name);
+                numElements = visitNode(listNode->lastChild()->firstChild(), ctx);
+            } else {
+                if (numChildren != 0U) {
+                    numElements = numChildren;
+                } else {
+                    ctx.pushError(node, "list variable must be initialized with at least one element: " + name);
+                    numElements = 1U;
+                }
             }
         }
     } else {
         type = convertType(typeNode->typeId());
     }
-    auto allocOp = ctx.insert<AllocateOp>(node->ref, Type::make<PointerType>(type, numElements));
-    ctx.saveVariable(name, allocOp.result(), true);
+    size_t boundNum = PointerType::dynamic;
+    Value::Ptr dynamicSize;
+    if (std::holds_alternative<size_t>(numElements))
+        boundNum = std::get<size_t>(numElements);
+    else
+        dynamicSize = std::get<Value::Ptr>(numElements);
+    auto allocOp = ctx.insert<AllocateOp>(node->ref, Type::make<PointerType>(type, boundNum), dynamicSize);
+    ctx.saveVariable(name, allocOp.result(), /*needsLoad*/ true, aggregate, numElements);
     auto insertStore = [&](const Node::Ptr &defNode, const Value::Ptr &offset) {
         if (defNode->type == NodeType::Expression && isFunctionCallInputNode(defNode->firstChild())) {
             createInputOp(nameNode, defNode->ref, ctx);
@@ -200,11 +239,26 @@ void processVariableDeclaration(const Node::Ptr &node, ConverterContext &ctx) {
         ctx.insert<StoreOp>(defNode->ref, allocOp.result(), defValue, offset);
     };
     if (listNode) {
-        int64_t i = 0;
-        for (const auto &defNode : listNode->children) {
-            auto offset = ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), i).result();
-            insertStore(defNode, offset);
-            i++;
+        if (std::holds_alternative<Value::Ptr>(numElements)) { // Dynamically sized list (numElements holds Value::Ptr)
+            const auto &stopValue = std::get<Value::Ptr>(numElements);
+            const auto &sizeNode = listNode->lastChild();
+            if (!stopValue->type->is<IntegerType>()) {
+                ctx.pushError(sizeNode, "dynamic list size must be defined as int");
+                throw ctx.errors;
+            }
+            auto startValue = ctx.insert<ConstantOp>(sizeNode->ref, stopValue->type, 0).result();
+            auto stepValue = ctx.insert<ConstantOp>(sizeNode->ref, stopValue->type, 1).result();
+            auto forOp = ctx.insert<ForOp>(node->ref, stopValue->type, startValue, stopValue, stepValue);
+            ctx.goInto(forOp);
+            insertStore(listNode->firstChild(), forOp.iterator());
+            ctx.goParent();
+        } else { // List with compile-time known constant size (numElements holds size_t)
+            int64_t i = 0;
+            for (const auto &defNode : listNode->children) {
+                auto offset = ctx.insert<ConstantOp>(node->ref, TypeStorage::integerType(), i).result();
+                insertStore(defNode, offset);
+                i++;
+            }
         }
     } else if (hasDefinition) {
         insertStore(node->lastChild(), {});
@@ -229,7 +283,7 @@ void processWhileStatement(const Node::Ptr &node, ConverterContext &ctx) {
 
 void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
     auto cond = visitNode(node->firstChild(), ctx);
-    bool withElse = node->children.size() > 2;
+    bool withElse = node->numChildren() > 2;
     auto ifOp = ctx.insert<IfOp>(node->ref, cond, withElse);
     ctx.goInto(ifOp.thenOp());
     processNode(node->secondChild(), ctx);
@@ -257,6 +311,149 @@ void processIfStatement(const Node::Ptr &node, ConverterContext &ctx) {
     while (depth-- > 0)
         ctx.goParent();
     ctx.goParent();
+}
+
+void processForStatement(const Node::Ptr &node, ConverterContext &ctx) {
+    const auto &targets = node->firstChild();
+    size_t numTargets = targets->numChildren();
+    assert(numTargets != 0 && "parser ensures that there is at least one target");
+    const auto &iterExpr = node->secondChild()->firstChild()->firstChild();
+    // Process layout: for i in range(start, stop, step)
+    if (iterExpr->type == NodeType::FunctionCall && iterExpr->firstChild()->str() == language::funcRange) {
+        if (numTargets > 1)
+            ctx.pushError(node, "for loop with range() must have exactly one target");
+        const auto &argsNode = iterExpr->lastChild();
+        size_t numArgs = argsNode->numChildren();
+        if (numArgs == 0) {
+            ctx.pushError(argsNode, "range() must have at least one argument");
+            return;
+        }
+        if (numArgs > 3)
+            ctx.pushError(argsNode, "range() must have 1, 2, or 3 arguments");
+        Node::Ptr startExpr, stopExpr, stepExpr;
+        if (numArgs == 1) {
+            stopExpr = argsNode->firstChild();
+        } else if (numArgs == 2) {
+            startExpr = argsNode->firstChild();
+            stopExpr = argsNode->lastChild();
+        } else {
+            assert(numArgs == 3);
+            startExpr = argsNode->firstChild();
+            stopExpr = argsNode->secondChild();
+            stepExpr = argsNode->lastChild();
+        }
+        auto stopValue = visitNode(stopExpr, ctx);
+        if (!stopValue->type->is<IntegerType>())
+            ctx.pushError(stopExpr, "'stop' argument of range() statement must be int");
+        Value::Ptr startValue;
+        if (startExpr) {
+            startValue = visitNode(startExpr, ctx);
+            if (!startValue->type->is<IntegerType>())
+                ctx.pushError(startExpr, "'start' argument of range() statement must be int");
+        } else {
+            startValue = ctx.insert<ConstantOp>(iterExpr->ref, stopValue->type, 0).result();
+        }
+        Value::Ptr stepValue;
+        if (stepExpr) {
+            stepValue = visitNode(stepExpr, ctx);
+            if (!stepValue->type->is<IntegerType>())
+                ctx.pushError(stepExpr, "'step' argument of range() statement must be int");
+        } else {
+            stepValue = ctx.insert<ConstantOp>(iterExpr->ref, stopValue->type, 1).result();
+        }
+        auto forOp = ctx.insert<ForOp>(node->ref, stopValue->type, startValue, stopValue, stepValue);
+        ctx.goInto(forOp);
+        ctx.enterScope();
+        const auto &targetNode = targets->firstChild();
+        ctx.saveVariable(targetNode->str(), forOp.iterator(), false);
+        processNode(node->lastChild(), ctx);
+        ctx.exitScope();
+        ctx.goParent();
+        return;
+    }
+    // Process layout: for i, value in enumerate(list)
+    if (iterExpr->type == NodeType::FunctionCall && iterExpr->firstChild()->str() == language::funcEnumerate) {
+        if (numTargets != 2)
+            ctx.pushError(node, "for loop with enumerate() must have exactly two targets");
+        if (numTargets < 2)
+            return;
+        const auto &argsNode = iterExpr->lastChild();
+        if (argsNode->numChildren() != 1U) {
+            ctx.pushError(argsNode, "enumerate() must have exactly one argument");
+            return;
+        }
+        const auto &listNode = argsNode->firstChild()->firstChild();
+        if (listNode->type != NodeType::VariableName) {
+            ctx.pushError(listNode, "enumerate() must have variable name as an argument");
+            return;
+        }
+        const auto *var = ctx.findVariable(listNode->str());
+        if (var == nullptr) {
+            ctx.pushError(listNode, "variable was not declared in this scope: " + listNode->str());
+            return;
+        }
+        if (!std::holds_alternative<size_t>(var->numElements)) {
+            ctx.pushError(node, "list must have static length to be used in for loop: " + listNode->str());
+            return;
+        }
+        auto intType = TypeStorage::integerType();
+        auto startValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, 0).result();
+        auto numElements = static_cast<NativeInt>(std::get<size_t>(var->numElements));
+        auto stopValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, numElements).result();
+        auto stepValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, 1).result();
+        auto forOp = ctx.insert<ForOp>(node->ref, intType, startValue, stopValue, stepValue);
+        ctx.goInto(forOp);
+        ctx.enterScope();
+        ctx.saveVariable(targets->firstChild()->str(), forOp.iterator(), false);
+        auto value = ctx.insert<LoadOp>(targets->lastChild()->ref, var->value, forOp.iterator()).result();
+        ctx.saveVariable(targets->lastChild()->str(), value, false);
+        processNode(node->lastChild(), ctx);
+        ctx.exitScope();
+        ctx.goParent();
+        return;
+    }
+    // Process layout: for value in list
+    if (iterExpr->type == NodeType::VariableName) {
+        if (numTargets > 1)
+            ctx.pushError(node, "for loop with list must have exactly one target");
+        const auto *var = ctx.findVariable(iterExpr->str());
+        if (var == nullptr) {
+            ctx.pushError(iterExpr, "variable was not declared in this scope: " + iterExpr->str());
+            return;
+        }
+        if (!std::holds_alternative<size_t>(var->numElements)) {
+            ctx.pushError(node, "list must have static length to be used in for loop: " + iterExpr->str());
+            return;
+        }
+        auto intType = TypeStorage::integerType();
+        auto startValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, 0).result();
+        auto numElements = static_cast<NativeInt>(std::get<size_t>(var->numElements));
+        auto stopValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, numElements).result();
+        auto stepValue = ctx.insert<ConstantOp>(iterExpr->ref, intType, 1).result();
+        auto forOp = ctx.insert<ForOp>(node->ref, intType, startValue, stopValue, stepValue);
+        ctx.goInto(forOp);
+        ctx.enterScope();
+        const auto &targetNode = targets->firstChild();
+        auto value = ctx.insert<LoadOp>(targetNode->ref, var->value, forOp.iterator()).result();
+        ctx.saveVariable(targetNode->str(), value, false);
+        processNode(node->lastChild(), ctx);
+        ctx.exitScope();
+        ctx.goParent();
+        return;
+    }
+    ctx.pushError(node, "unexpected for loop layout");
+}
+
+void processBreakStatement(const Node::Ptr &node, ConverterContext &ctx) {
+    ctx.pushError(node, "break is not supported");
+}
+
+void processContinueStatement(const Node::Ptr &node, ConverterContext &ctx) {
+    ctx.pushError(node, "continue is not supported");
+}
+
+void processPassStatement([[maybe_unused]] const Node::Ptr &node, [[maybe_unused]] ConverterContext &ctx) {
+    // Nothing to do here...
 }
 
 Value::Ptr visitExpression(const Node::Ptr &node, ConverterContext &ctx) {
@@ -294,20 +491,23 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
     }
     auto lhs = visitNode(lhsNode, ctx);
     auto rhs = visitNode(rhsNode, ctx);
+    if (!lhs) {
+        ctx.pushError(lhsNode, "expression result cannot be used as an operand in this context");
+        throw ctx.errors;
+    }
+    if (!rhs) {
+        ctx.pushError(rhsNode, "expression result cannot be used as an operand in this context");
+        throw ctx.errors;
+    }
     Type::Ptr lhsType = lhs->type;
     const Type::Ptr &rhsType = rhs->type;
-    auto typeError = [](const Type::Ptr &type) {
-        std::stringstream error;
-        error << "unexpected expression type: " << prettyTypeName(type) << ", supported types are: int, bool, float";
-        return error.str();
-    };
     Value::Ptr offset;
     if (isAssignment(binOp)) {
         if (lhsType->is<PointerType>()) {
             const auto &ptrType = lhsType->as<PointerType>();
             lhsType = ptrType.pointee;
-            if (ptrType.numElements > 1U) {
-                assert(lhsNode->type == NodeType::ListAccessor && lhsNode->children.size() == 2U);
+            if (ptrType.numElements != 1U) {
+                assert(lhsNode->type == NodeType::ListAccessor && lhsNode->numChildren() == 2U);
                 offset = visitNode(lhsNode->lastChild(), ctx);
             }
         } else {
@@ -315,11 +515,11 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
         }
     }
     if (!utils::isAny<IntegerType, FloatType>(lhsType)) {
-        ctx.pushError(node, typeError(lhsType));
+        ctx.pushError(node, typeError(lhsType, "int, bool, float"));
         throw ctx.errors;
     }
     if (!utils::isAny<IntegerType, FloatType>(rhsType)) {
-        ctx.pushError(node, typeError(rhsType));
+        ctx.pushError(node, typeError(lhsType, "int, bool, float"));
         throw ctx.errors;
     }
     if (*lhsType != *rhsType) {
@@ -382,14 +582,14 @@ Value::Ptr visitBinaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
 }
 
 Value::Ptr visitVariableName(const Node::Ptr &node, ConverterContext &ctx) {
-    auto var = ctx.findVariable(node->str());
-    if (!var.value) {
+    const auto *var = ctx.findVariable(node->str());
+    if (var == nullptr) {
         ctx.pushError(node, "variable was not declared in this scope: " + node->str());
         throw ctx.errors;
     }
-    if (isLhsInAssignment(node) || !var.needsLoad)
-        return var.value;
-    return ctx.insert<LoadOp>(node->ref, var.value).result();
+    if (isLhsInAssignment(node) || !var->needsLoad || var->aggregate)
+        return var->value;
+    return ctx.insert<LoadOp>(node->ref, var->value).result();
 }
 
 Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
@@ -423,19 +623,49 @@ Value::Ptr visitFunctionCall(const Node::Ptr &node, ConverterContext &ctx) {
 Value::Ptr visitListAccessor(const Node::Ptr &node, ConverterContext &ctx) {
     const auto &nameNode = node->firstChild();
     assert(nameNode->type == NodeType::VariableName && "ListAccessor node must have VariableName as first child");
-    auto var = ctx.findVariable(nameNode->str());
-    if (!var.value) {
+    const auto *var = ctx.findVariable(nameNode->str());
+    if (var == nullptr) {
         ctx.pushError(node, "variable was not declared in this scope: " + nameNode->str());
         throw ctx.errors;
     }
-    if (!var.needsLoad) {
+    if (!var->aggregate) {
         ctx.pushError(node, "list accessor is not allowed in the current context: " + nameNode->str());
         throw ctx.errors;
     }
     if (isLhsInAssignment(node))
-        return var.value;
+        return var->value;
     auto offset = visitNode(node->lastChild(), ctx);
-    return ctx.insert<LoadOp>(node->ref, var.value, offset).result();
+    return ctx.insert<LoadOp>(node->ref, var->value, offset).result();
+}
+
+Value::Ptr visitUnaryOperation(const Node::Ptr &node, ConverterContext &ctx) {
+    const auto &opndNode = node->firstChild();
+    auto operand = visitNode(opndNode, ctx);
+    if (!operand) {
+        ctx.pushError(opndNode, "expression result cannot be used as an operand in this context");
+        throw ctx.errors;
+    }
+    const auto &type = operand->type;
+    auto unOp = node->unOp();
+    switch (unOp) {
+    case ast::UnaryOperation::Negative: {
+        if (!utils::isAny<IntegerType, FloatType>(type)) {
+            ctx.pushError(opndNode, typeError(type, "int, float"));
+            throw ctx.errors;
+        }
+        auto kind = type->is<IntegerType>() ? ArithUnaryOpKind::NegI : ArithUnaryOpKind::NegF;
+        return ctx.insert<ArithUnaryOp>(node->ref, kind, operand).result();
+    }
+    case ast::UnaryOperation::Not: {
+        if (!type->is<BoolType>()) {
+            ctx.pushError(opndNode, typeError(type, "bool"));
+            throw ctx.errors;
+        }
+        return ctx.insert<LogicUnaryOp>(node->ref, LogicUnaryOpKind::Not, operand).result();
+    }
+    default:
+        COMPILER_UNREACHABLE("Unexpected ast::UnaryOperation value in visitUnaryOperation");
+    }
 }
 
 void processNode(const Node::Ptr &node, ConverterContext &ctx) {
@@ -464,6 +694,18 @@ void processNode(const Node::Ptr &node, ConverterContext &ctx) {
     case NodeType::IfStatement:
         processIfStatement(node, ctx);
         return;
+    case NodeType::ForStatement:
+        processForStatement(node, ctx);
+        return;
+    case NodeType::BreakStatement:
+        processBreakStatement(node, ctx);
+        return;
+    case NodeType::ContinueStatement:
+        processContinueStatement(node, ctx);
+        return;
+    case NodeType::PassStatement:
+        processPassStatement(node, ctx);
+        return;
     default:
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in processNode");
     }
@@ -489,6 +731,8 @@ Value::Ptr visitNode(const Node::Ptr &node, ConverterContext &ctx) {
         return visitFunctionCall(node, ctx);
     case NodeType::ListAccessor:
         return visitListAccessor(node, ctx);
+    case NodeType::UnaryOperation:
+        return visitUnaryOperation(node, ctx);
     default:
         COMPILER_UNREACHABLE("Unexpected ast::NodeType value in visitNode");
     }

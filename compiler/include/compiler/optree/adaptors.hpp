@@ -89,6 +89,7 @@ struct ArithBinaryOp;
 struct LogicBinaryOp;
 struct UnaryOp;
 struct ArithCastOp;
+struct ArithUnaryOp;
 struct LogicUnaryOp;
 
 struct BinaryOp : Adaptor {
@@ -135,6 +136,15 @@ struct ArithCastOp : UnaryOp {
     OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, ArithCastOpKind, 0)
 };
 
+struct ArithUnaryOp : UnaryOp {
+    OPTREE_ADAPTOR_HELPER(UnaryOp, "ArithUnary")
+
+    void init(ArithUnaryOpKind kind, const Type::Ptr &resultType, const Value::Ptr &value);
+    void init(ArithUnaryOpKind kind, const Value::Ptr &value);
+
+    OPTREE_ADAPTOR_ATTRIBUTE(kind, setKind, ArithUnaryOpKind, 0)
+};
+
 struct LogicUnaryOp : UnaryOp {
     OPTREE_ADAPTOR_HELPER(UnaryOp, "LogicUnary")
 
@@ -154,9 +164,13 @@ struct StoreOp;
 struct AllocateOp : Adaptor {
     OPTREE_ADAPTOR_HELPER(Adaptor, "Allocate")
 
-    void init(const Type::Ptr &type);
+    void init(const Type::Ptr &type, const Value::Ptr &dynamicSize = {});
 
     OPTREE_ADAPTOR_RESULT(result, 0)
+
+    // dynamicSize is an optional operand
+    Value::Ptr dynamicSize() const;
+    void setDynamicSize(const Value::Ptr &value);
 };
 
 struct LoadOp : Adaptor {
