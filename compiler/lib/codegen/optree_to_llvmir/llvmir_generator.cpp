@@ -1,15 +1,22 @@
 #include "llvmir_generator.hpp"
 
+#include <climits>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <iterator>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <vector>
 
+#include <llvm/ADT/StringRef.h>
+#include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/DIBuilder.h>
+#include <llvm/IR/DebugInfoMetadata.h>
+#include <llvm/IR/DebugLoc.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Value.h>
@@ -54,7 +61,14 @@ std::string_view getFormatSpecifier(const Type::Ptr &type) {
 } // namespace
 
 LLVMIRGenerator::LLVMIRGenerator(const std::string &moduleName)
-    : context(), builder(context), mod(moduleName, context), currentFunction(nullptr) {
+    : context(), builder(context), mod(moduleName, context), diBuilder(mod), compileUnit(nullptr),
+      currentFunction(nullptr) {
+    std::filesystem::path modulePath(moduleName);
+    auto filename = modulePath.filename().string();
+    auto directory = modulePath.parent_path().string();
+    compileUnit = diBuilder.createCompileUnit(llvm::dwarf::DW_LANG_C, diBuilder.createFile(filename, directory),
+                                              "compiler", false, "", 0);
+    debugScopes.push_back(compileUnit);
 }
 
 llvm::Value *LLVMIRGenerator::findValue(const Value::Ptr &value) const {
@@ -81,6 +95,26 @@ llvm::Type *LLVMIRGenerator::convertType(const Type::Ptr &type) {
         return llvm::Type::getIntNPtrTy(context, type->as<StrType>().charWidth);
     if (type->is<PointerType>())
         return llvm::PointerType::getUnqual(context);
+    COMPILER_UNREACHABLE("unexpected type");
+}
+
+llvm::DIType *LLVMIRGenerator::convertDebugType(const Type::Ptr &type) {
+    if (type->is<NoneType>())
+        return diBuilder.createUnspecifiedType("None");
+    if (type->is<BoolType>())
+        return diBuilder.createBasicType("bool", 1, llvm::dwarf::DW_ATE_boolean);
+    if (type->is<IntegerType>())
+        return diBuilder.createBasicType("int", type->bitWidth(), llvm::dwarf::DW_ATE_signed);
+    if (type->is<FloatType>())
+        return diBuilder.createBasicType("float", type->bitWidth(), llvm::dwarf::DW_ATE_float);
+    if (type->is<StrType>()) {
+        auto *ct = diBuilder.createBasicType("str", type->as<StrType>().charWidth, llvm::dwarf::DW_ATE_unsigned_char);
+        return diBuilder.createPointerType(ct, sizeof(void *) * CHAR_BIT);
+    }
+    if (type->is<PointerType>()) {
+        auto *pointee = convertDebugType(type->as<PointerType>().pointee);
+        return diBuilder.createPointerType(pointee, sizeof(void *) * CHAR_BIT);
+    }
     COMPILER_UNREACHABLE("unexpected type");
 }
 
@@ -141,7 +175,17 @@ llvm::FunctionCallee LLVMIRGenerator::loadExternalFunction(std::string_view name
     COMPILER_UNREACHABLE("unexpected external function");
 }
 
+void LLVMIRGenerator::emitDebugLocation(const Operation::Ptr &op) {
+    if (!op) {
+        builder.SetCurrentDebugLocation(llvm::DebugLoc());
+        return;
+    }
+    auto *location = llvm::DILocation::get(context, op->ref.line, op->ref.column, debugScopes.back());
+    builder.SetCurrentDebugLocation(location);
+}
+
 void LLVMIRGenerator::visit(const Operation::Ptr &op) {
+    emitDebugLocation(op);
     if (auto concreteOp = op->as<ModuleOp>())
         return visit(concreteOp);
     if (auto concreteOp = op->as<FunctionOp>())
@@ -213,9 +257,29 @@ void LLVMIRGenerator::visit(const FunctionOp &op) {
         if (auto *elemType = elemTypes[i])
             typedValues[argValue] = elemType;
     }
+    auto *unit = diBuilder.createFile(compileUnit->getFilename(), compileUnit->getDirectory());
+    std::vector<llvm::Metadata *> argDebugTypes;
+    argDebugTypes.push_back(convertDebugType(funcType.result));
+    for (const auto &arg : funcType.arguments)
+        argDebugTypes.push_back(convertDebugType(arg));
+    auto &ref = op->ref;
+    auto *funcDebugType = diBuilder.createSubroutineType(diBuilder.getOrCreateTypeArray(argDebugTypes));
+    auto *subprogram = diBuilder.createFunction(unit, op.name(), "", unit, ref.line, funcDebugType, ref.line,
+                                                llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
+    currentFunction->setSubprogram(subprogram);
+    debugScopes.push_back(subprogram);
+    emitDebugLocation(nullptr);
     auto *bb = createBlock();
     builder.SetInsertPoint(bb);
+    for (size_t i = 0; i < op->numInwards(); i++) {
+        auto argName = "arg" + std::to_string(i++);
+        auto *type = convertDebugType(op->inward(i)->type);
+        auto *debugVar = diBuilder.createParameterVariable(subprogram, argName, i + 1, unit, ref.line, type);
+        auto *location = llvm::DILocation::get(context, ref.line, ref.column, subprogram);
+        diBuilder.insertDeclare(currentFunction->getArg(i), debugVar, diBuilder.createExpression(), location, bb);
+    }
     visitBody(op);
+    debugScopes.pop_back();
 }
 
 void LLVMIRGenerator::visit(const FunctionCallOp &op) {
@@ -488,6 +552,7 @@ void LLVMIRGenerator::visit(const PrintOp &op) {
 void LLVMIRGenerator::process(const Program &program) {
     visit(program.root);
     eraseDeadBlocks();
+    diBuilder.finalize();
 }
 
 std::string LLVMIRGenerator::dump() const {

@@ -5,6 +5,8 @@
 #include <string_view>
 #include <unordered_map>
 
+#include <llvm/IR/DIBuilder.h>
+#include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
@@ -30,22 +32,28 @@ class LLVMIRGenerator {
     llvm::LLVMContext context;
     IRBuilder builder;
     llvm::Module mod;
+    llvm::DIBuilder diBuilder;
+    llvm::DICompileUnit *compileUnit;
+
     llvm::Function *currentFunction;
     std::unordered_map<const Value *, llvm::Value *> values;
     std::unordered_map<llvm::Value *, llvm::Type *> typedValues;
     std::unordered_map<std::string, llvm::Value *> globalStrings;
     std::unordered_map<std::string_view, llvm::FunctionCallee> externalFunctions;
     std::deque<llvm::BasicBlock *> basicBlocks;
+    std::deque<llvm::DIScope *> debugScopes;
 
     llvm::Value *findValue(const Value::Ptr &value) const;
     void saveValue(const Value::Ptr &value, llvm::Value *llvmValue);
     llvm::Type *convertType(const Type::Ptr &type);
+    llvm::DIType *convertDebugType(const Type::Ptr &type);
     llvm::BasicBlock *createBlock();
     void eraseDeadBlocks();
     llvm::Value *normalizePredicate(const Value::Ptr &cond);
     llvm::Value *getGlobalString(const std::string &str);
     llvm::FunctionCallee getExternalFunction(std::string_view name);
     llvm::FunctionCallee loadExternalFunction(std::string_view name);
+    void emitDebugLocation(const Operation::Ptr &op);
 
     void visit(const Operation::Ptr &op);
     void visitBody(const Operation::Ptr &op);
