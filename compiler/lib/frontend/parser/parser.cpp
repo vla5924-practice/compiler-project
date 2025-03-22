@@ -12,6 +12,7 @@
 
 #include "compiler/ast/node.hpp"
 #include "compiler/ast/node_type.hpp"
+#include "compiler/ast/types.hpp"
 #include "compiler/utils/error_buffer.hpp"
 
 #include "lexer/token.hpp"
@@ -218,9 +219,9 @@ size_t getOperationPriority(const Token &token) {
 
 size_t getOperandCount(OperationType type) {
     if (type == OperationType::Binary)
-        return 2u;
+        return 2U;
     if (type == OperationType::Unary)
-        return 1u;
+        return 1U;
     return -1;
 }
 
@@ -245,6 +246,33 @@ bool canBeUnaryOperation(const TokenIterator &tokenIter) {
 bool isUnaryOperation(const TokenIterator &tokenIter, const ExpressionTokenType &prevTokenIter) {
     return canBeUnaryOperation(tokenIter) &&
            (prevTokenIter == ExpressionTokenType::Operation || prevTokenIter == ExpressionTokenType::OpeningBrace);
+}
+
+std::string unescapeStringLiteral(const std::string &str) {
+    std::string result;
+    result.reserve(str.size());
+    std::string::value_type prev = '\0';
+    bool backslash = false;
+    for (auto c : str) {
+        if (!backslash && prev == '\\') {
+            backslash = false;
+            if (c == '\\')
+                backslash = true;
+            else if (c == 'n')
+                result.back() = '\n';
+            else if (c == 'r')
+                result.back() = '\r';
+            else if (c == 't')
+                result.back() = '\t';
+            else
+                result.push_back(c);
+        } else {
+            result.push_back(c);
+        }
+        prev = c;
+    }
+    result.shrink_to_fit();
+    return result;
 }
 
 void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::Ptr &root, ErrorBuffer &errors) {
@@ -288,7 +316,7 @@ void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::
                     }
                 } else if (token.type == TokenType::StringLiteral) {
                     Node::Ptr node = ParserContext::unshiftChildNode(currNode, NodeType::StringLiteralValue, token.ref);
-                    node->value = token.literal();
+                    node->value = unescapeStringLiteral(token.literal());
                 } else if (token.is(Keyword::False) || token.is(Keyword::True)) {
                     Node::Ptr node =
                         ParserContext::unshiftChildNode(currNode, NodeType::BooleanLiteralValue, token.ref);
@@ -306,7 +334,7 @@ void buildExpressionSubtree(std::stack<SubExpression> &postfixForm, const Node::
             callNode->parent = currNode;
             currNode->children.push_front(callNode);
         }
-        while (currNode->children.size() >= getOperandCount(getOperationType(*currNode)))
+        while (currNode->numChildren() >= getOperandCount(getOperationType(*currNode)))
             currNode = currNode->parent;
         postfixForm.pop();
     }
@@ -444,6 +472,28 @@ std::stack<SubExpression> generatePostfixForm(TokenIterator tokenIterBegin, Toke
     return postfixForm;
 }
 
+bool isElementaryType(TypeId typeId) {
+    return typeId == IntType || typeId == FloatType || typeId == BoolType || typeId == NoneType;
+}
+
+void parseType(ParserContext &ctx) {
+    ctx.node = ctx.pushChildNode(NodeType::TypeName);
+    ctx.node->value = TypeRegistry::typeId(ctx.token());
+    if (ctx.token().is(Keyword::List)) {
+        const Token &leftBrace = (ctx.goNextToken(), ctx.token());
+        const Token &varTypeList = (ctx.goNextToken(), ctx.token());
+        auto typeId = TypeRegistry::typeId(varTypeList);
+        const Token &rightBrace = (ctx.goNextToken(), ctx.token());
+        if (!leftBrace.is(Operator::RectLeftBrace) || !isElementaryType(typeId) ||
+            !rightBrace.is(Operator::RectRightBrace)) {
+            ctx.pushError("Unexpected syntax for list declaration");
+        }
+        auto node = ctx.pushChildNode(NodeType::TypeName);
+        node->value = typeId;
+    }
+    ctx.goParentNode();
+}
+
 void parseSimpleStatement(ParserContext &ctx) {
     assert(ctx.tokenIter->is(Keyword::Break) || ctx.tokenIter->is(Keyword::Continue) ||
            ctx.tokenIter->is(Keyword::Pass));
@@ -566,26 +616,23 @@ void parseFunctionArguments(ParserContext &ctx) {
     assert(ctx.token().is(Operator::LeftBrace));
     ctx.goNextToken();
     while (!ctx.token().is(Operator::RightBrace)) {
-        const Token &argName = *ctx.tokenIter;
-        const Token &colon = *std::next(ctx.tokenIter);
-        const Token &argType = *std::next(ctx.tokenIter, 2);
+        const Token &argName = ctx.token();
+        const Token &colon = (ctx.goNextToken(), ctx.token());
+        const Token &argType = (ctx.goNextToken(), ctx.token());
         if (argName.type != TokenType::Identifier || !colon.is(Special::Colon) || !TypeRegistry::isTypename(argType)) {
             ctx.pushError("Function argument declaration is ill-formed");
             while (!ctx.token().is(Operator::RightBrace) && !ctx.token().is(Special::Colon))
                 ctx.goNextToken();
             break;
         }
-        auto node = ctx.pushChildNode(NodeType::FunctionArgument);
-        auto argTypeNode = ParserContext::pushChildNode(node, NodeType::TypeName, argType.ref);
-        argTypeNode->value = TypeRegistry::typeId(argType);
-        auto argNameNode = ParserContext::pushChildNode(node, NodeType::VariableName, argName.ref);
+        ctx.node = ctx.pushChildNode(NodeType::FunctionArgument);
+        parseType(ctx);
+        auto argNameNode = ParserContext::pushChildNode(ctx.node, NodeType::VariableName, argName.ref);
         argNameNode->value = argName.id();
-
-        const Token &last = *std::next(ctx.tokenIter, 3);
-        if (last.is(Operator::Comma))
-            std::advance(ctx.tokenIter, 4);
-        else
-            std::advance(ctx.tokenIter, 3);
+        ctx.goParentNode();
+        ctx.goNextToken();
+        if (ctx.token().is(Operator::Comma))
+            ctx.goNextToken();
     }
     ctx.goParentNode();
     ctx.goNextToken();
@@ -611,7 +658,10 @@ void parseFunctionDefinition(ParserContext &ctx) {
     if (!TypeRegistry::isTypename(ctx.token())) {
         ctx.pushError("Type name not found");
     }
-    ctx.pushChildNode(NodeType::FunctionReturnType)->value = TypeRegistry::typeId(ctx.token());
+    auto retTypeId = TypeRegistry::typeId(ctx.token());
+    if (!isElementaryType(retTypeId))
+        ctx.pushError("Function return type must be one of the following: int, float, bool, None");
+    ctx.pushChildNode(NodeType::FunctionReturnType)->value = retTypeId;
     ctx.goNextToken();
     if (!ctx.token().is(Special::Colon)) {
         ctx.pushError("Colon expected at the end of function header");
@@ -670,24 +720,11 @@ void parseReturnStatement(ParserContext &ctx) {
 }
 
 void parseVariableDeclaration(ParserContext &ctx) {
+    const Token &varName = ctx.token();
     ctx.goNextToken();
-    const Token &colon = ctx.token();
-    const Token &varName = *std::prev(ctx.tokenIter);
-    const Token &varType = (std::advance(ctx.tokenIter, 1), ctx.token());
-    auto node = ctx.pushChildNode(NodeType::TypeName);
-    node->value = TypeRegistry::typeId(varType);
-    bool isListType = varType.is(Keyword::List);
-    if (isListType) {
-        const Token &leftBrace = (std::advance(ctx.tokenIter, 1), ctx.token());
-        const Token &varTypeList = (std::advance(ctx.tokenIter, 1), ctx.token());
-        const Token &rightBrace = (std::advance(ctx.tokenIter, 1), ctx.token());
-        if (!leftBrace.is(Operator::RectLeftBrace) || !rightBrace.is(Operator::RectRightBrace)) {
-            ctx.pushError("Unexepted syntax for list declaration");
-        }
-        auto listTypeNode = ParserContext::pushChildNode(node, NodeType::TypeName, ctx.tokenIter->ref);
-        listTypeNode->value = TypeRegistry::typeId(varTypeList);
-    }
-    node = ctx.pushChildNode(NodeType::VariableName);
+    const Token &varType = (ctx.goNextToken(), ctx.token());
+    parseType(ctx);
+    auto node = ctx.pushChildNode(NodeType::VariableName);
     node->value = varName.id();
 
     auto endOfDecl = std::next(ctx.tokenIter);
@@ -698,7 +735,7 @@ void parseVariableDeclaration(ParserContext &ctx) {
     } else if (endOfDecl->is(Operator::Assign)) {
         // declaration with definition
         ctx.node = ctx.pushChildNode(NodeType::Expression);
-        if (isListType) {
+        if (varType.is(Keyword::List)) {
             ctx.node = ctx.pushChildNode(NodeType::ListStatement);
         }
         std::advance(ctx.tokenIter, 2);

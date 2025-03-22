@@ -158,6 +158,8 @@ void LLVMIRGenerator::visit(const Operation::Ptr &op) {
         return visit(concreteOp);
     if (auto concreteOp = op->as<ArithCastOp>())
         return visit(concreteOp);
+    if (auto concreteOp = op->as<ArithUnaryOp>())
+        return visit(concreteOp);
     if (auto concreteOp = op->as<LogicUnaryOp>())
         return visit(concreteOp);
     if (auto concreteOp = op->as<AllocateOp>())
@@ -198,12 +200,19 @@ void LLVMIRGenerator::visit(const ModuleOp &op) {
 void LLVMIRGenerator::visit(const FunctionOp &op) {
     const auto &funcType = op.type();
     std::vector<llvm::Type *> arguments;
-    for (const auto &arg : funcType.arguments)
+    std::vector<llvm::Type *> elemTypes;
+    for (const auto &arg : funcType.arguments) {
         arguments.push_back(convertType(arg));
+        elemTypes.push_back(arg->is<PointerType>() ? convertType(arg->as<PointerType>().pointee) : nullptr);
+    }
     auto *llvmType = llvm::FunctionType::get(convertType(funcType.result), arguments, /*isVarArg*/ false);
     currentFunction = llvm::cast<llvm::Function>(mod.getOrInsertFunction(op.name(), llvmType).getCallee());
-    for (size_t i = 0; i < op->numInwards(); i++)
-        saveValue(op->inward(i), currentFunction->getArg(i));
+    for (size_t i = 0; i < op->numInwards(); i++) {
+        auto *argValue = currentFunction->getArg(i);
+        saveValue(op->inward(i), argValue);
+        if (auto *elemType = elemTypes[i])
+            typedValues[argValue] = elemType;
+    }
     auto *bb = createBlock();
     builder.SetInsertPoint(bb);
     visitBody(op);
@@ -328,6 +337,19 @@ void LLVMIRGenerator::visit(const ArithCastOp &op) {
         return result(builder.CreateFPTrunc(operand, destType));
     default:
         COMPILER_UNREACHABLE("unexpected kind in ArithCastOp");
+    }
+}
+
+void LLVMIRGenerator::visit(const ArithUnaryOp &op) {
+    auto result = [&](llvm::Value *v) -> void { saveValue(op.result(), v); };
+    auto *operand = findValue(op.value());
+    switch (op.kind()) {
+    case ArithUnaryOpKind::NegI:
+        return result(builder.CreateNeg(operand));
+    case ArithUnaryOpKind::NegF:
+        return result(builder.CreateFNeg(operand));
+    default:
+        COMPILER_UNREACHABLE("unexpected kind in ArithUnaryOp");
     }
 }
 
