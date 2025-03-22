@@ -43,13 +43,25 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         return result;
     }
 
-    static bool proccesOperand(const LogicBinaryOp &logicOp, const ConstantOp &constOp, const Operation::Ptr &secondOp, bool annihilatorValue,
+    static bool proccesOperand(const LogicBinaryOp &logicOp, const ConstantOp &constOp, const Value::Ptr &secondOp, bool annihilatorValue,
                                OptBuilder &builder) {
         auto valueType = constOp->result(0)->type;
         auto replaceFunc = [&logicOp, &secondOp, &builder, annihilatorValue]<typename T>(T value) {
             bool opSwitch = annihilatorValue ? !value : value;
             if (opSwitch) {
-                builder.replace(logicOp, secondOp);
+                // builder.replace(logicOp, secondOp);
+                builder.update(logicOp, 
+                    [&logicOp, &secondOp, &builder](){
+                        //auto lhsResult = logicOp.lhs();
+                        auto &oldUses = logicOp.result()->uses;
+                        for (const auto &use : oldUses) {
+                            auto user = use.lock();
+                            builder.update(user, [&] { user->operand(use.operandNumber) = secondOp; });
+                        }
+                        secondOp->uses.splice_after(secondOp->uses.before_begin(), oldUses);
+                    }
+                );
+                builder.erase(logicOp);
             } else {
                 auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), annihilatorValue);
                 builder.replace(logicOp, newOp);
@@ -79,12 +91,12 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         auto constLhsOp = getValueOwnerAs<ConstantOp>(logicOp.lhs());
         bool processed = false;
         if (constLhsOp) {
-            processed = proccesOperand(logicOp, constLhsOp, logicOp.rhs()->owner.lock(), annihilatorValue, builder);
+            processed = proccesOperand(logicOp, constLhsOp, logicOp.rhs(), annihilatorValue, builder);
         }
         if (!processed) {
             auto constRhsOp = getValueOwnerAs<ConstantOp>(logicOp.rhs());
             if (constRhsOp) {
-                proccesOperand(logicOp, constRhsOp, logicOp.lhs()->owner.lock(), annihilatorValue, builder);
+                proccesOperand(logicOp, constRhsOp, logicOp.lhs(), annihilatorValue, builder);
             }
         }
     }

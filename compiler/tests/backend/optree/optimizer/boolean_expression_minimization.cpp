@@ -34,16 +34,13 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_or) {
         v[3] = m.opInit<ConstantOp>(m.tBool, true);
         v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v["x"], v["y"]);
         v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v["x"], v["x"]);
-        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[5], v["y"]);
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]);
         v[7] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[3], v["x"]);
         v[8] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[7], v["x"]);
-
-
-        // v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v["y"], v["y"]);
-        // v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[2], v["x"]);
-        // v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[3], v["x"]);
-        // v[7] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v["x"], v[2]);
-        // v[8] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v["x"], v[3]);
+        v[9] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[2], v["x"]);
+        v[10] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[9], v["x"]);
+        // v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
+        // v[12] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[11], v["x"]);
         m.opInit<ReturnOp>();
         m.endBody();
         m.dump(std::cout);
@@ -57,12 +54,15 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_or) {
         v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v["x"], v["y"]);
         v[7] = m.opInit<ConstantOp>(m.tBool, true);
         v[8] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[7], v["x"]);
-
+        //v[9] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[2], v["x"]);
+        v[10] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v["x"], v["x"]);
         m.opInit<ReturnOp>();
         m.endBody();
         m.dump(std::cout);
 
     }
     runOptimizer();
+    auto &&[m, v] = this->getActual();
+    m.dump(std::cout);
     assertSameOpTree();
 }
