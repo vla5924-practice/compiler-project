@@ -15,16 +15,16 @@ using dbg = utils::DebugPrinter;
 
 namespace {
 
-void runTransform(const BaseTransform::Ptr &transform, const Operation::Ptr &op) {
+void runTransform(const BaseTransform::Ptr &transform, const OptBuilder::Notifier &notifier, const Operation::Ptr &op) {
     bool canRun = transform->canRun(op);
     if (transform->recurse() || (!canRun && !transform->recurse())) {
         for (const auto &childOp : utils::advanceEarly(op->body)) {
-            runTransform(transform, childOp);
+            runTransform(transform, notifier, childOp);
         }
     }
     if (!canRun)
         return;
-    OptBuilder builder;
+    OptBuilder builder(notifier);
     builder.setInsertPointBefore(op);
     COMPILER_DEBUG(dbg::get() << "Run " << transform->name() << " on " << op->dump() << "{\n");
     transform->run(op, builder);
@@ -39,8 +39,9 @@ Optimizer &Optimizer::add(const BaseTransform::Ptr &transform) {
 }
 
 void Optimizer::process(const Operation::Ptr &op) const {
+    OptBuilder::Notifier empty;
     for (const auto &transform : transforms)
-        runTransform(transform, op);
+        runTransform(transform, empty, op);
 }
 
 void Optimizer::process(Program &program) const {

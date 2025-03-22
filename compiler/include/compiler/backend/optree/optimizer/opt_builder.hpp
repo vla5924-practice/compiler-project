@@ -29,7 +29,7 @@ class OptBuilder : public Builder {
         void notifyErase(const Operation::Ptr &op) const;
     };
 
-    explicit OptBuilder(const Notifier &notifier = {}) : Builder(), notifier(notifier){};
+    explicit OptBuilder(const Notifier &notifier) : Builder(), notifier(notifier){};
     OptBuilder(const OptBuilder &) = delete;
     OptBuilder(OptBuilder &&) = default;
     ~OptBuilder() override = default;

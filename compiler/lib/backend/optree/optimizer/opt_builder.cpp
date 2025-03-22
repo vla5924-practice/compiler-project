@@ -17,7 +17,7 @@ namespace {
 void notifyInsertRecursively(const Operation::Ptr &op, const OptBuilder::Notifier &notifier) {
     for (const auto &nestedOp : op->body) {
         notifyInsertRecursively(nestedOp, notifier);
-        notifier.onInsert(nestedOp);
+        notifier.notifyInsert(nestedOp);
     }
 }
 
@@ -38,8 +38,12 @@ void OptBuilder::Notifier::notifyUpdate(const Operation::Ptr &op) const {
 }
 
 void OptBuilder::Notifier::notifyErase(const Operation::Ptr &op) const {
-    if (onErase)
+    if (onErase) {
+        std::cerr << "Call notifier on erase!\n";
         onErase(op);
+        std::cerr << "Called notifier on erase!\n";
+    } else
+        std::cerr << "No notifier on erase!\n";
 }
 
 void OptBuilder::insert(const Operation::Ptr &op) {
