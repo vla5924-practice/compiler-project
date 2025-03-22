@@ -17,7 +17,7 @@ namespace {
 void notifyInsertRecursively(const Operation::Ptr &op, const OptBuilder::Notifier &notifier) {
     for (const auto &nestedOp : op->body) {
         notifyInsertRecursively(nestedOp, notifier);
-        notifier.onInsert(nestedOp);
+        notifier.notifyInsert(nestedOp);
     }
 }
 
