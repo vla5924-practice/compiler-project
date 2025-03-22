@@ -9,7 +9,7 @@
 
 #include "compiler/utils/platform.hpp"
 
-#if defined(NDEBUG) && !defined(DEBUG)
+#if defined(ENABLE_COMPILER_DEBUG) || (defined(NDEBUG) && !defined(DEBUG))
 #define COMPILER_DEBUG(...)
 #else
 #define COMPILER_DEBUG(STATEMENT) STATEMENT
