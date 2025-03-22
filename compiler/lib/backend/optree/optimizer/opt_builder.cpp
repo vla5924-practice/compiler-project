@@ -38,12 +38,8 @@ void OptBuilder::Notifier::notifyUpdate(const Operation::Ptr &op) const {
 }
 
 void OptBuilder::Notifier::notifyErase(const Operation::Ptr &op) const {
-    if (onErase) {
-        std::cerr << "Call notifier on erase!\n";
+    if (onErase)
         onErase(op);
-        std::cerr << "Called notifier on erase!\n";
-    } else
-        std::cerr << "No notifier on erase!\n";
 }
 
 void OptBuilder::insert(const Operation::Ptr &op) {
