@@ -9,10 +9,10 @@
 
 #include "compiler/utils/platform.hpp"
 
-#if defined(ENABLE_COMPILER_DEBUG) || (defined(NDEBUG) && !defined(DEBUG))
-#define COMPILER_DEBUG(...)
-#else
+#if defined(ENABLE_COMPILER_DEBUG) || !defined(NDEBUG) || defined(DEBUG)
 #define COMPILER_DEBUG(STATEMENT) STATEMENT
+#else
+#define COMPILER_DEBUG(...)
 #endif
 
 // NOLINTNEXTLINE(bugprone-macro-parentheses)
