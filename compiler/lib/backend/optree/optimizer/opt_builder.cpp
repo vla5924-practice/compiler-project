@@ -86,3 +86,13 @@ void OptBuilder::replace(const Operation::Ptr &op, const Operation::Ptr &newOp) 
     }
     erase(op);
 }
+
+void OptBuilder::replace(const Value::Ptr &result, const Value::Ptr &newResult) {
+    COMPILER_DEBUG(dbg::get() << "  Replace result " << '\n');
+    for (const auto &use : result->uses) {
+        auto user = use.lock();
+        update(user, [&] { user->operand(use.operandNumber) = newResult; });
+    }
+    newResult->uses.splice_after(newResult->uses.before_begin(), result->uses);
+    erase(result->owner.lock());
+}
