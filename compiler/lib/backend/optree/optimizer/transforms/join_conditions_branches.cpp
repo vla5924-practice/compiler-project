@@ -32,6 +32,13 @@ struct JoinConditionsBranches : public Transform<IfOp> {
                     }
                 }
                 builder.erase(elseOp);
+                builder.setInsertPointBefore(op);
+                for (const auto &childOp : utils::advanceEarly(thenOp->body)) {
+                    auto cloned = builder.clone(childOp);
+                    builder.replace(childOp, cloned);
+                    builder.setInsertPointAfter(cloned);
+                }
+                builder.erase(op);
             }
         }
     }
