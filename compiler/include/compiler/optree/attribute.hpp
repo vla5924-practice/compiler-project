@@ -15,7 +15,7 @@ struct Attribute {
     using Storage = std::variant<
         //
         std::monostate, NativeInt, NativeBool, NativeFloat, NativeStr, Type::Ptr, ArithBinOpKind, ArithCastOpKind,
-        LogicBinOpKind, LogicUnaryOpKind
+        ArithUnaryOpKind, LogicBinOpKind, LogicUnaryOpKind
         //
         >;
 

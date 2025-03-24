@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <forward_list>
 #include <stdexcept>
 #include <string>
@@ -14,7 +15,7 @@
 
 namespace optimizer {
 
-using VariableValue = std::variant<long int, double>;
+using VariableValue = std::variant<int64_t, double>;
 
 struct OptimizerContext {
     std::forward_list<ast::VariablesTable *> variables;
@@ -23,8 +24,8 @@ struct OptimizerContext {
     ast::Node::Ptr root;
     OptimizerOptions options;
 
-    OptimizerContext(ast::FunctionsTable &functions_, const OptimizerOptions &options_)
-        : variables(), values(), functions(functions_), options(options_){};
+    OptimizerContext(ast::FunctionsTable &functions, const OptimizerOptions &options)
+        : variables(), values(), functions(functions), options(options){};
 
     ast::Variable &findVariable(const std::string &name) {
         for (auto &table : variables) {

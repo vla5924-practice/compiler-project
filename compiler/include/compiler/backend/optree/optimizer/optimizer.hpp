@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstddef>
-#include <vector>
+#include <deque>
 
+#include "compiler/optree/operation.hpp"
 #include "compiler/optree/program.hpp"
 
 #include "compiler/backend/optree/optimizer/transform.hpp"
@@ -11,16 +11,16 @@ namespace optree {
 namespace optimizer {
 
 class Optimizer {
-    std::vector<BaseTransform::Ptr> transforms;
-    size_t iterLimit;
+    std::deque<BaseTransform::Ptr> transforms;
 
   public:
-    Optimizer();
+    Optimizer() = default;
     Optimizer(const Optimizer &) = default;
     Optimizer(Optimizer &&) = default;
     ~Optimizer() = default;
 
-    void add(const BaseTransform::Ptr &transform);
+    Optimizer &add(const BaseTransform::Ptr &transform);
+    void process(const Operation::Ptr &op) const;
     void process(Program &program) const;
 };
 

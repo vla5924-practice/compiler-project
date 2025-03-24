@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 
 #include "compiler/utils/language.hpp"
@@ -361,7 +362,7 @@ llvm::Value *IRGenerator::visitFunctionCall(Node *node) {
 llvm::Value *IRGenerator::visitIntegerLiteralValue(Node *node) {
     assert(node && node->type == NodeType::IntegerLiteralValue);
 
-    long value = node->intNum();
+    int64_t value = node->intNum();
     return llvm::ConstantInt::get(context, llvm::APInt(64, value, true));
 }
 
@@ -410,7 +411,7 @@ llvm::Value *IRGenerator::visitPrintFunctionCall(Node *node) {
     assert(node && node->type == NodeType::FunctionCall && node->firstChild()->str() == language::funcPrint);
 
     auto argsNode = node->lastChild();
-    assert(argsNode->children.size() == 1u); // print requires only one argument
+    assert(argsNode->numChildren() == 1U); // print requires only one argument
 
     auto valueNode = argsNode->firstChild();
     auto placeholderName = placeholderNameByTypeId(detectExpressionType(valueNode));
@@ -516,7 +517,7 @@ void IRGenerator::processIfStatement(Node *node) {
     llvm::BasicBlock *endBlock = llvm::BasicBlock::Create(context, "endif");
     llvm::BasicBlock *elseBlock = nullptr;
 
-    bool hasAdditionals = node->children.size() > 2u;
+    bool hasAdditionals = node->numChildren() > 2U;
     auto lastElse = node->lastChild();
 
     if (hasAdditionals && lastElse->type == NodeType::ElseStatement) {

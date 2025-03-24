@@ -156,7 +156,7 @@ static TypeId processFunctionCall(Node::Ptr &node, SemantizerContext &ctx) {
         }
     }
 
-    if (node->children.size() >= 2u) {
+    if (node->numChildren() >= 2U) {
         const std::vector<TypeId> &args = funcIter->second.argumentsTypes;
         size_t index = 0;
         for (auto &child : node->secondChild()->children) {
