@@ -4,8 +4,6 @@
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
-#include "compiler/utils/helpers.hpp"
-#include "compiler/utils/language.hpp"
 
 #include "optimizer/opt_builder.hpp"
 #include "optimizer/transform.hpp"
@@ -43,22 +41,20 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         return result;
     }
 
-    static bool proccesOperand(const LogicBinaryOp &logicOp, const ConstantOp &constOp, const Value::Ptr &secondOp, bool annihilatorValue,
-                               OptBuilder &builder) {
+    static bool proccesOperand(const LogicBinaryOp &logicOp, const ConstantOp &constOp, const Value::Ptr &secondOp,
+                               bool annihilatorValue, OptBuilder &builder) {
         auto valueType = constOp->result(0)->type;
         auto replaceFunc = [&logicOp, &secondOp, &builder, annihilatorValue]<typename T>(T value) {
             bool opSwitch = annihilatorValue ? !value : value;
             if (opSwitch) {
-                builder.update(logicOp, 
-                    [&logicOp, &secondOp, &builder](){
-                        auto &oldUses = logicOp.result()->uses;
-                        for (const auto &use : oldUses) {
-                            auto user = use.lock();
-                            builder.update(user, [&] { user->operand(use.operandNumber) = secondOp; });
-                        }
-                        secondOp->uses.splice_after(secondOp->uses.before_begin(), oldUses);
+                builder.update(logicOp, [&logicOp, &secondOp, &builder]() {
+                    auto &oldUses = logicOp.result()->uses;
+                    for (const auto &use : oldUses) {
+                        auto user = use.lock();
+                        builder.update(user, [&] { user->operand(use.operandNumber) = secondOp; });
                     }
-                );
+                    secondOp->uses.splice_after(secondOp->uses.before_begin(), oldUses);
+                });
                 builder.erase(logicOp);
             } else {
                 auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), annihilatorValue);
@@ -101,17 +97,15 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
 
     static void proccesAnd(const LogicBinaryOp &logicOp, OptBuilder &builder) {
         if (checkIdempotence(logicOp)) {
-            builder.update(logicOp, 
-                [&logicOp, &builder](){
-                    auto lhsResult = logicOp.lhs();
-                    auto &oldUses = logicOp.result()->uses;
-                    for (const auto &use : oldUses) {
-                        auto user = use.lock();
-                        builder.update(user, [&] { user->operand(use.operandNumber) = lhsResult; });
-                    }
-                    lhsResult->uses.splice_after(lhsResult->uses.before_begin(), oldUses);
+            builder.update(logicOp, [&logicOp, &builder]() {
+                auto lhsResult = logicOp.lhs();
+                auto &oldUses = logicOp.result()->uses;
+                for (const auto &use : oldUses) {
+                    auto user = use.lock();
+                    builder.update(user, [&] { user->operand(use.operandNumber) = lhsResult; });
                 }
-            );
+                lhsResult->uses.splice_after(lhsResult->uses.before_begin(), oldUses);
+            });
             builder.erase(logicOp);
             return;
         }
@@ -125,17 +119,15 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
 
     static void proccesOr(const LogicBinaryOp &logicOp, OptBuilder &builder) {
         if (checkIdempotence(logicOp)) {
-            builder.update(logicOp, 
-                [&logicOp, &builder](){
-                    auto lhsResult = logicOp.lhs();
-                    auto &oldUses = logicOp.result()->uses;
-                    for (const auto &use : oldUses) {
-                        auto user = use.lock();
-                        builder.update(user, [&] { user->operand(use.operandNumber) = lhsResult; });
-                    }
-                    lhsResult->uses.splice_after(lhsResult->uses.before_begin(), oldUses);
+            builder.update(logicOp, [&logicOp, &builder]() {
+                auto lhsResult = logicOp.lhs();
+                auto &oldUses = logicOp.result()->uses;
+                for (const auto &use : oldUses) {
+                    auto user = use.lock();
+                    builder.update(user, [&] { user->operand(use.operandNumber) = lhsResult; });
                 }
-            );
+                lhsResult->uses.splice_after(lhsResult->uses.before_begin(), oldUses);
+            });
             builder.erase(logicOp);
             return;
         }
@@ -175,8 +167,7 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
         auto logicOp = op->as<LogicBinaryOp>();
-        switch (logicOp.kind())
-        {
+        switch (logicOp.kind()) {
         case LogicBinOpKind::Equal:
             proccesEqual(logicOp, builder);
             break;
