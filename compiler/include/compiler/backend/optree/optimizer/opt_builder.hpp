@@ -4,6 +4,7 @@
 
 #include "compiler/optree/builder.hpp"
 #include "compiler/optree/operation.hpp"
+#include "compiler/optree/value.hpp"
 
 namespace optree {
 namespace optimizer {
