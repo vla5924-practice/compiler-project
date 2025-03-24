@@ -29,13 +29,13 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
 
     // checks pattern x op ~x
     static bool checkComplementation(const LogicBinaryOp &logicOp) {
-        auto lhs = getValueOwnerAs<UnaryOp>(logicOp.lhs());
+        auto lhs = getValueOwnerAs<LogicUnaryOp>(logicOp.lhs());
         bool result = false;
         if (lhs) {
             result = lhs->operand(0) == logicOp.rhs();
         }
         if (!result) {
-            auto rhs = getValueOwnerAs<UnaryOp>(logicOp.rhs());
+            auto rhs = getValueOwnerAs<LogicUnaryOp>(logicOp.rhs());
             if (rhs && !result) {
                 result = rhs->operand(0) == logicOp.lhs();
             }
@@ -49,10 +49,8 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         auto replaceFunc = [&logicOp, &secondOp, &builder, annihilatorValue]<typename T>(T value) {
             bool opSwitch = annihilatorValue ? !value : value;
             if (opSwitch) {
-                // builder.replace(logicOp, secondOp);
                 builder.update(logicOp, 
                     [&logicOp, &secondOp, &builder](){
-                        //auto lhsResult = logicOp.lhs();
                         auto &oldUses = logicOp.result()->uses;
                         for (const auto &use : oldUses) {
                             auto user = use.lock();
