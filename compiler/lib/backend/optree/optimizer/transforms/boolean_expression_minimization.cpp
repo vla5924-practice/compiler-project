@@ -127,7 +127,6 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         if (checkIdempotence(logicOp)) {
             builder.update(logicOp, 
                 [&logicOp, &builder](){
-                    auto &lhsUses = logicOp.lhs()->uses;
                     auto lhsResult = logicOp.lhs();
                     auto &oldUses = logicOp.result()->uses;
                     for (const auto &use : oldUses) {
@@ -176,17 +175,22 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
         auto logicOp = op->as<LogicBinaryOp>();
-        if (logicOp.kind() == LogicBinOpKind::Equal) {
+        switch (logicOp.kind())
+        {
+        case LogicBinOpKind::Equal:
             proccesEqual(logicOp, builder);
-        }
-        if (logicOp.kind() == LogicBinOpKind::NotEqual) {
+            break;
+        case LogicBinOpKind::NotEqual:
             proccesNotEqual(logicOp, builder);
-        }
-        if (logicOp.kind() == LogicBinOpKind::AndI) {
+            break;
+        case LogicBinOpKind::AndI:
             proccesAnd(logicOp, builder);
-        }
-        if (logicOp.kind() == LogicBinOpKind::OrI) {
+            break;
+        case LogicBinOpKind::OrI:
             proccesOr(logicOp, builder);
+            break;
+        default:
+            break;
         }
     }
 };

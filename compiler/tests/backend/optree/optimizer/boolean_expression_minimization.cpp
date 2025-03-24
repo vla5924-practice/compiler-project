@@ -65,3 +65,111 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_or) {
     runOptimizer();
     assertSameOpTree();
 }
+
+TEST_F(BooleanExpressionMinimizationTest, minimize_and) {
+    {
+        auto &&[m, v] = getActual();
+        m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+        v[2] = m.opInit<ConstantOp>(m.tBool, false);
+        v[3] = m.opInit<ConstantOp>(m.tBool, true);
+        v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v["x"], v["y"]);
+        v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v["x"], v["x"]);
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]); 
+        v[7] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v[3], v["x"]); // true or x
+        v[8] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[7], v["x"]);
+        v[9] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v[2], v["x"]); // false or x
+        v[10] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[9], v["x"]);
+        v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
+        v[12] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v[11], v["x"]);
+        v[13] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[12], v["x"]);
+
+        m.opInit<ReturnOp>();
+        m.endBody();
+    }
+    {
+        auto &&[m, v] = getExpected();
+        m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+        v[2] = m.opInit<ConstantOp>(m.tBool, false);
+        v[3] = m.opInit<ConstantOp>(m.tBool, true);
+        v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v["x"], v["y"]);
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v["x"], v["y"]);
+        v[8] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v["x"], v["x"]);
+        v[9] = m.opInit<ConstantOp>(m.tBool, false);
+        v[10] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[9], v["x"]);
+        v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
+        v[12] = m.opInit<ConstantOp>(m.tBool, false);
+        v[13] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[12], v["x"]);
+        m.opInit<ReturnOp>();
+        m.endBody();
+    }
+    runOptimizer();
+    assertSameOpTree();
+}
+
+TEST_F(BooleanExpressionMinimizationTest, minimize_equal) {
+    {
+        auto &&[m, v] = getActual();
+        m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+        v[2] = m.opInit<ConstantOp>(m.tBool, false);
+        v[3] = m.opInit<ConstantOp>(m.tBool, true);
+        v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::Equal, v["x"], v["y"]);
+        v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::Equal, v["x"], v["x"]);
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]); 
+        v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
+        v[12] = m.opInit<LogicBinaryOp>(LogicBinOpKind::Equal, v[11], v["x"]);
+        v[13] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[12], v["x"]);
+
+        m.opInit<ReturnOp>();
+        m.endBody();
+    }
+    {
+        auto &&[m, v] = getExpected();
+        m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+        v[2] = m.opInit<ConstantOp>(m.tBool, false);
+        v[3] = m.opInit<ConstantOp>(m.tBool, true);
+        v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::Equal, v["x"], v["y"]);
+        v[5] = m.opInit<ConstantOp>(m.tBool, true);
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]);
+        v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
+        v[12] = m.opInit<ConstantOp>(m.tBool, false);
+        v[13] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[12], v["x"]);
+        m.opInit<ReturnOp>();
+        m.endBody();
+    }
+    runOptimizer();
+    assertSameOpTree();
+}
+
+TEST_F(BooleanExpressionMinimizationTest, minimize_not_equal) {
+    {
+        auto &&[m, v] = getActual();
+        m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+        v[2] = m.opInit<ConstantOp>(m.tBool, false);
+        v[3] = m.opInit<ConstantOp>(m.tBool, true);
+        v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::NotEqual, v["x"], v["y"]);
+        v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::NotEqual, v["x"], v["x"]);
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]); 
+        v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
+        v[12] = m.opInit<LogicBinaryOp>(LogicBinOpKind::NotEqual, v[11], v["x"]);
+        v[13] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[12], v["x"]);
+
+        m.opInit<ReturnOp>();
+        m.endBody();
+    }
+    {
+        auto &&[m, v] = getExpected();
+        m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
+        v[2] = m.opInit<ConstantOp>(m.tBool, false);
+        v[3] = m.opInit<ConstantOp>(m.tBool, true);
+        v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::NotEqual, v["x"], v["y"]);
+        v[5] = m.opInit<ConstantOp>(m.tBool, false);
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]);
+        v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
+        v[12] = m.opInit<ConstantOp>(m.tBool, true);
+        v[13] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[12], v["x"]);
+        m.opInit<ReturnOp>();
+        m.endBody();
+    }
+    runOptimizer();
+    assertSameOpTree();
+}
