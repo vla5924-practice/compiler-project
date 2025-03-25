@@ -1,16 +1,19 @@
-#include <string>
+#include <memory>
 #include <string_view>
 
 #include "compiler/optree/adaptors.hpp"
+#include "compiler/optree/definitions.hpp"
 #include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
+#include "compiler/optree/types.hpp"
+#include "compiler/optree/value.hpp"
 
 #include "optimizer/opt_builder.hpp"
 #include "optimizer/transform.hpp"
 
 using namespace optree;
 using namespace optree::optimizer;
-#include <iostream>
+
 namespace {
 
 struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
