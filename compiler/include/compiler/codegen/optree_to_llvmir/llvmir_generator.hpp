@@ -59,6 +59,7 @@ class LLVMIRGenerator {
     void visit(const ArithBinaryOp &op);
     void visit(const LogicBinaryOp &op);
     void visit(const ArithCastOp &op);
+    void visit(const ArithUnaryOp &op);
     void visit(const LogicUnaryOp &op);
 
     void visit(const AllocateOp &op);

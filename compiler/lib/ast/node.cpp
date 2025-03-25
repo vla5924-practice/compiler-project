@@ -1,16 +1,21 @@
 #include "node.hpp"
 
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
+#include <iterator>
 #include <sstream>
+#include <string>
 
 #include "node_type.hpp"
 #include "types.hpp"
+#include "variables_table.hpp"
 
 using namespace ast;
 
 namespace {
 
-const char *const binaryOperationToString(BinaryOperation binOp) {
+const char *binaryOperationToString(BinaryOperation binOp) {
     switch (binOp) {
     case BinaryOperation::Add:
         return "Add";
@@ -65,7 +70,7 @@ const char *const binaryOperationToString(BinaryOperation binOp) {
     }
 }
 
-const char *const unaryOperationToString(UnaryOperation unOp) {
+const char *unaryOperationToString(UnaryOperation unOp) {
     switch (unOp) {
     case UnaryOperation::Not:
         return "Not";
@@ -77,7 +82,7 @@ const char *const unaryOperationToString(UnaryOperation unOp) {
     return "";
 }
 
-const char *const typeIdToString(TypeId typeId) {
+const char *typeIdToString(TypeId typeId) {
     switch (typeId) {
     case IntType:
         return "IntType";
@@ -101,6 +106,106 @@ void dumpVariablesTable(std::ostream &stream, const VariablesTable &table) {
 }
 
 } // namespace
+
+Node::Node(const NodeType &type, const Ptr &parent) : type(type), parent(parent) {
+}
+
+Node::Node(int64_t intNum, const Ptr &parent) : type(NodeType::IntegerLiteralValue), value(intNum), parent(parent) {
+}
+
+Node::Node(double fpNum, const Ptr &parent) : type(NodeType::FloatingPointLiteralValue), value(fpNum), parent(parent) {
+}
+
+Node::Node(const NodeType &type, const std::string &str, const Ptr &parent) : type(type), value(str), parent(parent) {
+}
+
+Node::Node(TypeId typeId, const Ptr &parent) : type(NodeType::TypeName), value(typeId), parent(parent) {
+}
+
+Node::Node(BinaryOperation binOp, const Ptr &parent) : type(NodeType::BinaryOperation), value(binOp), parent(parent) {
+}
+
+Node::Node(UnaryOperation unOp, const Ptr &parent) : type(NodeType::UnaryOperation), value(unOp), parent(parent) {
+}
+
+const int64_t &Node::intNum() const {
+    return std::get<int64_t>(value);
+}
+
+const double &Node::fpNum() const {
+    return std::get<double>(value);
+}
+
+const bool &Node::boolean() const {
+    return std::get<bool>(value);
+}
+
+const std::string &Node::str() const {
+    return std::get<std::string>(value);
+}
+
+const TypeId &Node::typeId() const {
+    return std::get<TypeId>(value);
+}
+
+const BinaryOperation &Node::binOp() const {
+    return std::get<BinaryOperation>(value);
+}
+
+const UnaryOperation &Node::unOp() const {
+    return std::get<UnaryOperation>(value);
+}
+
+const VariablesTable &Node::variables() const {
+    return std::get<VariablesTable>(value);
+}
+
+VariablesTable &Node::variables() {
+    return std::get<VariablesTable>(value);
+}
+
+bool Node::operator==(const Node &other) const {
+    if (numChildren() != other.numChildren())
+        return false;
+    if (numChildren() > 0) {
+        for (auto i = children.begin(), j = other.children.begin(); i != children.end(); i++, j++)
+            if (**i != **j)
+                return false;
+    }
+    return type == other.type && value == other.value;
+}
+
+bool Node::operator!=(const Node &other) const {
+    return !(*this == other);
+}
+
+Node::Ptr &Node::firstChild() {
+    return children.front();
+}
+
+const Node::Ptr &Node::firstChild() const {
+    return children.front();
+}
+
+Node::Ptr &Node::secondChild() {
+    return *std::next(children.begin());
+}
+
+const Node::Ptr &Node::secondChild() const {
+    return *std::next(children.begin());
+}
+
+Node::Ptr &Node::lastChild() {
+    return children.back();
+}
+
+const Node::Ptr &Node::lastChild() const {
+    return children.back();
+}
+
+size_t Node::numChildren() const {
+    return children.size();
+}
 
 void Node::dump(std::ostream &stream, int depth) const {
     for (int i = 0; i < depth; i++)
@@ -200,6 +305,9 @@ void Node::dump(std::ostream &stream, int depth) const {
     case NodeType::ListAccessor:
         stream << "ListAccessor\n";
         break;
+    case NodeType::ListDynamicSize:
+        stream << "ListDynamicSize\n";
+        break;
     case NodeType::ForStatement:
         stream << "ForStatement\n";
         break;
@@ -221,12 +329,12 @@ void Node::dump(std::ostream &stream, int depth) const {
     default:
         stream << "Unknown\n";
     }
-    for (auto child : children)
+    for (const auto &child : children)
         child->dump(stream, depth + 1);
 }
 
 std::string Node::dump(int depth) const {
     std::stringstream str;
-    dump(str);
+    dump(str, depth);
     return str.str();
 }

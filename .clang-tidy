@@ -34,7 +34,6 @@ Checks: >
   misc-unused-using-decls,
   misc-use-anonymous-namespace,
   modernize-avoid-c-arrays,
-  modernize-deprecated-headers,
   modernize-loop-convert,
   modernize-make-shared,
   modernize-make-unique,

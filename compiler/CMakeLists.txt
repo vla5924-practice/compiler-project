@@ -38,10 +38,15 @@ endif()
 option(ENABLE_CLI "Enables command-line interface application" ON)
 option(ENABLE_TESTS "Enables tests for components" ON)
 option(ENABLE_COVERAGE "Enables code coverage instrumentation" OFF)
+option(ENABLE_DEBUG "Enables debug statements forcefully" OFF)
 
 if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Z7 /Od")
     option(gtest_force_shared_crt "" TRUE)
+endif()
+
+if (ENABLE_DEBUG)
+    add_compile_definitions(ENABLE_COMPILER_DEBUG)
 endif()
 
 include(${COMPILER_CMAKE_DIR}/utils.cmake)
