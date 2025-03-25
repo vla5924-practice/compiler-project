@@ -34,10 +34,10 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_or) {
         v[3] = m.opInit<ConstantOp>(m.tBool, true);
         v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v["x"], v["y"]);
         v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v["x"], v["x"]);
-        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]); 
-        v[7] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[3], v["x"]); // true or x
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]);
+        v[7] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[3], v["x"]);
         v[8] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[7], v["x"]);
-        v[9] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[2], v["x"]); // false or x
+        v[9] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[2], v["x"]);
         v[10] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[9], v["x"]);
         v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
         v[12] = m.opInit<LogicBinaryOp>(LogicBinOpKind::OrI, v[11], v["x"]);
@@ -74,10 +74,10 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_and) {
         v[3] = m.opInit<ConstantOp>(m.tBool, true);
         v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v["x"], v["y"]);
         v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v["x"], v["x"]);
-        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]); 
-        v[7] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v[3], v["x"]); // true or x
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]);
+        v[7] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v[3], v["x"]);
         v[8] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[7], v["x"]);
-        v[9] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v[2], v["x"]); // false or x
+        v[9] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v[2], v["x"]);
         v[10] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[9], v["x"]);
         v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
         v[12] = m.opInit<LogicBinaryOp>(LogicBinOpKind::AndI, v[11], v["x"]);
@@ -114,7 +114,7 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_equal) {
         v[3] = m.opInit<ConstantOp>(m.tBool, true);
         v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::Equal, v["x"], v["y"]);
         v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::Equal, v["x"], v["x"]);
-        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]); 
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]);
         v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
         v[12] = m.opInit<LogicBinaryOp>(LogicBinOpKind::Equal, v[11], v["x"]);
         v[13] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[12], v["x"]);
@@ -148,7 +148,7 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_not_equal) {
         v[3] = m.opInit<ConstantOp>(m.tBool, true);
         v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::NotEqual, v["x"], v["y"]);
         v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::NotEqual, v["x"], v["x"]);
-        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]); 
+        v[6] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[5], v["y"]);
         v[11] = m.opInit<LogicUnaryOp>(LogicUnaryOpKind::Not, v["x"]);
         v[12] = m.opInit<LogicBinaryOp>(LogicBinOpKind::NotEqual, v[11], v["x"]);
         v[13] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterI, v[12], v["x"]);

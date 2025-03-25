@@ -130,7 +130,6 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         }
     }
 
-
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
         auto logicOp = op->as<LogicBinaryOp>();
         auto opKind = logicOp.kind();
