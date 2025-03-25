@@ -95,7 +95,7 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
         }
     }
 
-    static void proccesAnd(const LogicBinaryOp &logicOp, OptBuilder &builder) {
+    static void proccesOrAnd(const LogicBinaryOp &logicOp, bool annihilatorValue, OptBuilder &builder) {
         if (checkIdempotence(logicOp)) {
             builder.update(logicOp, [&logicOp, &builder]() {
                 auto lhsResult = logicOp.lhs();
@@ -110,75 +110,38 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
             return;
         }
         if (checkComplementation(logicOp)) {
-            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), false);
+            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), annihilatorValue);
             builder.replace(logicOp, newOp);
             return;
         }
-        proccesIdentityAndAnnihilatorRules(logicOp, false, builder);
+        proccesIdentityAndAnnihilatorRules(logicOp, annihilatorValue, builder);
     }
 
-    static void proccesOr(const LogicBinaryOp &logicOp, OptBuilder &builder) {
+    static void proccesEqualNotEqual(const LogicBinaryOp &logicOp, bool annihilatorValue, OptBuilder &builder) {
         if (checkIdempotence(logicOp)) {
-            builder.update(logicOp, [&logicOp, &builder]() {
-                auto lhsResult = logicOp.lhs();
-                auto &oldUses = logicOp.result()->uses;
-                for (const auto &use : oldUses) {
-                    auto user = use.lock();
-                    builder.update(user, [&] { user->operand(use.operandNumber) = lhsResult; });
-                }
-                lhsResult->uses.splice_after(lhsResult->uses.before_begin(), oldUses);
-            });
-            builder.erase(logicOp);
-            return;
-        }
-        if (checkComplementation(logicOp)) {
-            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), true);
-            builder.replace(logicOp, newOp);
-            return;
-        }
-        proccesIdentityAndAnnihilatorRules(logicOp, true, builder);
-    }
-
-    static void proccesEqual(const LogicBinaryOp &logicOp, OptBuilder &builder) {
-        if (checkIdempotence(logicOp)) {
-            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), true);
+            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), annihilatorValue);
             builder.replace(logicOp, newOp);
             return;
         }
         if (checkComplementation(logicOp)) {
-            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), false);
+            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), !annihilatorValue);
             builder.replace(logicOp, newOp);
             return;
         }
     }
 
-    static void proccesNotEqual(const LogicBinaryOp &logicOp, OptBuilder &builder) {
-        if (checkIdempotence(logicOp)) {
-            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), false);
-            builder.replace(logicOp, newOp);
-            return;
-        }
-        if (checkComplementation(logicOp)) {
-            auto newOp = builder.insert<ConstantOp>(logicOp->ref, TypeStorage::boolType(), true);
-            builder.replace(logicOp, newOp);
-            return;
-        }
-    }
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
         auto logicOp = op->as<LogicBinaryOp>();
+        auto opKind = logicOp.kind();
         switch (logicOp.kind()) {
         case LogicBinOpKind::Equal:
-            proccesEqual(logicOp, builder);
-            break;
         case LogicBinOpKind::NotEqual:
-            proccesNotEqual(logicOp, builder);
+            proccesEqualNotEqual(logicOp, opKind == LogicBinOpKind::Equal, builder);
             break;
         case LogicBinOpKind::AndI:
-            proccesAnd(logicOp, builder);
-            break;
         case LogicBinOpKind::OrI:
-            proccesOr(logicOp, builder);
+            proccesOrAnd(logicOp, opKind == LogicBinOpKind::OrI, builder);
             break;
         default:
             break;
