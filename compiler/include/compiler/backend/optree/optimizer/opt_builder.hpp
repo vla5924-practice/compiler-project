@@ -4,6 +4,7 @@
 
 #include "compiler/optree/builder.hpp"
 #include "compiler/optree/operation.hpp"
+#include "compiler/optree/value.hpp"
 
 namespace optree {
 namespace optimizer {
@@ -41,6 +42,7 @@ class OptBuilder : public Builder {
     void erase(const Operation::Ptr &op);
     void update(const Operation::Ptr &op, const std::function<void()> &actor = {});
     void replace(const Operation::Ptr &op, const Operation::Ptr &newOp);
+    void replace(const Value::Ptr &value, const Value::Ptr &newValue);
 
   private:
     const Notifier &notifier;
