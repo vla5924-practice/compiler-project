@@ -11,6 +11,5 @@ BaseTransform::Ptr createFoldConstants();
 BaseTransform::Ptr createFoldControlFlowOps();
 BaseTransform::Ptr createControlFlowSinkOps();
 
-
 } // namespace optimizer
 } // namespace optree
