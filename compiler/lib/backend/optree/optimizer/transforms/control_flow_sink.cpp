@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <iostream>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string_view>
@@ -70,13 +70,13 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
 
             if (!notFound && !usingIn.empty()) {
                 auto minRegion = usingIn[0];
-                auto candidate = usingIn[0].owner;
+                const auto &candidate = usingIn[0].owner;
                 // cheking that operations are family
                 bool isBrothers = false;
                 for (const auto &pos : usingIn) {
                     if (pos.id < minRegion.id)
                         minRegion = pos;
-                    auto &posOwner = pos.owner;
+                    const auto &posOwner = pos.owner;
                     if (!(isParentChild(posOwner, candidate) || isParentChild(candidate, posOwner))) {
                         isBrothers = true;
                     }
