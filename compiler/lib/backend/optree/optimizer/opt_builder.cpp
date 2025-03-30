@@ -79,21 +79,16 @@ void OptBuilder::update(const Operation::Ptr &op, const std::function<void()> &a
 void OptBuilder::replace(const Operation::Ptr &op, const Operation::Ptr &newOp) {
     COMPILER_DEBUG(dbg::get() << "  Replace " << op->name << '\n');
     for (const auto &[oldResult, newResult] : utils::zip(op->results, newOp->results)) {
-        for (const auto &use : oldResult->uses) {
-            auto user = use.lock();
-            update(user, [&] { user->operand(use.operandNumber) = newResult; });
-        }
-        newResult->uses.splice_after(newResult->uses.before_begin(), oldResult->uses);
+        replace(oldResult, newResult);
     }
     erase(op);
 }
 
-void OptBuilder::replace(const Value::Ptr &result, const Value::Ptr &newResult) {
+void OptBuilder::replace(const Value::Ptr &value, const Value::Ptr &newValue) {
     COMPILER_DEBUG(dbg::get() << "  Replace result " << '\n');
-    for (const auto &use : result->uses) {
+    for (const auto &use : value->uses) {
         auto user = use.lock();
-        update(user, [&] { user->operand(use.operandNumber) = newResult; });
+        update(user, [&] { user->operand(use.operandNumber) = newValue; });
     }
-    newResult->uses.splice_after(newResult->uses.before_begin(), result->uses);
-    erase(result->owner.lock());
+    newValue->uses.splice_after(newValue->uses.before_begin(), value->uses);
 }
