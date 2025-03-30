@@ -53,6 +53,8 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
 
     void sinkOperation(const Operation::Ptr &child, RegionMap &regionMap, OptBuilder &builder) const {
         uint32_t childPos = regionMap[child].id;
+        if (child->results.size() != 1)
+            return;
         for (const auto &result : child->results) {
             std::vector<Region> usingIn{}; // can use set in this?
             bool notFound = false;
