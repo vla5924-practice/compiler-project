@@ -9,6 +9,8 @@ BaseTransform::Ptr createEraseUnusedOps();
 BaseTransform::Ptr createEraseUnusedFunctions();
 BaseTransform::Ptr createFoldConstants();
 BaseTransform::Ptr createFoldControlFlowOps();
+BaseTransform::Ptr createControlFlowSinkOps();
+
 
 } // namespace optimizer
 } // namespace optree
