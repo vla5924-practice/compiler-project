@@ -288,7 +288,6 @@ TEST_F(ControlFlowSinkOpsTest, two_ifs) {
                 m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v["y"], v[1]);
             m.endBody();
         m.endBody();
-
         m.op<IfOp>(v[0]).withBody();
             m.op<ThenOp>().withBody();
                 m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v["y"], v[1]);
@@ -307,7 +306,6 @@ TEST_F(ControlFlowSinkOpsTest, two_ifs) {
                 m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v["y"], v[1]);
             m.endBody();
         m.endBody();
-
         m.op<IfOp>(v[0]).withBody();
             m.op<ThenOp>().withBody();
                 m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v["y"], v[1]);

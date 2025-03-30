@@ -1,19 +1,16 @@
+#include <algorithm>
+#include <iostream>
+#include <map>
 #include <memory>
 #include <string_view>
+#include <vector>
 
 #include "compiler/optree/adaptors.hpp"
-#include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
-#include "compiler/optree/types.hpp"
 #include "compiler/utils/helpers.hpp"
 
 #include "optimizer/opt_builder.hpp"
 #include "optimizer/transform.hpp"
-
-#include <algorithm>
-#include <iostream>
-#include <map>
-#include <set>
 
 using namespace optree;
 using namespace optree::optimizer;
