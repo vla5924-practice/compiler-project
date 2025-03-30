@@ -42,30 +42,52 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
         }
     };
 
+    bool isParentChild(const Operation::Ptr &child, const Operation::Ptr &parentCandidate) const {
+        if (child == parentCandidate)
+            return true;
+        auto parent = child->parent;
+        while (parent) {
+            if (parent == parentCandidate)
+                return true;
+            parent = parent->parent;
+        }
+        return false;
+    }
+
     void sinkOperation(const Operation::Ptr &child, RegionMap &regionMap, OptBuilder &builder) const {
+        uint32_t childPos = regionMap[child].id;
         for (const auto &result : child->results) {
-            std::vector<Region> usingIn{};
+            std::vector<Region> usingIn{}; // can use set in this?
             bool notFound = false;
             for (const auto &use : result->uses) {
                 auto user = use.lock();
                 if (auto search = regionMap.find(user); search != regionMap.end()) {
-                    usingIn.push_back(search->second);
+                    if (childPos < search->second.id)
+                        usingIn.emplace_back(search->second);
+                    else
+                        notFound = true;
                 } else {
                     notFound = true;
                 }
             }
-            if (!notFound) {
-                auto position =
-                    std::min_element(usingIn.begin(), usingIn.end(),
-                                     [](const Region &lhs, const Region &rhs) { return lhs.id < rhs.id; });
-                if (position == usingIn.end()) {
+
+            if (!notFound && !usingIn.empty()) {
+                auto minRegion = usingIn[0];
+                auto candidate = usingIn[0].owner;
+                // cheking that operations are family
+                bool isBrothers = false;
+                for (const auto &pos : usingIn) {
+                    if (pos.id < minRegion.id)
+                        minRegion = pos;
+                    auto &posOwner = pos.owner;
+                    if (!(isParentChild(posOwner, candidate) || isParentChild(candidate, posOwner))) {
+                        isBrothers = true;
+                    }
+                }
+                if (isBrothers) {
                     continue;
                 }
-                Region minRegion = *position;
                 uint32_t minRegionId = minRegion.id;
-                if (minRegionId <= regionMap[child].id) {
-                    continue;
-                }
                 if (auto thenOp = minRegion.owner->as<ThenOp>()) {
                     if (auto search =
                             std::find_if(usingIn.begin(), usingIn.end(),
@@ -74,6 +96,7 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
                         continue;
                     }
                 }
+
                 builder.setInsertPointBefore(*minRegion.owner->body.begin());
                 auto newOp = builder.clone(child);
                 regionMap.erase(child);
@@ -88,7 +111,6 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
             dfs(child, regionMap, builder);
             sinkOperation(child, regionMap, builder);
         }
-        
     }
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
@@ -104,19 +126,7 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
                 regionMap[child] = {rootId, op};
             }
         }
-        std::set<Region, decltype([](const Region &lhs, const Region &rhs) { return lhs.id < rhs.id; })> test;
-        for (const auto &[rOp, region] : regionMap) {
-            test.insert(region);
-            std::cout << rOp->name << " : " << region.id << std::endl;
-        }
-        std::cout << " : " << std::endl;
-
-        for (const auto &elem : test) {
-            std::cout << elem.owner->name << " : " << elem.id << std::endl;
-        }
         dfs(op, regionMap, builder);
-        std::cout << " ______________________ " << std::endl;
-
     }
 };
 

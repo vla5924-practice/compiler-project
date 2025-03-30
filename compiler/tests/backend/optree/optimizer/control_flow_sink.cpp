@@ -32,7 +32,6 @@ TEST_F(ControlFlowSinkOpsTest, can_move_operator_to_then) {
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
         v[0] = m.opInit<ConstantOp>(m.tBool, true);
         v[1] = m.opInit<ConstantOp>(m.tF64, 2.3);
-
         m.op<IfOp>(v[0]).withBody();
             m.op<ThenOp>().withBody();
                 m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v["y"], v[1]);
