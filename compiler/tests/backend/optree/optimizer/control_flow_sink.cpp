@@ -26,6 +26,7 @@ TEST_F(ControlFlowSinkOpsTest, can_run_on_empty_optree) {
     assertSameOpTree();
 }
 
+// clang-format off
 TEST_F(ControlFlowSinkOpsTest, can_move_operator_to_then) {
     {
         auto &&[m, v] = getActual();
@@ -44,7 +45,6 @@ TEST_F(ControlFlowSinkOpsTest, can_move_operator_to_then) {
         auto &&[m, v] = getExpected();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
         v[0] = m.opInit<ConstantOp>(m.tBool, true);
-        
         m.op<IfOp>(v[0]).withBody();
             m.op<ThenOp>().withBody();
                 v[1] = m.opInit<ConstantOp>(m.tF64, 2.3);
@@ -55,8 +55,6 @@ TEST_F(ControlFlowSinkOpsTest, can_move_operator_to_then) {
         m.endBody();
     }
     runOptimizer();
-    auto &&[m, v] = getActual();
-    m.dump(std::cout);
     assertSameOpTree();
 }
 
@@ -66,14 +64,12 @@ TEST_F(ControlFlowSinkOpsTest, can_keep_operation_using_in_base_region) {
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
         v[0] = m.opInit<ConstantOp>(m.tBool, true);
         v[1] = m.opInit<ConstantOp>(m.tF64, 2.3);
-
         m.op<IfOp>(v[0]).withBody();
             m.op<ThenOp>().withBody();
                 v[2] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v["y"], v[1]);
             m.endBody();
         m.endBody();
         v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v["y"], v[1]);
-
         m.opInit<ReturnOp>();
         m.endBody();
     }
@@ -94,8 +90,6 @@ TEST_F(ControlFlowSinkOpsTest, can_keep_operation_using_in_base_region) {
         m.endBody();
     }
     runOptimizer();
-    auto &&[m, v] = getActual();
-    m.dump(std::cout);
     assertSameOpTree();
 }
 
@@ -134,8 +128,6 @@ TEST_F(ControlFlowSinkOpsTest, cannot_move_operation_to_then_else_regions) {
         m.endBody();
     }
     runOptimizer();
-    auto &&[m, v] = getActual();
-    m.dump(std::cout);
     assertSameOpTree();
 }
 
@@ -177,8 +169,6 @@ TEST_F(ControlFlowSinkOpsTest, can_move_to_then_else_diff_operations) {
         m.endBody();
     }
     runOptimizer();
-    auto &&[m, v] = getActual();
-    m.dump(std::cout);
     assertSameOpTree();
 }
 
@@ -212,8 +202,6 @@ TEST_F(ControlFlowSinkOpsTest, chain_moving) {
         m.endBody();
     }
     runOptimizer();
-    auto &&[m, v] = getActual();
-    m.dump(std::cout);
     assertSameOpTree();
 }
 
@@ -253,8 +241,6 @@ TEST_F(ControlFlowSinkOpsTest, can_move_operators_in_inner_regions) {
         m.endBody();
     }
     runOptimizer();
-    auto &&[m, v] = getActual();
-    m.dump(std::cout);
     assertSameOpTree();
 }
 
@@ -288,8 +274,6 @@ TEST_F(ControlFlowSinkOpsTest, skip_while) {
         m.endBody();
     }
     runOptimizer();
-    auto &&[m, v] = getActual();
-    m.dump(std::cout);
     assertSameOpTree();
 }
 
@@ -333,7 +317,6 @@ TEST_F(ControlFlowSinkOpsTest, two_ifs) {
         m.endBody();
     }
     runOptimizer();
-    auto &&[m, v] = getActual();
-    m.dump(std::cout);
     assertSameOpTree();
 }
+// clang-format on
