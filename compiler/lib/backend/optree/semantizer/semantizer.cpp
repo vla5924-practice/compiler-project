@@ -14,6 +14,7 @@
 #include "compiler/optree/value.hpp"
 #include "compiler/utils/debug.hpp"
 
+#include "semantizer/dominance_tree.hpp"
 #include "semantizer/semantizer_context.hpp"
 #include "semantizer/traits.hpp"
 
@@ -400,6 +401,25 @@ bool verify(const Operation::Ptr &op, SemantizerContext &ctx) {
     return false;
 }
 
+void verifyValueDominance(const Value::Ptr &value, const Operation::Ptr &owner, const DominanceTree &dom,
+                          SemantizerContext &ctx) {
+    for (const auto &use : value->uses) {
+        auto user = use.lock();
+        if (!dom.properlyDominates(owner, use.lock())) {
+            ctx.pushOpError(user) << "is not dominated by its operand #" << use.operandNumber << " owner";
+        }
+    }
+}
+
+void verifyDominance(const Operation::Ptr &op, const DominanceTree &dom, SemantizerContext &ctx) {
+    for (const auto &result : op->results)
+        verifyValueDominance(result, op, dom, ctx);
+    for (const auto &inward : op->inwards)
+        verifyValueDominance(inward, op, dom, ctx);
+    for (const auto &childOp : op->body)
+        verifyDominance(childOp, dom, ctx);
+}
+
 } // namespace
 
 void Semantizer::process(const Program &program) {
@@ -409,6 +429,11 @@ void Semantizer::process(const Program &program) {
 void Semantizer::process(const Operation::Ptr &op) {
     SemantizerContext ctx;
     verify(op, ctx);
+    if (!ctx.errors.empty())
+        throw ctx.errors;
+
+    DominanceTree dom(op);
+    verifyDominance(op, dom, ctx);
     if (!ctx.errors.empty())
         throw ctx.errors;
 }
