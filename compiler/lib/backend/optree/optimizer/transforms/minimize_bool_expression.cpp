@@ -16,11 +16,11 @@ using namespace optree::optimizer;
 
 namespace {
 
-struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
+struct MinimizeBoolExpression : public Transform<LogicBinaryOp> {
     using Transform::Transform;
 
     std::string_view name() const override {
-        return "BooleanExpressionMinimization";
+        return "MinimizeBoolExpression";
     }
 
     // checks pattern x op x
@@ -36,10 +36,8 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
             result = lhs->operand(0) == logicOp.rhs();
         }
         if (!result) {
-            auto rhs = getValueOwnerAs<LogicUnaryOp>(logicOp.rhs());
-            if (rhs && !result) {
+            if (auto rhs = getValueOwnerAs<LogicUnaryOp>(logicOp.rhs()))
                 result = rhs->operand(0) == logicOp.lhs();
-            }
         }
         return result;
     }
@@ -141,8 +139,8 @@ struct BooleanExpressionMinimization : public Transform<LogicBinaryOp> {
 namespace optree {
 namespace optimizer {
 
-BaseTransform::Ptr createBooleanExpressionMinimization() {
-    return std::make_shared<BooleanExpressionMinimization>();
+BaseTransform::Ptr createMinimizeBoolExpression() {
+    return std::make_shared<MinimizeBoolExpression>();
 }
 
 } // namespace optimizer

@@ -1,7 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <utility>
-
 #include "compiler/backend/optree/optimizer/optimizer.hpp"
 #include "compiler/backend/optree/optimizer/transform_factories.hpp"
 #include "compiler/optree/adaptors.hpp"
@@ -11,22 +9,22 @@
 using namespace optree;
 using namespace optree::optimizer;
 
-class BooleanExpressionMinimizationTest : public TransformTestBase {
+class MinimizeBoolExpressionTest : public TransformTestBase {
     virtual void setupOptimizer(Optimizer &opt) const override {
-        opt.add(createBooleanExpressionMinimization());
+        opt.add(createMinimizeBoolExpression());
     }
 
   public:
-    BooleanExpressionMinimizationTest() = default;
-    ~BooleanExpressionMinimizationTest() = default;
+    MinimizeBoolExpressionTest() = default;
+    ~MinimizeBoolExpressionTest() = default;
 };
 
-TEST_F(BooleanExpressionMinimizationTest, can_run_on_empty_optree) {
+TEST_F(MinimizeBoolExpressionTest, can_run_on_empty_optree) {
     runOptimizer();
     assertSameOpTree();
 }
 
-TEST_F(BooleanExpressionMinimizationTest, minimize_or) {
+TEST_F(MinimizeBoolExpressionTest, minimize_or) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -66,7 +64,7 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_or) {
     assertSameOpTree();
 }
 
-TEST_F(BooleanExpressionMinimizationTest, minimize_and) {
+TEST_F(MinimizeBoolExpressionTest, minimize_and) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -106,7 +104,7 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_and) {
     assertSameOpTree();
 }
 
-TEST_F(BooleanExpressionMinimizationTest, minimize_equal) {
+TEST_F(MinimizeBoolExpressionTest, minimize_equal) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -140,7 +138,7 @@ TEST_F(BooleanExpressionMinimizationTest, minimize_equal) {
     assertSameOpTree();
 }
 
-TEST_F(BooleanExpressionMinimizationTest, minimize_not_equal) {
+TEST_F(MinimizeBoolExpressionTest, minimize_not_equal) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tI64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
