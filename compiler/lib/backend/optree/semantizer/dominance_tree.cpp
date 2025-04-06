@@ -1,5 +1,7 @@
 #include "semantizer/dominance_tree.hpp"
 
+#include <ostream>
+
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/operation.hpp"
 #include "compiler/utils/helpers.hpp"
