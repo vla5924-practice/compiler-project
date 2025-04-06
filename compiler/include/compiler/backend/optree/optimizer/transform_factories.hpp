@@ -8,8 +8,9 @@ namespace optimizer {
 BaseTransform::Ptr createEraseUnusedOps();
 BaseTransform::Ptr createEraseUnusedFunctions();
 BaseTransform::Ptr createFoldConstants();
-BaseTransform::Ptr createJoinConditionsBranches();
 BaseTransform::Ptr createFoldControlFlowOps();
+BaseTransform::Ptr createJoinConditionsBranches();
+BaseTransform::Ptr createMinimizeBoolExpression();
 
 } // namespace optimizer
 } // namespace optree
