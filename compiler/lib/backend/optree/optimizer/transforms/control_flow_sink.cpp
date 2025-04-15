@@ -30,7 +30,9 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
     };
     using RegionMap = std::map<Operation::Ptr, Region>;
 
-    void fillRegionMap(const Operation::Ptr &op, RegionMap &regionMap, uint32_t &scope) const {
+    RegionMap regionMap;
+
+    static void fillRegionMap(const Operation::Ptr &op, uint32_t &scope) {
         if (!op->body.empty())
             scope++;
         for (auto &child : op->body) {
@@ -39,7 +41,7 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
         }
     };
 
-    bool isParentChild(const Operation::Ptr &child, const Operation::Ptr &parentCandidate) const {
+    static bool isParentChild(const Operation::Ptr &child, const Operation::Ptr &parentCandidate) {
         if (child == parentCandidate)
             return true;
         auto parent = child->parent;
@@ -51,26 +53,26 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
         return false;
     }
 
-    void sinkOperation(const Operation::Ptr &child, RegionMap &regionMap, OptBuilder &builder) const {
+    static void sinkOperation(const Operation::Ptr &child, OptBuilder &builder) {
         uint32_t childPos = regionMap[child].id;
         if (child->results.size() != 1)
             return;
         for (const auto &result : child->results) {
-            std::vector<Region> usingIn{}; // can use set in this?
-            bool notFound = false;
+            std::vector<Region> usingIn;
+            bool found = true;
             for (const auto &use : result->uses) {
                 auto user = use.lock();
-                if (auto search = regionMap.find(user); search != regionMap.end()) {
-                    if (childPos < search->second.id)
-                        usingIn.emplace_back(search->second);
+                if (auto it = regionMap.find(user); it != regionMap.end()) {
+                    if (childPos < it->second.id)
+                        usingIn.emplace_back(it->second);
                     else
-                        notFound = true;
+                        found = false;
                 } else {
-                    notFound = true;
+                    found = false;
                 }
             }
 
-            if (!notFound && !usingIn.empty()) {
+            if (found && !usingIn.empty()) {
                 auto minRegion = usingIn[0];
                 const auto &candidate = usingIn[0].owner;
                 // cheking that operations are family
@@ -79,7 +81,7 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
                     if (pos.id < minRegion.id)
                         minRegion = pos;
                     const auto &posOwner = pos.owner;
-                    if (!(isParentChild(posOwner, candidate) || isParentChild(candidate, posOwner))) {
+                    if (!isParentChild(posOwner, candidate) || !isParentChild(candidate, posOwner)) {
                         isBrothers = true;
                     }
                 }
@@ -88,10 +90,9 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
                 }
                 uint32_t minRegionId = minRegion.id;
                 if (auto thenOp = minRegion.owner->as<ThenOp>()) {
-                    if (auto search =
-                            std::find_if(usingIn.begin(), usingIn.end(),
-                                         [&minRegion](const Region &reg) { return reg.id == minRegion.id + 1; });
-                        search != usingIn.end()) {
+                    if (auto it = std::find_if(usingIn.begin(), usingIn.end(),
+                                               [&minRegion](const Region &reg) { return reg.id == minRegion.id + 1; });
+                        it != usingIn.end()) {
                         continue;
                     }
                 }
@@ -105,9 +106,9 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
         }
     }
 
-    void dfs(const Operation::Ptr &op, RegionMap &regionMap, OptBuilder &builder) const {
+    static void traverseOps(const Operation::Ptr &op, OptBuilder &builder) {
         for (const auto &child : utils::advanceEarly(op->body)) {
-            dfs(child, regionMap, builder);
+            traverseOps(child, regionMap, builder);
             sinkOperation(child, regionMap, builder);
         }
     }
@@ -115,17 +116,17 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
         auto funcOp = op->as<FunctionOp>();
         uint32_t rootId = 0;
-        RegionMap regionMap;
+        // RegionMap regionMap;
         uint32_t scope = 0;
         for (const auto &child : op->body) {
             auto ifOp = child->as<IfOp>();
             if (ifOp) {
-                fillRegionMap(child, regionMap, scope);
+                fillRegionMap(child, scope);
             } else {
                 regionMap[child] = {rootId, op};
             }
         }
-        dfs(op, regionMap, builder);
+        traverseOps(op, builder);
     }
 };
 
