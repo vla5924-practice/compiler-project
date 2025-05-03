@@ -26,7 +26,7 @@ struct HoistLoopInvariants : public Transform<WhileOp, ForOp> {
 
     using LoopValues = std::unordered_set<Value::Ptr>;
 
-    static bool isInvariant(const Operation::Ptr op, const LoopValues& values) {
+    static bool isInvariant(const Operation::Ptr op, const LoopValues &values) {
         bool result = false;
         for (auto operand : op->operands) {
             result |= values.count(operand);
