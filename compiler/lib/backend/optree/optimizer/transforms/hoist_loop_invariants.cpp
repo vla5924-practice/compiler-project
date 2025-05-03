@@ -1,5 +1,6 @@
 #include "optimizer/transform.hpp"
 
+#include <iostream>
 #include <memory>
 #include <string_view>
 #include <unordered_set>
@@ -7,8 +8,7 @@
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
-#include "compiler/optree/types.hpp"
-#include "compiler/utils/helpers.hpp"
+#include "compiler/optree/value.hpp"
 
 #include "optimizer/opt_builder.hpp"
 
@@ -26,9 +26,9 @@ struct HoistLoopInvariants : public Transform<WhileOp, ForOp> {
 
     using LoopValues = std::unordered_set<Value::Ptr>;
 
-    static bool isInvariant(const Operation::Ptr op, const LoopValues &values) {
+    static bool isInvariant(const Operation::Ptr &op, const LoopValues &values) {
         bool result = false;
-        for (auto operand : op->operands) {
+        for (const auto &operand : op->operands) {
             result |= values.count(operand);
         }
         return !result;
@@ -37,21 +37,23 @@ struct HoistLoopInvariants : public Transform<WhileOp, ForOp> {
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
         LoopValues values;
         for (const auto &childOp : op->body) {
-            for (auto result : childOp->results) {
+            for (const auto &result : childOp->results) {
                 values.insert(result);
+            }
+            if (childOp->as<StoreOp>()) {
+                for (const auto &operand : childOp->operands) {
+                    values.insert(operand);
+                }
             }
         }
 
         for (const auto &childOp : utils::advanceEarly(op->body)) {
-            if (utils::isAny<WhileOp, ForOp>(childOp)) {
-                continue;
-            }
-
-            if (childOp->as<LoadOp>()) {
+            if (utils::isAny<WhileOp, ForOp, LoadOp, ConditionOp, StoreOp>(childOp)) {
                 continue;
             }
 
             if (isInvariant(childOp, values)) {
+                std::cout << "INVARIANT" << childOp->name << std::endl;
                 builder.setInsertPointBefore(op);
                 auto cloned = builder.clone(childOp);
                 builder.replace(childOp, cloned);
