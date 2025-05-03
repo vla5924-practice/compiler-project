@@ -10,6 +10,7 @@ BaseTransform::Ptr createEraseUnusedFunctions();
 BaseTransform::Ptr createFoldConstants();
 BaseTransform::Ptr createFoldControlFlowOps();
 BaseTransform::Ptr createJoinConditionsBranches();
+BaseTransform::Ptr createHoistLoopInvariants();
 BaseTransform::Ptr createMinimizeBoolExpression();
 
 } // namespace optimizer
