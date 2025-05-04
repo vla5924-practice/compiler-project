@@ -17,12 +17,9 @@ using namespace optree::optimizer;
 
 namespace {
 
-struct ControlFlowSinkOps : public Transform<FunctionOp> {
-    using Transform::Transform;
+struct ControlFlowSinkHelper {
 
-    std::string_view name() const override {
-        return "ControlFlowSinkOps";
-    }
+    ControlFlowSinkHelper(OptBuilder &builder) : builder{builder} {};
 
     struct Region {
         uint32_t id;
@@ -30,18 +27,16 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
     };
     using RegionMap = std::map<Operation::Ptr, Region>;
 
-    RegionMap regionMap;
-
-    static void fillRegionMap(const Operation::Ptr &op, uint32_t &scope) {
+    void fillRegionMap(const Operation::Ptr &op, uint32_t &scope) {
         if (!op->body.empty())
             scope++;
         for (auto &child : op->body) {
             regionMap[child] = {scope, op};
-            fillRegionMap(child, regionMap, scope);
+            fillRegionMap(child, scope);
         }
     };
 
-    static bool isParentChild(const Operation::Ptr &child, const Operation::Ptr &parentCandidate) {
+    bool isParentChild(const Operation::Ptr &child, const Operation::Ptr &parentCandidate) {
         if (child == parentCandidate)
             return true;
         auto parent = child->parent;
@@ -53,7 +48,7 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
         return false;
     }
 
-    static void sinkOperation(const Operation::Ptr &child, OptBuilder &builder) {
+    void sinkOperation(const Operation::Ptr &child) {
         uint32_t childPos = regionMap[child].id;
         if (child->results.size() != 1)
             return;
@@ -76,16 +71,16 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
                 auto minRegion = usingIn[0];
                 const auto &candidate = usingIn[0].owner;
                 // cheking that operations are family
-                bool isBrothers = false;
+                bool siblings = false;
                 for (const auto &pos : usingIn) {
                     if (pos.id < minRegion.id)
                         minRegion = pos;
                     const auto &posOwner = pos.owner;
                     if (!isParentChild(posOwner, candidate) || !isParentChild(candidate, posOwner)) {
-                        isBrothers = true;
+                        siblings = true;
                     }
                 }
-                if (isBrothers) {
+                if (siblings) {
                     continue;
                 }
                 uint32_t minRegionId = minRegion.id;
@@ -106,27 +101,38 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
         }
     }
 
-    static void traverseOps(const Operation::Ptr &op, OptBuilder &builder) {
+    void traverseOps(const Operation::Ptr &op) {
         for (const auto &child : utils::advanceEarly(op->body)) {
-            traverseOps(child, regionMap, builder);
-            sinkOperation(child, regionMap, builder);
+            traverseOps(child);
+            sinkOperation(child);
         }
+    }
+
+    RegionMap regionMap;
+    OptBuilder &builder;
+};
+
+struct ControlFlowSinkOps : public Transform<FunctionOp> {
+    using Transform::Transform;
+
+    std::string_view name() const override {
+        return "ControlFlowSinkOps";
     }
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
         auto funcOp = op->as<FunctionOp>();
-        uint32_t rootId = 0;
-        // RegionMap regionMap;
+        auto context = ControlFlowSinkHelper(builder);
+
         uint32_t scope = 0;
         for (const auto &child : op->body) {
             auto ifOp = child->as<IfOp>();
             if (ifOp) {
-                fillRegionMap(child, scope);
+                context.fillRegionMap(child, scope);
             } else {
-                regionMap[child] = {rootId, op};
+                context.regionMap[child] = {0, op};
             }
         }
-        traverseOps(op, builder);
+        context.traverseOps(op);
     }
 };
 
