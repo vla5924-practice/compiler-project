@@ -18,14 +18,14 @@ using namespace optree::optimizer;
 namespace {
 
 struct ControlFlowSinkHelper {
-
-    ControlFlowSinkHelper(OptBuilder &builder) : builder{builder} {};
-
     struct Region {
         uint32_t id;
         Operation::Ptr owner;
     };
+
     using RegionMap = std::map<Operation::Ptr, Region>;
+
+    ControlFlowSinkHelper(OptBuilder &builder) : builder(builder){};
 
     void fillRegionMap(const Operation::Ptr &op, uint32_t &scope) {
         if (!op->body.empty())
@@ -70,7 +70,6 @@ struct ControlFlowSinkHelper {
             if (found && !usingIn.empty()) {
                 auto minRegion = usingIn[0];
                 const auto &candidate = usingIn[0].owner;
-                // cheking that operations are family
                 bool siblings = false;
                 for (const auto &pos : usingIn) {
                     if (pos.id < minRegion.id)
@@ -112,11 +111,11 @@ struct ControlFlowSinkHelper {
     OptBuilder &builder;
 };
 
-struct ControlFlowSinkOps : public Transform<FunctionOp> {
+struct SinkControlFlowOps : public Transform<FunctionOp> {
     using Transform::Transform;
 
     std::string_view name() const override {
-        return "ControlFlowSinkOps";
+        return "SinkControlFlowOps";
     }
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
@@ -141,8 +140,8 @@ struct ControlFlowSinkOps : public Transform<FunctionOp> {
 namespace optree {
 namespace optimizer {
 
-BaseTransform::Ptr createControlFlowSinkOps() {
-    return std::make_shared<ControlFlowSinkOps>();
+BaseTransform::Ptr createSinkControlFlowOps() {
+    return std::make_shared<SinkControlFlowOps>();
 }
 
 } // namespace optimizer

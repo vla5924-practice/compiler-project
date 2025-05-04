@@ -9,25 +9,25 @@
 using namespace optree;
 using namespace optree::optimizer;
 
-class ControlFlowSinkOpsTest : public TransformTestBase {
+class SinkControlFlowOpsTest : public TransformTestBase {
     virtual void setupOptimizer(Optimizer &opt) const override {
-        auto transform = CascadeTransform::make("ControlFlowSinkOpsTest");
-        transform->add(createControlFlowSinkOps());
+        auto transform = CascadeTransform::make("SinkControlFlowOpsTest");
+        transform->add(createSinkControlFlowOps());
         opt.add(transform);
     }
 
   public:
-    ControlFlowSinkOpsTest() = default;
-    ~ControlFlowSinkOpsTest() = default;
+    SinkControlFlowOpsTest() = default;
+    ~SinkControlFlowOpsTest() = default;
 };
 
-TEST_F(ControlFlowSinkOpsTest, can_run_on_empty_optree) {
+TEST_F(SinkControlFlowOpsTest, can_run_on_empty_optree) {
     runOptimizer();
     assertSameOpTree();
 }
 
 // clang-format off
-TEST_F(ControlFlowSinkOpsTest, can_move_operator_to_then) {
+TEST_F(SinkControlFlowOpsTest, can_move_operator_to_then) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -58,7 +58,7 @@ TEST_F(ControlFlowSinkOpsTest, can_move_operator_to_then) {
     assertSameOpTree();
 }
 
-TEST_F(ControlFlowSinkOpsTest, can_keep_operation_using_in_base_region) {
+TEST_F(SinkControlFlowOpsTest, can_keep_operation_using_in_base_region) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -93,7 +93,7 @@ TEST_F(ControlFlowSinkOpsTest, can_keep_operation_using_in_base_region) {
     assertSameOpTree();
 }
 
-TEST_F(ControlFlowSinkOpsTest, cannot_move_operation_to_then_else_regions) {
+TEST_F(SinkControlFlowOpsTest, cannot_move_operation_to_then_else_regions) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -131,7 +131,7 @@ TEST_F(ControlFlowSinkOpsTest, cannot_move_operation_to_then_else_regions) {
     assertSameOpTree();
 }
 
-TEST_F(ControlFlowSinkOpsTest, can_move_to_then_else_diff_operations) {
+TEST_F(SinkControlFlowOpsTest, can_move_to_then_else_diff_operations) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -172,7 +172,7 @@ TEST_F(ControlFlowSinkOpsTest, can_move_to_then_else_diff_operations) {
     assertSameOpTree();
 }
 
-TEST_F(ControlFlowSinkOpsTest, chain_moving) {
+TEST_F(SinkControlFlowOpsTest, chain_moving) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -205,7 +205,7 @@ TEST_F(ControlFlowSinkOpsTest, chain_moving) {
     assertSameOpTree();
 }
 
-TEST_F(ControlFlowSinkOpsTest, can_move_operators_in_inner_regions) {
+TEST_F(SinkControlFlowOpsTest, can_move_operators_in_inner_regions) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -244,7 +244,7 @@ TEST_F(ControlFlowSinkOpsTest, can_move_operators_in_inner_regions) {
     assertSameOpTree();
 }
 
-TEST_F(ControlFlowSinkOpsTest, skip_while) {
+TEST_F(SinkControlFlowOpsTest, skip_while) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
@@ -277,7 +277,7 @@ TEST_F(ControlFlowSinkOpsTest, skip_while) {
     assertSameOpTree();
 }
 
-TEST_F(ControlFlowSinkOpsTest, two_ifs) {
+TEST_F(SinkControlFlowOpsTest, two_ifs) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({m.tI64, m.tF64}, m.tNone)).inward(v["x"], 0).inward(v["y"], 1).withBody();
