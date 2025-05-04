@@ -1,6 +1,3 @@
-#include <deque>
-#include <utility>
-
 #include <gtest/gtest.h>
 
 #include "compiler/backend/optree/semantizer/semantizer.hpp"
@@ -152,4 +149,20 @@ TEST_F(SemantizerTest, succeeds_on_valid_function_with_while) {
     m.endBody();
 
     assertNoErrors(m.rootOp());
+}
+
+TEST_F(SemantizerTest, fails_on_improper_result_dominance) {
+    m.opInit<FunctionOp>("test", m.tFunc({m.tI64}, m.tNone)).inward(v["x"], 0).withBody();
+    m.op<WhileOp>().withBody();
+    m.op<ConditionOp>().withBody();
+    v[0] = m.opInit<ConstantOp>(m.tI64, int64_t(1));
+    v[1] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualI, v["x"], v[0]);
+    m.endBody();
+    v[2] = m.opInit<ConstantOp>(m.tI64, int64_t(2));
+    m.endBody();
+    m.opInit<ArithBinaryOp>(ArithBinOpKind::MulI, v[2], v["x"]);
+    m.opInit<ReturnOp>();
+    m.endBody();
+
+    assertAnyErrors(m.rootOp());
 }
