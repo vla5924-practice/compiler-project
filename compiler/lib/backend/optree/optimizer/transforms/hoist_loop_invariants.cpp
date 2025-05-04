@@ -1,6 +1,5 @@
 #include "optimizer/transform.hpp"
 
-#include <iostream>
 #include <memory>
 #include <string_view>
 #include <unordered_set>
@@ -29,7 +28,7 @@ struct HoistLoopInvariants : public Transform<WhileOp, ForOp> {
     static bool isInvariant(const Operation::Ptr &op, const LoopValues &values) {
         bool result = false;
         for (const auto &operand : op->operands) {
-            result |= static_cast<bool>(values.count(operand));
+            result |= values.contains(operand);
         }
         return !result;
     }
