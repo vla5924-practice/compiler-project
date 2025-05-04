@@ -6,9 +6,9 @@
 #include <unordered_set>
 
 #include "compiler/optree/adaptors.hpp"
-#include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
 #include "compiler/optree/value.hpp"
+#include "compiler/utils/helpers.hpp"
 
 #include "optimizer/opt_builder.hpp"
 
@@ -29,7 +29,7 @@ struct HoistLoopInvariants : public Transform<WhileOp, ForOp> {
     static bool isInvariant(const Operation::Ptr &op, const LoopValues &values) {
         bool result = false;
         for (const auto &operand : op->operands) {
-            result |= values.count(operand);
+            result |= static_cast<bool>(values.count(operand));
         }
         return !result;
     }
@@ -53,7 +53,6 @@ struct HoistLoopInvariants : public Transform<WhileOp, ForOp> {
             }
 
             if (isInvariant(childOp, values)) {
-                std::cout << "INVARIANT" << childOp->name << std::endl;
                 builder.setInsertPointBefore(op);
                 auto cloned = builder.clone(childOp);
                 builder.replace(childOp, cloned);
