@@ -5,13 +5,14 @@
 namespace optree {
 namespace optimizer {
 
-BaseTransform::Ptr createEraseUnusedOps();
 BaseTransform::Ptr createEraseUnusedFunctions();
+BaseTransform::Ptr createEraseUnusedOps();
 BaseTransform::Ptr createFoldConstants();
 BaseTransform::Ptr createFoldControlFlowOps();
 BaseTransform::Ptr createJoinConditionsBranches();
 BaseTransform::Ptr createHoistLoopInvariants();
 BaseTransform::Ptr createMinimizeBoolExpression();
+BaseTransform::Ptr createSinkControlFlowOps();
 
 } // namespace optimizer
 } // namespace optree
