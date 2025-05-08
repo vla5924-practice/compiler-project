@@ -9,6 +9,7 @@ BaseTransform::Ptr createEraseUnusedFunctions();
 BaseTransform::Ptr createEraseUnusedOps();
 BaseTransform::Ptr createFoldConstants();
 BaseTransform::Ptr createFoldControlFlowOps();
+BaseTransform::Ptr createHoistLoopInvariants();
 BaseTransform::Ptr createJoinConditionsBranches();
 BaseTransform::Ptr createMinimizeBoolExpression();
 BaseTransform::Ptr createSinkControlFlowOps();
