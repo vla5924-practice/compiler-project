@@ -1,14 +1,12 @@
-#include <algorithm>
+#include <deque>
 #include <memory>
 #include <string_view>
 #include <unordered_map>
 
 #include "compiler/optree/adaptors.hpp"
-#include "compiler/optree/definitions.hpp"
 #include "compiler/optree/helpers.hpp"
 #include "compiler/optree/operation.hpp"
-#include "compiler/optree/types.hpp"
-#include "compiler/utils/helpers.hpp"
+#include "compiler/optree/value.hpp"
 
 #include "optimizer/opt_builder.hpp"
 #include "optimizer/transform.hpp"
@@ -84,8 +82,6 @@ struct ConstantPropagation : public Transform<FunctionOp> {
     std::string_view name() const override {
         return "ConstantPropagation";
     }
-
-    // using ExpressionPair = std::pair<Operation::Ptr, std::vector<Value::Ptr>>;
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
         auto propagationContext = ConstantPropagationContext{builder};
