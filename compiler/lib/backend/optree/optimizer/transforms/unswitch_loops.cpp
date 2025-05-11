@@ -16,21 +16,22 @@ using namespace optree::optimizer;
 
 namespace {
 
-struct UnswitchLoops : public Transform<WhileOp, ForOp> {
-    using Transform::Transform;
-
-    std::string_view name() const override {
-        return "UnswitchLoops";
-    }
-
+struct UnswitchLoopsContext {
     using LoopValues = std::unordered_set<Value::Ptr>;
 
-    static bool isInvariant(const Operation::Ptr &op, const LoopValues &values) {
-        bool result = false;
-        for (const auto &operand : op->operands) {
-            result |= values.contains(operand);
+    UnswitchLoopsContext(OptBuilder& builder) : builder(builder) {}
+
+    void fillLoopValues(const Operation::Ptr &op) {
+        for (const auto &childOp : op->body) {
+            for (const auto &result : childOp->results) {
+                values.insert(result);
+            }
+            if (childOp->as<StoreOp>()) {
+                for (const auto &operand : childOp->operands) {
+                    values.insert(operand);
+                }
+            }
         }
-        return !result;
     }
 
     static void hoistBody(const Operation::Ptr &op, OptBuilder &builder) {
@@ -44,24 +45,22 @@ struct UnswitchLoops : public Transform<WhileOp, ForOp> {
         }
     }
 
-    void run(const Operation::Ptr &op, OptBuilder &builder) const override {
-        LoopValues values;
-        for (const auto &childOp : op->body) {
-            for (const auto &result : childOp->results) {
-                values.insert(result);
-            }
-            if (childOp->as<StoreOp>()) {
-                for (const auto &operand : childOp->operands) {
-                    values.insert(operand);
-                }
-            }
+    bool isInvariant(const Operation::Ptr &op) {
+        bool result = false;
+        for (const auto &operand : op->operands) {
+            result |= values.contains(operand);
         }
+        return !result;
+    }
+
+    void run(const Operation::Ptr &op) {
+        fillLoopValues(op);
 
         auto invariant_if_it = op->body.end();
 
         for (auto childIt = op->body.begin(); childIt != op->body.end(); ++childIt) {
 
-            if ((*childIt)->as<IfOp>() && isInvariant(*childIt, values)) {
+            if ((*childIt)->as<IfOp>() && isInvariant(*childIt)) {
                 invariant_if_it = childIt;
                 break;
             }
@@ -96,6 +95,22 @@ struct UnswitchLoops : public Transform<WhileOp, ForOp> {
             cloned_if->as<IfOp>().elseOp()->addToBody(cloned_loop_else); });
 
         builder.replace(op, cloned_if);
+    }
+
+    LoopValues values;
+    OptBuilder& builder;
+};
+
+struct UnswitchLoops : public Transform<WhileOp, ForOp> {
+    using Transform::Transform;
+
+    std::string_view name() const override {
+        return "UnswitchLoops";
+    }
+
+    void run(const Operation::Ptr &op, OptBuilder &builder) const override {
+        UnswitchLoopsContext ctx(builder);
+        ctx.run(op);
     }
 };
 
