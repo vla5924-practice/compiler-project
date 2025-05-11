@@ -13,6 +13,7 @@ BaseTransform::Ptr createHoistLoopInvariants();
 BaseTransform::Ptr createJoinConditionsBranches();
 BaseTransform::Ptr createMinimizeBoolExpression();
 BaseTransform::Ptr createSinkControlFlowOps();
+BaseTransform::Ptr createUnswitchLoops();
 
 } // namespace optimizer
 } // namespace optree

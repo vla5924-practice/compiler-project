@@ -47,7 +47,7 @@ struct HoistLoopInvariants : public Transform<WhileOp, ForOp> {
         }
 
         for (const auto &childOp : utils::advanceEarly(op->body)) {
-            if (utils::isAny<WhileOp, ForOp, LoadOp, ConditionOp, StoreOp>(childOp)) {
+            if (utils::isAny<IfOp, WhileOp, ForOp, LoadOp, ConditionOp, StoreOp>(childOp)) {
                 continue;
             }
 
