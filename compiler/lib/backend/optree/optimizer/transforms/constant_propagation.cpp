@@ -20,34 +20,41 @@ namespace {
 struct ConstantPropagationContext {
 
     ConstantPropagationContext(OptBuilder &builder) : builder{builder} {};
-    using ScopesStack = std::deque<std::unordered_map<Value::Ptr, Value::Ptr>>;
+    using Scopes = std::deque<std::unordered_map<Value::Ptr, Value::Ptr>>;
 
     void setValueAttribute(const StoreOp &op) {
         auto storeValue = op.valueToStore();
         auto valueOwner = storeValue->owner.lock();
-
-        if (valueOwner->as<ConstantOp>()) {
-            scopes.front()[op.dst()] = storeValue;
-        } else {
-            return;
+        auto dst = op.dst();
+        if (valueOwner->as<ConstantOp>())
+            scopes.front()[dst] = storeValue;
+        auto beginIt = scopes.begin();
+        beginIt++;
+        for (; beginIt != scopes.end(); beginIt++) {
+            auto &scope = *beginIt;
+            if (scope.count(dst) != 0) {
+                scope[dst] = nullptr;
+            }
         }
     }
 
     void replaceValue(const LoadOp &op) {
         auto scr = op.src();
-        Value::Ptr value;
+        Value::Ptr value = nullptr;
+        auto tmp_scope = scopes.front();
         for (const auto &scope : scopes) {
             if (const auto it = scope.find(scr); it != scope.end()) {
                 value = it->second;
                 break;
-            } else {
-                return;
             }
         }
+        if (!value) {
+            return;
+        }
+
         auto &result = op->result(0);
         for (auto &use : result->uses) {
             auto user = use.lock();
-
             builder.update(user, [&user, &value, &operandNumber = use.operandNumber]() {
                 auto &targetOperand = user->operand(operandNumber);
                 targetOperand = value;
@@ -58,7 +65,6 @@ struct ConstantPropagationContext {
     void traverseOps(const Operation::Ptr &op) {
         if (utils::isAny<FunctionOp, IfOp, ThenOp, ElseOp, ForOp, WhileOp>(op)) {
             scopes.emplace_front();
-
             for (const auto &child : op->body) {
                 if (auto storeOp = child->as<StoreOp>()) {
                     setValueAttribute(storeOp);
@@ -73,7 +79,7 @@ struct ConstantPropagationContext {
         }
     }
 
-    ScopesStack scopes;
+    Scopes scopes;
     OptBuilder &builder;
 };
 
