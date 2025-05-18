@@ -226,6 +226,68 @@ TEST_F(ConstantPropagationTest, invalidate_variable_after_condition) {
     assertSameOpTree();
 }
 
+TEST_F(ConstantPropagationTest, independ_propagate_for_if_blocks) {
+    {
+        auto &&[m, v] = getActual();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[2]);
+        v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[3], v[1]);
+        // clang-format off
+        m.op<IfOp>(v[4]).withBody();
+            m.op<ThenOp>().withBody();
+                v[5] = m.opInit<ConstantOp>(m.tF64, 9.10);
+                m.opInit<StoreOp>(v["z"], v[5]);
+                v[6] = m.opInit<LoadOp>(v["z"]);
+                v[7] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[5], v[6]);
+            m.endBody();
+            m.op<ElseOp>().withBody();
+                v[8] = m.opInit<LoadOp>(v["z"]);
+                v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[1], v[8]);
+            m.endBody();
+        m.endBody();
+        // clang-format on
+        v[10] = m.opInit<LoadOp>(v["z"]);
+        v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[8]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+    {
+        auto &&[m, v] = getExpected();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[1]);
+        v[4] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[3], v[1]);
+        // clang-format off
+        m.op<IfOp>(v[4]).withBody();
+            m.op<ThenOp>().withBody();
+                v[5] = m.opInit<ConstantOp>(m.tF64, 9.10);
+                m.opInit<StoreOp>(v["z"], v[5]);
+                v[6] = m.opInit<LoadOp>(v["z"]);
+                v[7] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[5], v[5]);
+            m.endBody();
+            m.op<ElseOp>().withBody();
+                v[8] = m.opInit<LoadOp>(v["z"]);
+                v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[1], v[1]);
+            m.endBody();
+        m.endBody();
+        // clang-format on
+        v[10] = m.opInit<LoadOp>(v["z"]);
+        v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[1]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+
+    runOptimizer();
+    assertSameOpTree();
+}
+
 TEST_F(ConstantPropagationTest, propagate_variable_in_scopes) {
     {
         auto &&[m, v] = getActual();
@@ -270,6 +332,306 @@ TEST_F(ConstantPropagationTest, propagate_variable_in_scopes) {
         // clang-format on
         v[8] = m.opInit<LoadOp>(v["z"]);
         v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[1]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+
+    runOptimizer();
+    assertSameOpTree();
+}
+
+TEST_F(ConstantPropagationTest, propagate_variable_with_while) {
+    {
+        auto &&[m, v] = getActual();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[2]);
+        // clang-format off
+        m.op<WhileOp>().withBody();
+            m.op<ConditionOp>().withBody();
+                v[4] = m.opInit<LoadOp>(v["z"]);
+                v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[4], v[1]);
+            m.endBody();
+            v[6] = m.opInit<ConstantOp>(m.tF64, 312.321);
+            m.opInit<StoreOp>(v["z"], v[6]);
+            v[8] = m.opInit<LoadOp>(v["z"]);
+            v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[8], v[8]);
+        m.endBody();
+        // clang-format on
+        v[10] = m.opInit<LoadOp>(v["z"]);
+        v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[10]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+    {
+        auto &&[m, v] = getExpected();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[1]);
+        // clang-format off
+        m.op<WhileOp>().withBody();
+            m.op<ConditionOp>().withBody();
+                v[4] = m.opInit<LoadOp>(v["z"]);
+                v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[4], v[1]);
+            m.endBody();
+            v[6] = m.opInit<ConstantOp>(m.tF64, 312.321);
+            m.opInit<StoreOp>(v["z"], v[6]);
+            v[8] = m.opInit<LoadOp>(v["z"]);
+            v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[6], v[6]);
+        m.endBody();
+        // clang-format on
+        v[10] = m.opInit<LoadOp>(v["z"]);
+        v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[10]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+
+    runOptimizer();
+    assertSameOpTree();
+}
+
+TEST_F(ConstantPropagationTest, propagate_variable_with_for) {
+    {
+        auto &&[m, v] = getActual();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[2]);
+        // clang-format off
+        m.op<ForOp>().withBody();
+            v[6] = m.opInit<ConstantOp>(m.tF64, 312.321);
+            m.opInit<StoreOp>(v["z"], v[6]);
+            v[8] = m.opInit<LoadOp>(v["z"]);
+            v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[8], v[8]);
+        m.endBody();
+        // clang-format on
+        v[10] = m.opInit<LoadOp>(v["z"]);
+        v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[10]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+    {
+        auto &&[m, v] = getExpected();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[1]);
+        // clang-format off
+        m.op<ForOp>().withBody();
+            v[6] = m.opInit<ConstantOp>(m.tF64, 312.321);
+            m.opInit<StoreOp>(v["z"], v[6]);
+            v[8] = m.opInit<LoadOp>(v["z"]);
+            v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[6], v[6]);
+        m.endBody();
+        // clang-format on
+        v[10] = m.opInit<LoadOp>(v["z"]);
+        v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[10]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+
+    runOptimizer();
+    assertSameOpTree();
+}
+
+TEST_F(ConstantPropagationTest, propagate_into_while) {
+    {
+        auto &&[m, v] = getActual();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[2]);
+        // clang-format off
+        m.op<WhileOp>().withBody();
+            m.op<ConditionOp>().withBody();
+                v[4] = m.opInit<LoadOp>(v["z"]);
+                v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[4], v[1]);
+            m.endBody();
+            v[8] = m.opInit<LoadOp>(v["z"]);
+            v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[8], v[8]);
+        m.endBody();
+        // clang-format on
+        v[10] = m.opInit<LoadOp>(v["z"]);
+        v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[10]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+    {
+        auto &&[m, v] = getExpected();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[1]);
+        // clang-format off
+        m.op<WhileOp>().withBody();
+            m.op<ConditionOp>().withBody();
+                v[4] = m.opInit<LoadOp>(v["z"]);
+                v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[1], v[1]);
+            m.endBody();
+            v[8] = m.opInit<LoadOp>(v["z"]);
+            v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddI, v[1], v[1]);
+        m.endBody();
+        // clang-format on
+        v[10] = m.opInit<LoadOp>(v["z"]);
+        v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[1]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+
+    runOptimizer();
+    assertSameOpTree();
+}
+
+TEST_F(ConstantPropagationTest, propagate_into_while_if) {
+    {
+        auto &&[m, v] = getActual();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[2]);
+        // clang-format off
+        m.op<WhileOp>().withBody();
+            m.op<ConditionOp>().withBody();
+                v[4] = m.opInit<LoadOp>(v["z"]);
+                v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[4], v[1]);
+            m.endBody();
+            m.op<IfOp>(v[1]).withBody();
+                m.op<ThenOp>().withBody();
+                    v[6] = m.opInit<ConstantOp>(m.tF64, 9.10);
+                    m.opInit<StoreOp>(v["z"], v[6]);
+                    v[8] = m.opInit<LoadOp>(v["z"]);
+                    v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[8], v[6]);
+                m.endBody();
+                m.op<ElseOp>().withBody();
+                    v[10] = m.opInit<LoadOp>(v["z"]);
+                    v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[1], v[10]);
+                m.endBody();
+            m.endBody();
+        m.endBody();
+        // clang-format on
+        v[12] = m.opInit<LoadOp>(v["z"]);
+        v[13] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[12]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+    {
+        auto &&[m, v] = getExpected();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[1]);
+        // clang-format off
+        m.op<WhileOp>().withBody();
+            m.op<ConditionOp>().withBody();
+                v[4] = m.opInit<LoadOp>(v["z"]);
+                v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[4], v[1]);
+            m.endBody();
+            m.op<IfOp>(v[1]).withBody();
+                m.op<ThenOp>().withBody();
+                    v[6] = m.opInit<ConstantOp>(m.tF64, 9.10);
+                    m.opInit<StoreOp>(v["z"], v[6]);
+                    v[8] = m.opInit<LoadOp>(v["z"]);
+                    v[9] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[6], v[6]);
+                m.endBody();
+                m.op<ElseOp>().withBody();
+                    v[10] = m.opInit<LoadOp>(v["z"]);
+                    v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[1], v[10]);
+                m.endBody();
+            m.endBody();
+        m.endBody();
+        // clang-format on
+        v[12] = m.opInit<LoadOp>(v["z"]);
+        v[13] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[12]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+
+    runOptimizer();
+    assertSameOpTree();
+}
+
+TEST_F(ConstantPropagationTest, propagate_into_while_if_store_in_else) {
+    {
+        auto &&[m, v] = getActual();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[2]);
+        // clang-format off
+        m.op<WhileOp>().withBody();
+            m.op<ConditionOp>().withBody();
+                v[4] = m.opInit<LoadOp>(v["z"]);
+                v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[4], v[1]);
+            m.endBody();
+            m.op<IfOp>(v[1]).withBody();
+                m.op<ThenOp>().withBody();
+                    v[6] = m.opInit<LoadOp>(v["z"]);
+                    v[7] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[1], v[6]);
+                m.endBody();
+                m.op<ElseOp>().withBody();
+                    v[8] = m.opInit<ConstantOp>(m.tF64, 9.10);
+                    m.opInit<StoreOp>(v["z"], v[8]);
+                    v[10] = m.opInit<LoadOp>(v["z"]);
+                    v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[1], v[10]);
+                m.endBody();
+            m.endBody();
+        m.endBody();
+        // clang-format on
+        v[12] = m.opInit<LoadOp>(v["z"]);
+        v[13] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[12]);
+        m.opInit<ReturnOp>(v[3]);
+        m.endBody();
+    }
+    {
+        auto &&[m, v] = getExpected();
+        m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
+        v["z"] = m.opInit<AllocateOp>(m.tPtr(m.tF64));
+        v[1] = m.opInit<ConstantOp>(m.tF64, 4.5);
+        m.opInit<StoreOp>(v["z"], v[1]);
+        v[2] = m.opInit<LoadOp>(v["z"]);
+        v[3] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[1]);
+        // clang-format off
+        m.op<WhileOp>().withBody();
+            m.op<ConditionOp>().withBody();
+                v[4] = m.opInit<LoadOp>(v["z"]);
+                v[5] = m.opInit<LogicBinaryOp>(LogicBinOpKind::GreaterEqualF, v[4], v[1]);
+            m.endBody();
+            m.op<IfOp>(v[1]).withBody();
+                m.op<ThenOp>().withBody();
+                    v[6] = m.opInit<LoadOp>(v["z"]);
+                    v[7] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[1], v[6]);
+                m.endBody();
+                m.op<ElseOp>().withBody();
+                    v[8] = m.opInit<ConstantOp>(m.tF64, 9.10);
+                    m.opInit<StoreOp>(v["z"], v[8]);
+                    v[10] = m.opInit<LoadOp>(v["z"]);
+                    v[11] = m.opInit<ArithBinaryOp>(ArithBinOpKind::SubF, v[1], v[8]);
+                m.endBody();
+            m.endBody();
+        m.endBody();
+        // clang-format on
+        v[12] = m.opInit<LoadOp>(v["z"]);
+        v[13] = m.opInit<ArithBinaryOp>(ArithBinOpKind::AddF, v[1], v[12]);
         m.opInit<ReturnOp>(v[3]);
         m.endBody();
     }
