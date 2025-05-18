@@ -6,7 +6,6 @@
 #include <string_view>
 #include <unordered_map>
 
-
 #include "compiler/optree/adaptors.hpp"
 #include "compiler/optree/operation.hpp"
 #include "compiler/optree/value.hpp"
