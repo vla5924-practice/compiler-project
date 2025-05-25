@@ -18,9 +18,9 @@ using namespace optree::optimizer;
 
 namespace {
 
-struct ConstantPropagationContext {
+struct Context {
 
-    ConstantPropagationContext(OptBuilder &builder) : builder{builder} {};
+    Context(OptBuilder &builder) : builder{builder} {};
     using Scope = std::unordered_map<Value::Ptr, Value::Ptr>;
     using Scopes = std::deque<Scope>;
 
@@ -126,15 +126,15 @@ struct ConstantPropagationContext {
     OptBuilder &builder;
 };
 
-struct ConstantPropagation : public Transform<FunctionOp> {
+struct PropagateConstants : public Transform<FunctionOp> {
     using Transform::Transform;
 
     std::string_view name() const override {
-        return "ConstantPropagation";
+        return "PropagateConstants";
     }
 
     void run(const Operation::Ptr &op, OptBuilder &builder) const override {
-        auto propagationContext = ConstantPropagationContext{builder};
+        Context propagationContext{builder};
         propagationContext.traverseOps(op);
     }
 };
@@ -144,8 +144,8 @@ struct ConstantPropagation : public Transform<FunctionOp> {
 namespace optree {
 namespace optimizer {
 
-BaseTransform::Ptr createConstantPropagation() {
-    return std::make_shared<ConstantPropagation>();
+BaseTransform::Ptr createPropagateConstants() {
+    return std::make_shared<PropagateConstants>();
 }
 
 } // namespace optimizer

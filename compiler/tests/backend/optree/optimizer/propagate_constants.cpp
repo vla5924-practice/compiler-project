@@ -9,22 +9,22 @@
 using namespace optree;
 using namespace optree::optimizer;
 
-class ConstantPropagationTest : public TransformTestBase {
+class PropagateConstantsTest : public TransformTestBase {
     virtual void setupOptimizer(Optimizer &opt) const override {
-        opt.add(createConstantPropagation());
+        opt.add(createPropagateConstants());
     }
 
   public:
-    ConstantPropagationTest() = default;
-    ~ConstantPropagationTest() = default;
+    PropagateConstantsTest() = default;
+    ~PropagateConstantsTest() = default;
 };
 
-TEST_F(ConstantPropagationTest, can_run_on_empty_optree) {
+TEST_F(PropagateConstantsTest, can_run_on_empty_optree) {
     runOptimizer();
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, simple_propagation) {
+TEST_F(PropagateConstantsTest, simple_propagation) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -52,7 +52,7 @@ TEST_F(ConstantPropagationTest, simple_propagation) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, propagate_in_down_scope) {
+TEST_F(PropagateConstantsTest, propagate_in_down_scope) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -106,7 +106,7 @@ TEST_F(ConstantPropagationTest, propagate_in_down_scope) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, propagate_in_scope) {
+TEST_F(PropagateConstantsTest, propagate_in_scope) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -172,7 +172,7 @@ TEST_F(ConstantPropagationTest, propagate_in_scope) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, invalidate_variable_after_condition) {
+TEST_F(PropagateConstantsTest, invalidate_variable_after_condition) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -226,7 +226,7 @@ TEST_F(ConstantPropagationTest, invalidate_variable_after_condition) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, independ_propagate_for_if_blocks) {
+TEST_F(PropagateConstantsTest, independ_propagate_for_if_blocks) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -288,7 +288,7 @@ TEST_F(ConstantPropagationTest, independ_propagate_for_if_blocks) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, propagate_variable_in_scopes) {
+TEST_F(PropagateConstantsTest, propagate_variable_in_scopes) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -340,7 +340,7 @@ TEST_F(ConstantPropagationTest, propagate_variable_in_scopes) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, propagate_variable_with_while) {
+TEST_F(PropagateConstantsTest, propagate_variable_with_while) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -396,7 +396,7 @@ TEST_F(ConstantPropagationTest, propagate_variable_with_while) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, propagate_variable_with_for) {
+TEST_F(PropagateConstantsTest, propagate_variable_with_for) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -444,7 +444,7 @@ TEST_F(ConstantPropagationTest, propagate_variable_with_for) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, propagate_into_while) {
+TEST_F(PropagateConstantsTest, propagate_into_while) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -496,7 +496,7 @@ TEST_F(ConstantPropagationTest, propagate_into_while) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, propagate_into_while_if) {
+TEST_F(PropagateConstantsTest, propagate_into_while_if) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();
@@ -568,7 +568,7 @@ TEST_F(ConstantPropagationTest, propagate_into_while_if) {
     assertSameOpTree();
 }
 
-TEST_F(ConstantPropagationTest, propagate_into_while_if_store_in_else) {
+TEST_F(PropagateConstantsTest, propagate_into_while_if_store_in_else) {
     {
         auto &&[m, v] = getActual();
         m.opInit<FunctionOp>("test", m.tFunc({}, m.tF64)).withBody();

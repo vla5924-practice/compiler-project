@@ -8,11 +8,11 @@ namespace optimizer {
 BaseTransform::Ptr createEraseUnusedFunctions();
 BaseTransform::Ptr createEraseUnusedOps();
 BaseTransform::Ptr createFoldConstants();
-BaseTransform::Ptr createConstantPropagation();
 BaseTransform::Ptr createFoldControlFlowOps();
 BaseTransform::Ptr createHoistLoopInvariants();
 BaseTransform::Ptr createJoinConditionsBranches();
 BaseTransform::Ptr createMinimizeBoolExpression();
+BaseTransform::Ptr createPropagateConstants();
 BaseTransform::Ptr createSinkControlFlowOps();
 
 } // namespace optimizer
