@@ -12,6 +12,7 @@ BaseTransform::Ptr createFoldControlFlowOps();
 BaseTransform::Ptr createHoistLoopInvariants();
 BaseTransform::Ptr createJoinConditionsBranches();
 BaseTransform::Ptr createMinimizeBoolExpression();
+BaseTransform::Ptr createPropagateConstants();
 BaseTransform::Ptr createSinkControlFlowOps();
 
 } // namespace optimizer
