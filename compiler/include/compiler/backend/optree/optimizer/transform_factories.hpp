@@ -14,6 +14,7 @@ BaseTransform::Ptr createJoinConditionsBranches();
 BaseTransform::Ptr createMinimizeBoolExpression();
 BaseTransform::Ptr createPropagateConstants();
 BaseTransform::Ptr createSinkControlFlowOps();
+BaseTransform::Ptr createUnswitchLoops();
 
 } // namespace optimizer
 } // namespace optree
