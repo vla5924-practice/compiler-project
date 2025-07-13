@@ -1,7 +1,31 @@
-# Compiler project
+# Документация - `compiler-project`
 
-This is a home for Compiler project, a free for use, open source, written from scratch compiler with additional support
-of LLVM IR code generation and binary executable production. Use links below to dive deep into the product understanding.
+## О проекте
 
-* [🇷🇺 Документация на русском языке](ru/README.md)
-* [🇺🇸 Documentation in English](en/README.md)
+* [Основные положения](overview/README.md)
+* [Компилируемый язык](language/README.md)
+
+## Внутренние представления программы
+
+* [Синтаксическое дерево](./representations/ast/README.md)
+* [Дерево опреаций](./representations/optree/README.md)
+
+## Компоненты проекта
+
+* [Фронтенд (`frontend`)](./frontend/README.md)
+* [Бэкенд на базе синтаксического дерева (`backend/ast`)](./backend_ast/README.md)
+* [Бэкенд на базе дерева операций (`backend/optree`)](./backend_optree/README.md)
+* [Генератор кода LLVM IR](./codegen/README.md)
+* [Консольное приложение](./cli/README.md)
+
+## Сравнения производительности
+
+* [Производительность компиляции](./benchmarking/compilation/README.md)
+* [Производительность исполнения](./benchmarking/execution/README.md)
+
+## См. также
+
+* [Список используемой литературы](./references.md)
+* [Репозиторий GitHub](./repository.md)
+
+> «Таким образом, был разработан и реализован компилятор».

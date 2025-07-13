@@ -25,58 +25,41 @@ production. Use links below to dive deep into the product understanding.
 
 
 .. toctree::
-   :caption: Documentation
-   :maxdepth: 2
+   :caption: О проекте
 
-   Документация на русском языке <ru/README>
-   Documentation in English <en/README>
+   overview/README.md
+   language/README.md
+
+.. toctree::
+   :caption: Внутренние представления
+
+   representations/ast/README.md
+   representations/optree/README.md
 
 
 .. toctree::
-   :caption: Общая информация о проекте
-   :hidden:
+   :caption: Компоненты проекта
 
-   ru/overview/architecture
-   ru/overview/stages
-   ru/overview/subject_area
-
-
-.. toctree::
-   :caption: Компилируемый язык
-   :hidden:
-
-   Обзор <ru/language/README>
-   ru/language/blocks
-   ru/language/conditions
-   ru/language/expressions
-   ru/language/functions
-   ru/language/identifiers
-   ru/language/keywords
-   ru/language/loops
-   ru/language/operators
-   ru/language/specials
-   ru/language/types
-   ru/language/variables
+   frontend/README.md
+   backend_ast/README.md
+   backend_optree/README.md
+   codegen/README.md
+   cli/README.md
 
 
 .. toctree::
-   :caption: Руководства
-   :hidden:
+   :caption: Сравнения производительности
 
-   ru/tutorials/install
-   ru/tutorials/llvm
+   benchmarking/compilation/README.md
+   benchmarking/execution/README.md
 
 
 .. toctree::
-   :caption: Компоненты (модули) проекта
-   :hidden:
+   :caption: См. также
 
-   Обзор <ru/components/README>
-   ru/components/preprocessor/README
-   ru/components/lexer/README
-   ru/components/parser/README
-   ru/components/semantizer/README
-   ru/components/optimizer/README
-   ru/components/ast/README
-   ru/components/ir_generator/README
-   ru/components/cli/README
+   references.md
+   repository.md
+
+..
+
+   «Таким образом, был разработан и реализован компилятор».
